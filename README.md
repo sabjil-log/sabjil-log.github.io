@@ -1,6 +1,6 @@
 # 삽질노트 — 무인 자동 블로그
 
-마크다운만 넣으면 → 스타일 입은 HTML로 빌드 → GitHub Pages가 루트에서 그대로 서빙.
+마크다운만 넣으면 → 스타일 입은 HTML로 빌드 → GitHub Pages가 docs/ 를 그대로 서빙.
 GitHub에는 **빌드 단계가 없어서**(완성된 HTML만 올림) 깨질 게 없습니다.
 
 ## 폴더 구조
@@ -10,8 +10,8 @@ blog/
 ├── publish.sh               # 빌드 + 커밋 + 푸시 한 방
 ├── posts/                   # ← 여기에 글(.md)만 쌓임. 원본.
 │   └── 2026-07-09-...md
-├── index.html  p/  c/  assets/   # ← 자동 생성물(루트). GitHub Pages가 서빙. 손대지 말 것.
-
+└── docs/                    # ← 자동 생성물. GitHub Pages가 서빙(main //docs). 손대지 말 것.
+    └── index.html  p/  c/  assets/
 ```
 
 ## 처음 한 번만 (익명 세팅)
@@ -20,7 +20,7 @@ blog/
 2. 그 이메일로 **새 GitHub 계정** 생성 → 사용자명이 곧 블로그 주소가 되니 가명으로.
 3. 저장소 만들기: 이름을 `<사용자명>.github.io` 로. (예: `sabjil-log.github.io`)
 4. 이 폴더 내용을 그 저장소에 push.
-5. `<사용자명>.github.io` 저장소는 push만 하면 **자동 발행**됩니다(Pages 설정 불필요).
+5. Settings → Pages → Source `main` / `/docs` (이미 설정됨). push하면 재빌드됩니다.
 6. 1~2분 뒤 `https://<사용자명>.github.io/` 로 접속 → 끝.
 
 > 익명성 핵심: 커밋 작성자 정보도 가명으로.

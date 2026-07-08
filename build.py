@@ -34,7 +34,7 @@ PYGMENTS_STYLE = "nord-darker"   # 없으면 monokai 로 폴백
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 POSTS_DIR = os.path.join(ROOT, "posts")
-DOCS = ROOT   # 루트에서 서빙 (user-site repo 자동 발행)
+DOCS = os.path.join(ROOT, "docs")
 
 def cat_slug(name):
     return CATEGORIES.get(name, re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "etc")
