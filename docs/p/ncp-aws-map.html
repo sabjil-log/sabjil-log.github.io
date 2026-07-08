@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NCP와 AWS, 같은 걸 다르게 부른다 — 헷갈리는 서비스 이름 지도 · 삽질노트</title>
+<meta name="description" content="개념은 거의 1:1인데 이름만 달라서 헤맵니다. 핵심 매핑만 외우면 두 클라우드 문서가 같은 언어로 읽혀요.">
+<meta property="og:title" content="NCP와 AWS, 같은 걸 다르게 부른다 — 헷갈리는 서비스 이름 지도 · 삽질노트">
+<meta property="og:description" content="개념은 거의 1:1인데 이름만 달라서 헤맵니다. 핵심 매핑만 외우면 두 클라우드 문서가 같은 언어로 읽혀요.">
+<meta property="og:type" content="article">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-09</span><a class="chip" href="../c/cloud.html">--cloud</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>NCP와 AWS, 같은 걸 다르게 부른다 — 헷갈리는 서비스 이름 지도</h1><blockquote>
+<p><strong>한 줄 요약:</strong> NCP와 AWS는 개념이 거의 1:1로 대응합니다. 이름만 다를 뿐이에요. 매핑 지도를 한 번 외워두면, 한쪽 문서를 읽던 감각 그대로 다른 쪽을 읽을 수 있습니다.</p>
+</blockquote>
+<h2 id="_1">왜 헷갈리나</h2>
+<p>같은 요리를 나라마다 다른 이름으로 파는 것과 같습니다. 재료(개념)는 똑같은데 메뉴판 글씨만 달라서, 처음엔 전혀 다른 음식처럼 보이죠. "인스턴스 방화벽"을 AWS는 Security Group, NCP는 ACG라고 부르는 식입니다.</p>
+<h2 id="_2">핵심 매핑 지도</h2>
+<table>
+<thead>
+<tr>
+<th>개념</th>
+<th>AWS</th>
+<th>NCP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>가상 네트워크</td>
+<td>VPC</td>
+<td>VPC</td>
+</tr>
+<tr>
+<td>서브넷</td>
+<td>Subnet</td>
+<td>Subnet</td>
+</tr>
+<tr>
+<td>인스턴스 방화벽</td>
+<td>Security Group</td>
+<td>ACG (Access Control Group)</td>
+</tr>
+<tr>
+<td>서브넷 방화벽</td>
+<td>Network ACL</td>
+<td>Network ACL</td>
+</tr>
+<tr>
+<td>로드밸런서</td>
+<td>ELB / ALB / NLB</td>
+<td>Load Balancer (ALB / NLB)</td>
+</tr>
+<tr>
+<td>오브젝트 스토리지</td>
+<td>S3</td>
+<td>Object Storage (S3 호환)</td>
+</tr>
+<tr>
+<td>블록 스토리지</td>
+<td>EBS</td>
+<td>Block Storage</td>
+</tr>
+<tr>
+<td>관리형 RDB</td>
+<td>RDS</td>
+<td>Cloud DB (for MySQL/PostgreSQL 등)</td>
+</tr>
+<tr>
+<td>서버리스 함수</td>
+<td>Lambda</td>
+<td>Cloud Functions</td>
+</tr>
+<tr>
+<td>모니터링</td>
+<td>CloudWatch</td>
+<td>Cloud Insight</td>
+</tr>
+<tr>
+<td>키 관리</td>
+<td>KMS</td>
+<td>Key Management Service (KMS)</td>
+</tr>
+<tr>
+<td>비밀 관리</td>
+<td>Secrets Manager</td>
+<td>Secret Manager</td>
+</tr>
+<tr>
+<td>계정/권한</td>
+<td>IAM</td>
+<td>Sub Account / IAM</td>
+</tr>
+<tr>
+<td>DNS</td>
+<td>Route 53</td>
+<td>Global DNS</td>
+</tr>
+<tr>
+<td>CDN</td>
+<td>CloudFront</td>
+<td>CDN+ / Global CDN</td>
+</tr>
+</tbody>
+</table>
+<p>이 표만 손에 쥐고 있으면, "AWS에서 이거 하던 건데 NCP선 뭐지?" 할 때 바로 목적지를 찾습니다.</p>
+<h2 id="_3">함정: 이름은 닮았는데 동작이 다른 것들</h2>
+<p>지도만 외우면 방심하기 쉬운데, <strong>동작이 미묘하게 다른 짝</strong>이 있습니다.</p>
+<ul>
+<li><strong>방화벽의 상태성:</strong> 인스턴스 방화벽(Security Group / ACG)은 <strong>스테이트풀</strong> — 나간 요청의 응답은 규칙 없이 자동으로 돌아옵니다. 반면 <strong>Network ACL은 양쪽 다 스테이트리스</strong> — 인바운드만 열고 아웃바운드(리턴) 포트를 안 열면 응답이 막힙니다. 헬스체크·SSH가 "붙는 듯 안 붙는" 전형적 원인이에요.</li>
+<li><strong>S3 호환의 함정:</strong> NCP Object Storage는 S3 API 호환이지만 100%는 아닙니다. 서명 방식(s3v4)·일부 체크섬 헤더 처리에서 차이가 있어, 최신 SDK(예: boto3 신버전)의 기본값이 그대로 안 먹을 때가 있어요. 클라이언트 설정을 호환 모드로 맞춰줘야 합니다.</li>
+<li><strong>부르는 단위가 다를 때:</strong> 같은 "관리형 DB"라도 지원 엔진·버전·백업 정책 세부는 벤더마다 다릅니다. 개념은 같아도 <strong>스펙은 반드시 각 문서에서 재확인</strong>하세요.</li>
+</ul>
+<h2 id="_4">한 줄 정리</h2>
+<p>개념 지도(왼쪽 열)를 외우면 두 클라우드가 같은 언어로 읽힙니다. 단, <strong>이름이 같아도 상태성·호환성 같은 동작 차이</strong>는 따로 확인 — 특히 스테이트리스 NACL이 사람 잡습니다.</p><nav class="pn"><a href="../p/network-triage.html"><span class="lbl">newer</span>&#x27;포트는 열렸다는데 접속이 안 돼요&#x27; — 계층별로 찔러보는 진단법</a><span></span></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

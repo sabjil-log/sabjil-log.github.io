@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAG가 뭐길래 — LLM한테 '오픈북 시험'을 보게 하는 법 · 삽질노트</title>
+<meta name="description" content="LLM은 외운 것만 답합니다. RAG는 답하기 직전에 관련 문서를 찾아 손에 쥐여주는 것 — 클로즈드북을 오픈북으로 바꾸는 기법이에요.">
+<meta property="og:title" content="RAG가 뭐길래 — LLM한테 '오픈북 시험'을 보게 하는 법 · 삽질노트">
+<meta property="og:description" content="LLM은 외운 것만 답합니다. RAG는 답하기 직전에 관련 문서를 찾아 손에 쥐여주는 것 — 클로즈드북을 오픈북으로 바꾸는 기법이에요.">
+<meta property="og:type" content="article">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-09</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>RAG가 뭐길래 — LLM한테 &#x27;오픈북 시험&#x27;을 보게 하는 법</h1><blockquote>
+<p><strong>한 줄 요약:</strong> LLM은 학습 때 외운 것만 답하는 <strong>클로즈드북 시험</strong> 상태입니다. RAG는 질문에 답하기 직전에 관련 문서를 찾아 책상 위에 올려주는 <strong>오픈북 시험</strong>으로 바꿔주는 기법이에요.</p>
+</blockquote>
+<h2 id="_1">왜 필요한가</h2>
+<p>아무리 똑똑한 LLM도 두 가지를 못 합니다. <strong>사내 문서</strong>처럼 학습한 적 없는 내용, 그리고 <strong>최신 정보</strong>. 모르는 걸 물으면 그럴듯하게 지어내죠(환각). 그렇다고 회사 문서로 매번 모델을 새로 학습(파인튜닝)시키는 건 비싸고 느립니다.</p>
+<h2 id="vs">비유: 클로즈드북 vs 오픈북</h2>
+<p>시험을 떠올려 보세요. 클로즈드북은 머리에 외운 것만 씁니다. 오픈북은 책을 뒤져 근거를 보고 답하죠. RAG는 여기서 한 발 더 나갑니다 — <strong>시험 직전에 조교가 관련 페이지만 쏙 뽑아 책상에 올려주는</strong> 것. 학생(LLM)은 그 페이지를 근거로 답만 잘 쓰면 됩니다.</p>
+<h2 id="4">어떻게 "관련 페이지"를 찾나 — 4단계</h2>
+<ol>
+<li><strong>자르기(chunk):</strong> 문서를 문단 단위로 잘게 나눕니다.</li>
+<li><strong>임베딩(embedding):</strong> 각 조각을 숫자 벡터로 바꿉니다. 핵심은 <strong>뜻이 비슷하면 벡터도 가깝다</strong>는 것. "강아지"와 "반려견"은 지도에서 이웃, "환율"은 저 멀리.</li>
+<li><strong>검색:</strong> 질문도 벡터로 바꿔서, 가장 가까운 조각 몇 개(top-k)를 벡터 DB에서 꺼냅니다.</li>
+<li><strong>답하기:</strong> 꺼낸 조각을 질문과 함께 프롬프트에 넣어, LLM이 <strong>그 근거만 보고</strong> 답하게 합니다.</li>
+</ol>
+<h2 id="_2">개념 코드 스케치</h2>
+<p>실제 구현이 아니라 흐름만 보여주는 뼈대입니다.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># 1) 문서를 잘라 임베딩해서 저장</span>
+<span class="n">chunks</span> <span class="o">=</span> <span class="n">split</span><span class="p">(</span><span class="n">document</span><span class="p">)</span>
+<span class="n">index</span> <span class="o">=</span> <span class="p">[(</span><span class="n">embed</span><span class="p">(</span><span class="n">c</span><span class="p">),</span> <span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">chunks</span><span class="p">]</span>      <span class="c1"># (벡터, 원문) 쌍</span>
+
+<span class="c1"># 2) 질문과 가장 가까운 조각 top-k 검색</span>
+<span class="n">q</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">question</span><span class="p">)</span>
+<span class="n">top</span> <span class="o">=</span> <span class="n">nearest</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>                 <span class="c1"># 벡터 거리로 정렬해 상위 4개</span>
+
+<span class="c1"># 3) 근거를 붙여 LLM에 질문</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;아래 근거만 사용해서 답해. 없으면 모른다고 해.</span>
+
+<span class="s2">[근거]</span>
+<span class="si">{</span><span class="n">top</span><span class="si">}</span>
+
+<span class="s2">[질문]</span>
+<span class="si">{</span><span class="n">question</span><span class="si">}</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="n">answer</span> <span class="o">=</span> <span class="n">llm</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+</code></pre></div>
+
+<h2 id="_3">흔한 함정</h2>
+<ul>
+<li><strong>검색이 엉뚱하면 답도 엉뚱합니다(garbage in, garbage out).</strong> 그래서 뽑은 후보를 <strong>리랭커(reranker)</strong>로 한 번 더 정렬해, 진짜 관련 있는 조각을 위로 올립니다. 1차 검색은 빠르지만 거칠고, 리랭커는 느리지만 정확 — 둘을 조합해요.</li>
+<li><strong>자르는 크기가 품질을 좌우합니다.</strong> 너무 크게 자르면 한 조각에 잡음이 섞이고, 너무 잘게 자르면 문맥이 끊깁니다.</li>
+<li><strong>"근거에 없으면 모른다고 해"</strong>를 프롬프트에 명시하지 않으면, 모델은 또 지어냅니다.</li>
+</ul>
+<h2 id="_4">한 줄 정리</h2>
+<p>RAG는 모델을 더 똑똑하게 만드는 게 아니라, <strong>답하기 직전에 정답 페이지를 쥐여주는</strong> 겁니다. 그래서 승부는 모델보다 <strong>"얼마나 관련 있는 조각을 잘 찾아 오느냐"</strong>에서 갈려요.</p><nav class="pn"><span></span><a href="../p/onedrive-unicode.html" style="text-align:right"><span class="lbl">older</span>맥·윈도우 섞인 팀에서 OneDrive가 파일을 자꾸 두 개로 만드는 이유</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
