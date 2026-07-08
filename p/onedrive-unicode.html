@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>맥·윈도우 섞인 팀에서 OneDrive가 파일을 자꾸 두 개로 만드는 이유 · 삽질노트</title>
+<meta name="description" content="이름이 똑같아 보여도 맥과 윈도우가 한글 이름을 다르게 저장해서 생기는 문제. 눈이 아니라 바이트로 봐야 답이 나옵니다.">
+<meta property="og:title" content="맥·윈도우 섞인 팀에서 OneDrive가 파일을 자꾸 두 개로 만드는 이유 · 삽질노트">
+<meta property="og:description" content="이름이 똑같아 보여도 맥과 윈도우가 한글 이름을 다르게 저장해서 생기는 문제. 눈이 아니라 바이트로 봐야 답이 나옵니다.">
+<meta property="og:type" content="article">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html" class="on">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-09</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>맥·윈도우 섞인 팀에서 OneDrive가 파일을 자꾸 두 개로 만드는 이유</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 파일 이름이 똑같아 보여도, 맥과 윈도우가 한글 이름을 <em>다른 방식으로 저장</em>하기 때문입니다. 사람 눈엔 같은데 컴퓨터 눈엔 다른 파일이에요.</p>
+</blockquote>
+<h2 id="_1">이런 적 있으신가요</h2>
+<p>맥 쓰는 디자이너가 <code>제안서.pptx</code>를 올렸는데, 윈도우 쓰는 팀원한테는 <code>제안서.pptx</code>랑 <code>제안서.pptx</code>가 <strong>두 개</strong> 보입니다. 이름은 글자 하나 안 다른데요. 누가 하나 지우면 다른 사람 파일이 사라지고, 동기화는 계속 충돌 나고… 딱 미치는 상황이죠.</p>
+<h2 id="_2">범인은 "유니코드 정규화"</h2>
+<p>핵심만 말하면, <strong>한글 글자 하나를 저장하는 방법이 두 가지</strong>라서 그렇습니다. <code>한</code>이라는 글자를 예로 들어볼게요.</p>
+<ul>
+<li><strong>방법 A (NFC):</strong> <code>한</code> 하나로 통째로 저장 — 윈도우가 쓰는 방식</li>
+<li><strong>방법 B (NFD):</strong> <code>ㅎ</code> + <code>ㅏ</code> + <code>ㄴ</code> 자음·모음을 따로따로 저장 — 맥이 쓰는 방식</li>
+</ul>
+<p>화면엔 둘 다 똑같이 <code>한</code>으로 보입니다. 하지만 실제 바이트는 완전히 다릅니다. 마치 <strong>"1"을 아라비아 숫자 <code>1</code>로 쓰느냐, 로마 숫자 <code>Ⅰ</code>로 쓰느냐</strong>의 차이 같은 거예요. 읽는 사람은 같은 1이지만 기계는 다른 문자로 봅니다. OneDrive 입장에선 "다른" 두 파일이니 착실하게 둘 다 보관합니다.</p>
+<h2 id="_3">왜 하필 맥이 문제냐</h2>
+<p>맥 파일 시스템(APFS/HFS+)이 파일 이름을 <strong>분해된 형태(NFD)로 저장</strong>하는 습관이 있어서입니다. 반대로 윈도우·대부분의 웹서비스·리눅스는 <strong>합쳐진 형태(NFC)</strong>를 표준으로 씁니다. 그래서 맥에서 만든 한글 파일이 다른 환경으로 넘어갈 때 어긋남이 터져요. (영어 파일명은 분해될 게 없어서 안 생깁니다. 한글·한자처럼 조합형 글자에서만 나타나요.)</p>
+<h2 id="_4">진짜인지 확인하는 법</h2>
+<p><code>한</code>은 눈으로 한 글자지만, NFC면 코드포인트 1개, NFD면 3개(ㅎ, ㅏ, ㄴ)입니다. 글자 수만 세보면 바로 드러나요.</p>
+<p>파이썬 — 이름 하나 찍어보기:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">unicodedata</span>
+
+<span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;한&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>                                <span class="c1"># NFC면 1, NFD면 3</span>
+<span class="nb">print</span><span class="p">([</span><span class="nb">hex</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">c</span><span class="p">))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">name</span><span class="p">])</span>              <span class="c1"># NFD면 자모가 따로 보임</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">unicodedata</span><span class="o">.</span><span class="n">is_normalized</span><span class="p">(</span><span class="s2">&quot;NFC&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>   <span class="c1"># False면 NFD 상태</span>
+</code></pre></div>
+
+<p>PowerShell(윈도우) — 폴더에서 NFD 파일명만 골라내기:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">Get-ChildItem</span> <span class="p">|</span> <span class="nb">Where-Object</span> <span class="p">{</span>
+  <span class="nv">$_</span><span class="p">.</span><span class="n">Name</span> <span class="o">-ne</span> <span class="nv">$_</span><span class="p">.</span><span class="n">Name</span><span class="p">.</span><span class="n">Normalize</span><span class="p">(</span><span class="no">[Text.NormalizationForm]</span><span class="p">::</span><span class="n">FormC</span><span class="p">)</span>
+<span class="p">}</span> <span class="p">|</span> <span class="nb">Select-Object</span> <span class="n">Name</span>
+</code></pre></div>
+
+<p>맥/리눅스 터미널 — 이름 길이 비교:</p>
+<div class="highlight"><pre><span></span><code><span class="k">for</span><span class="w"> </span>f<span class="w"> </span><span class="k">in</span><span class="w"> </span>*<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import sys,unicodedata as u; n=sys.argv[1]; print(len(n), len(u.normalize(&#39;NFC&#39;,n)), n)&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$f</span><span class="s2">&quot;</span>
+<span class="k">done</span>
+<span class="c1"># 앞 두 숫자가 다른 줄이 NFD 파일</span>
+</code></pre></div>
+
+<h2 id="_5">해결책</h2>
+<p><strong>1. 업로드 전에 폴더 전체를 NFC로 일괄 변환</strong> — 가장 확실합니다.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">unicodedata</span>
+
+<span class="n">target</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span>  <span class="c1"># 정규화할 폴더</span>
+<span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">target</span><span class="p">):</span>
+    <span class="n">nfc</span> <span class="o">=</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s2">&quot;NFC&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">nfc</span> <span class="o">!=</span> <span class="n">name</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">name</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">nfc</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;renamed: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">nfc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<blockquote>
+<p>⚠️ 돌리기 전에 백업. 이미 NFC 복제본이 함께 있으면 이름 충돌이 나니, 복제본부터 정리하고 실행하세요.</p>
+</blockquote>
+<p><strong>2. 한글 파일명을 아예 피한다.</strong> 팀 규칙으로 <code>proposal_260709.pptx</code>처럼 영문+날짜로 통일하면 문제 자체가 사라집니다. 근본 회피책이죠.</p>
+<p><strong>3. 이미 생긴 복제본은 최신본 확인 후 하나로 병합</strong>하고 위 규칙으로 재발을 막습니다. 지울 땐 어느 쪽이 최신 수정본인지 꼭 확인하세요 — 엉뚱한 걸 지우면 남의 작업이 날아갑니다.</p>
+<h2 id="_6">한 줄 정리</h2>
+<p><strong>"같은 이름인데 왜 두 개지?"</strong> 싶으면 십중팔구 맥의 NFD와 윈도우의 NFC가 싸우는 겁니다. 이름을 눈이 아니라 <strong>바이트로</strong> 보면 답이 나옵니다.</p><nav class="pn"><span></span><span></span></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
