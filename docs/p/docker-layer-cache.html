@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>도커 빌드가 매번 느린 이유 — 이미지 레이어와 캐시, Dockerfile 순서의 비밀 · 삽질노트</title>
+<meta name="description" content="도커 이미지는 층층이 쌓인 레이어입니다. 이 구조를 알면 Dockerfile 한 줄 순서만 바꿔도 빌드가 몇 배 빨라져요.">
+<meta property="og:title" content="도커 빌드가 매번 느린 이유 — 이미지 레이어와 캐시, Dockerfile 순서의 비밀 · 삽질노트">
+<meta property="og:description" content="도커 이미지는 층층이 쌓인 레이어입니다. 이 구조를 알면 Dockerfile 한 줄 순서만 바꿔도 빌드가 몇 배 빨라져요.">
+<meta property="og:type" content="article">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html" class="on">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-10</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>도커 빌드가 매번 느린 이유 — 이미지 레이어와 캐시, Dockerfile 순서의 비밀</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 도커 이미지는 <strong>층층이 쌓인 레이어</strong>입니다. 빌드는 바뀐 층부터 다시 만들기 때문에, <strong>잘 안 바뀌는 걸 아래에, 자주 바뀌는 걸 위에</strong> 두면 캐시가 살아나 빌드가 확 빨라집니다.</p>
+</blockquote>
+<h2 id="_1">이런 적 있으신가요</h2>
+<p>코드 한 줄 고쳤을 뿐인데 <code>docker build</code>가 라이브러리를 처음부터 다시 깝니다. 매번 몇 분씩. "아무것도 안 바뀐 부분인데 왜 또 받지?" 싶죠. 원인은 <strong>레이어 순서</strong>입니다.</p>
+<h2 id="_2">비유: 투명 필름을 겹치는 것</h2>
+<p>이미지는 투명 필름(레이어)을 아래부터 위로 겹쳐 만든 그림입니다. Dockerfile의 명령 한 줄이 필름 한 장이에요.</p>
+<ul>
+<li><code>FROM</code> → 바탕 필름</li>
+<li><code>RUN apt install ...</code> → 그 위에 한 장</li>
+<li><code>COPY . .</code> → 또 그 위에 한 장</li>
+</ul>
+<p>도커는 빌드할 때 <strong>어떤 필름부터 바뀌었는지</strong> 봅니다. 바뀐 필름과 <strong>그 위의 모든 필름</strong>은 다시 그리고, 그 아래는 <strong>캐시</strong>를 재사용합니다.</p>
+<h2 id="_3">그래서 순서가 전부다</h2>
+<p>문제는 이런 Dockerfile입니다.</p>
+<div class="highlight"><pre><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.12-slim</span>
+<span class="k">COPY</span><span class="w"> </span>.<span class="w"> </span>.<span class="w">                      </span>#<span class="w"> </span>코드가<span class="w"> </span>여기서<span class="w"> </span>통째로<span class="w"> </span>들어옴
+<span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</code></pre></div>
+
+<p>코드를 한 줄만 고쳐도 <code>COPY . .</code> 필름이 바뀌고, <strong>그 위의 <code>pip install</code>도 무효화</strong>됩니다. 그래서 매번 라이브러리를 새로 깔죠.</p>
+<p>순서만 바꾸면 해결됩니다.</p>
+<div class="highlight"><pre><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.12-slim</span>
+<span class="k">COPY</span><span class="w"> </span>requirements.txt<span class="w"> </span>.<span class="w">        </span>#<span class="w"> </span>의존성<span class="w"> </span>목록만<span class="w"> </span>먼저
+<span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt<span class="w">   </span>#<span class="w"> </span>목록이<span class="w"> </span>안<span class="w"> </span>바뀌면<span class="w"> </span>이<span class="w"> </span>층은<span class="w"> </span>캐시!
+<span class="k">COPY</span><span class="w"> </span>.<span class="w"> </span>.<span class="w">                       </span>#<span class="w"> </span>자주<span class="w"> </span>바뀌는<span class="w"> </span>코드는<span class="w"> </span>맨<span class="w"> </span>마지막
+</code></pre></div>
+
+<p>이제 <code>requirements.txt</code>가 그대로면 <code>pip install</code> 층은 캐시가 유지되고, 코드만 다시 복사됩니다. 빌드가 몇 분 → 몇 초로 줄어요.</p>
+<h2 id="_4">확인하는 법</h2>
+<p>빌드 로그에서 <code>CACHED</code> 표시를 보면 어느 층이 재사용됐는지 바로 압니다.</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>myapp<span class="w"> </span>.
+<span class="c1">#  =&gt; [2/4] COPY requirements.txt .        CACHED</span>
+<span class="c1">#  =&gt; [3/4] RUN pip install -r ...         CACHED   ← 이게 목표</span>
+<span class="c1">#  =&gt; [4/4] COPY . .</span>
+
+docker<span class="w"> </span><span class="nb">history</span><span class="w"> </span>myapp<span class="w">           </span><span class="c1"># 레이어별 크기와 명령 확인</span>
+</code></pre></div>
+
+<h2 id="_5">팁 하나 더</h2>
+<p><code>RUN</code> 을 여러 줄로 쪼개면 그만큼 필름이 늘어 이미지가 커집니다. 관련 명령은 <code>&amp;&amp;</code> 로 묶고, 캐시 정리까지 한 층에서 끝내세요.</p>
+<div class="highlight"><pre><span></span><code><span class="k">RUN</span><span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>curl<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>/var/lib/apt/lists/*
+</code></pre></div>
+
+<h2 id="_6">한 줄 정리</h2>
+<p>도커 이미지는 겹겹의 필름이고, 빌드는 <strong>바뀐 층부터 위로</strong> 다시 그립니다. <strong>안 바뀌는 것(의존성)은 아래, 자주 바뀌는 것(코드)은 위</strong> — 이 순서 하나로 빌드 속도가 갈립니다.</p><nav class="pn"><a href="../p/github-pages.html"><span class="lbl">newer</span>서버 없이 블로그 띄우기 — GitHub Pages가 공짜로 되는 원리</a><a href="../p/cron-utc.html" style="text-align:right"><span class="lbl">older</span>cron이 새벽에 도는데 시간이 밀린다? — UTC 함정과 표현식 읽는 법</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
