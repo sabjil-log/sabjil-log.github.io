@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>토큰은 딱 필요한 만큼만 — fine-grained PAT로 최소권한 실천하기 · 삽질노트</title>
+<meta name="description" content="자동화에 쓰는 접근 토큰은 &#x27;모든 권한&#x27;이 아니라 &#x27;이 저장소, 이 동작&#x27;만 열어야 합니다. 사고가 나도 피해가 작아져요.">
+<meta property="og:title" content="토큰은 딱 필요한 만큼만 — fine-grained PAT로 최소권한 실천하기 · 삽질노트">
+<meta property="og:description" content="자동화에 쓰는 접근 토큰은 &#x27;모든 권한&#x27;이 아니라 &#x27;이 저장소, 이 동작&#x27;만 열어야 합니다. 사고가 나도 피해가 작아져요.">
+<meta property="og:type" content="article">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html" class="on">--security</a><a href="../c/ai.html">--ai</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-10</span><a class="chip" href="../c/security.html">--security</a><span>1 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>토큰은 딱 필요한 만큼만 — fine-grained PAT로 최소권한 실천하기</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 접근 토큰은 <strong>마스터키가 아니라 카드키</strong>여야 합니다. 저장소 하나, 동작 하나, 짧은 만료 — 이 셋이 유출 사고의 크기를 결정합니다.</p>
+</blockquote>
+<h2 id="_1">왜 중요한가</h2>
+<p>자동화한다고 "다 되는" 만능 토큰을 하나 발급해서 여기저기 붙여 쓰기 쉽습니다. 그러다 로그·코드·채팅 어딘가에 토큰이 새면, 그 순간 <strong>계정 전체</strong>가 위험해져요. 권한을 좁혀놨다면 피해는 "그 저장소 하나"로 끝납니다. 이 차이가 사고와 재앙을 가릅니다.</p>
+<h2 id="vs">비유: 마스터키 vs 카드키</h2>
+<p>호텔 마스터키는 모든 방을 엽니다. 잃어버리면 호텔 전체가 위험하죠. 반면 카드키는 <strong>내 방만</strong> 열립니다. 잃어버려도 그 방만 바꾸면 끝. 토큰도 카드키처럼 발급해야 합니다.</p>
+<p>GitHub의 <strong>fine-grained PAT</strong>가 딱 이 카드키예요. 예전 classic PAT은 계정 전체에 걸리는 마스터키에 가깝습니다.</p>
+<h2 id="3">최소권한 3원칙</h2>
+<ol>
+<li><strong>범위를 좁게.</strong> 토큰 발급 시 <em>Only select repositories</em> → 딱 그 저장소 하나만 선택.</li>
+<li><strong>권한을 최소로.</strong> 필요한 동작만 켭니다. 파일 커밋만 하면 <code>Contents: Read and write</code> 하나면 충분해요. (워크플로우 파일 <code>.github/workflows/*</code> 를 건드릴 땐 <code>Workflows</code> 권한이 추가로 필요합니다 — 이건 일부러 분리돼 있어요.)</li>
+<li><strong>만료를 짧게.</strong> 며칠짜리로 끊습니다. 상시 도는 자동화라면, 아예 사람 토큰 대신 <strong>수명 짧은 자동 토큰</strong>(예: GitHub Actions가 실행 중에만 주는 <code>GITHUB_TOKEN</code>)을 쓰는 게 상책입니다.</li>
+</ol>
+<h2 id="_2">실천 체크리스트</h2>
+<ul>
+<li>토큰을 <strong>코드·채팅·로그에 평문으로 남기지 않기.</strong> 실수로 노출됐다면 고민 말고 <strong>즉시 폐기(revoke)</strong> 하고 새로 발급.</li>
+<li>CI/자동화에서는 저장소 <strong>Secret</strong>에 저장해 주입하고, 코드에는 이름만 참조. (값이 로그에 안 찍힙니다.)</li>
+<li>안 쓰는 토큰은 방치하지 말고 삭제. 주기적으로 사용 내역을 봅니다.</li>
+</ul>
+<p>점검 위치는 GitHub → Settings → Developer settings → Personal access tokens. 여기서 만료일과 마지막 사용 시각을 보고, 정체불명이거나 안 쓰는 건 <strong>Delete</strong>.</p>
+<h2 id="_3">한 줄 정리</h2>
+<p>토큰은 마스터키가 아니라 카드키로. <strong>저장소 하나 · 동작 하나 · 짧은 만료</strong>, 그리고 노출되면 즉시 폐기. 이 습관이 유출 사고를 "귀찮은 일"과 "재앙" 사이에서 갈라놓습니다.</p><nav class="pn"><span></span><a href="../p/github-pages.html" style="text-align:right"><span class="lbl">older</span>서버 없이 블로그 띄우기 — GitHub Pages가 공짜로 되는 원리</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

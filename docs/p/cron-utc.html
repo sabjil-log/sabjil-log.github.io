@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cron이 새벽에 도는데 시간이 밀린다? — UTC 함정과 표현식 읽는 법 · 삽질노트</title>
+<meta name="description" content="cron 5칸(분·시·일·월·요일)만 읽을 줄 알면 됩니다. 시간이 어긋나면 십중팔구 서버가 UTC로 돌기 때문이에요.">
+<meta property="og:title" content="cron이 새벽에 도는데 시간이 밀린다? — UTC 함정과 표현식 읽는 법 · 삽질노트">
+<meta property="og:description" content="cron 5칸(분·시·일·월·요일)만 읽을 줄 알면 됩니다. 시간이 어긋나면 십중팔구 서버가 UTC로 돌기 때문이에요.">
+<meta property="og:type" content="article">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html" class="on">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-10</span><a class="chip" href="../c/linux.html">--linux</a><span>1 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>cron이 새벽에 도는데 시간이 밀린다? — UTC 함정과 표현식 읽는 법</h1><blockquote>
+<p><strong>한 줄 요약:</strong> cron 표현식은 <strong>다섯 칸짜리 알람 다이얼</strong>입니다. 그리고 "새벽에 맞췄는데 낮에 돈다" 싶으면, 대개 서버·CI가 <strong>UTC 기준</strong>이라 내 시간과 어긋난 겁니다.</p>
+</blockquote>
+<h2 id="_1">이런 적 있으신가요</h2>
+<p>"매일 새벽 3시에 돌게 해놨는데 왜 낮에 실행됐지?" GitHub Actions나 클라우드 스케줄러에서 특히 자주 겪습니다. 표현식은 맞는데 결과가 엉뚱하죠. 범인은 보통 <strong>타임존</strong>입니다.</p>
+<h2 id="cron-5">cron 5칸 읽기</h2>
+<p>cron은 다섯 칸으로 "언제"를 적습니다. 왼쪽부터 분·시·일·월·요일이에요.</p>
+<div class="highlight"><pre><span></span><code>┌───── 분   (0-59)
+│ ┌─── 시   (0-23)
+│ │ ┌─ 일   (1-31)
+│ │ │ ┌ 월   (1-12)
+│ │ │ │ ┌ 요일 (0-6, 0=일요일)
+│ │ │ │ │
+* * * * *
+</code></pre></div>
+
+<p>예시로 감을 잡아보세요.</p>
+<div class="highlight"><pre><span></span><code>0 18 * * *     매일 18:00 정각
+*/15 * * * *   15분마다
+0 9 * * 1      매주 월요일 09:00
+30 2 1 * *     매월 1일 02:30
+</code></pre></div>
+
+<p><code>*</code> 는 "매 순간", <code>*/n</code> 은 "n마다", 숫자는 "그때 딱"입니다.</p>
+<h2 id="utc">UTC 함정</h2>
+<p>핵심입니다. <strong>GitHub Actions를 비롯한 많은 서버·CI는 UTC로 cron을 해석</strong>합니다. 한국(KST = UTC+9)에서 새벽 3시에 돌리고 싶다면, 그대로 <code>0 3 * * *</code> 라고 쓰면 안 돼요. 3 − 9 = −6, 즉 <strong>전날 18:00 UTC</strong>로 적어야 KST 새벽 3시에 돕니다.</p>
+<div class="highlight"><pre><span></span><code>0 18 * * *     ← 이게 KST 03:00
+</code></pre></div>
+
+<p>지금 기준 시각과 변환은 이렇게 확인합니다.</p>
+<div class="highlight"><pre><span></span><code>date<span class="w"> </span>-u<span class="w">                    </span><span class="c1"># 현재 UTC 시각</span>
+<span class="nv">TZ</span><span class="o">=</span>Asia/Seoul<span class="w"> </span>date<span class="w">         </span><span class="c1"># 같은 순간을 KST로</span>
+crontab<span class="w"> </span>-l<span class="w">                 </span><span class="c1"># 리눅스에 등록된 내 cron 목록</span>
+</code></pre></div>
+
+<h2 id="_2">몇 가지 더 조심할 것</h2>
+<ul>
+<li><strong>정시 보장 안 됨:</strong> GitHub Actions 크론은 부하에 따라 <strong>수 분 지연</strong>될 수 있습니다. "정확히 0초"를 기대하지 마세요.</li>
+<li><strong>방치된 저장소:</strong> 커밋이 오랫동안 없는 저장소는 예약 워크플로우가 <strong>자동 비활성화</strong>될 수 있습니다.</li>
+<li><strong>서머타임:</strong> UTC엔 서머타임이 없지만, 지역 타임존으로 스케줄하는 시스템은 DST 때 한 시간 튈 수 있어요. 한국은 DST가 없어 이 문제는 덜합니다.</li>
+</ul>
+<h2 id="_3">한 줄 정리</h2>
+<p>cron은 <strong>분·시·일·월·요일</strong> 다섯 칸. 그리고 실행 시각이 밀리면 표현식을 의심하기 전에 <strong>"이 시스템이 UTC로 도나?"</strong>부터 확인하세요. 대부분 거기서 끝납니다.</p><nav class="pn"><a href="../p/github-pages.html"><span class="lbl">newer</span>서버 없이 블로그 띄우기 — GitHub Pages가 공짜로 되는 원리</a><a href="../p/what-is-rag.html" style="text-align:right"><span class="lbl">older</span>RAG가 뭐길래 — LLM한테 &#x27;오픈북 시험&#x27;을 보게 하는 법</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
