@@ -84,6 +84,9 @@ BASE = Template("""<!DOCTYPE html>
 <meta property="og:type" content="$og_type">
 <meta property="og:url" content="$canonical">
 <meta property="og:site_name" content="$site_title">
+<meta property="og:image" content="$og_image">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="$og_image">
 <link rel="canonical" href="$canonical">
 <link rel="alternate" type="application/rss+xml" title="$site_title" href="${root}feed.xml">
 $verification<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
@@ -122,9 +125,66 @@ def build_nav(root, active=""):
     for name, slug in CATEGORIES.items():
         on = ' class="on"' if active == slug else ""
         items.append(f'<a href="{root}c/{slug}.html"{on}>--{slug}</a>')
+    on = ' class="on"' if active == "archive" else ""
+    items.append(f'<a href="{root}archive.html"{on}>--all</a>')
     return "".join(items)
 
-def page(path_out, page_title, desc, content, root, og_type="website", nav_active=""):
+
+# ─── OG 썸네일 생성 (PIL 없거나 폰트 없으면 조용히 건너뜀) ───
+def make_og_images(posts):
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        print("PIL 없음 — OG 이미지 생성 건너뜀"); return
+    font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"
+    font_mono = "/usr/share/fonts/opentype/noto/NotoSansCJK-Medium.ttc"
+    if not os.path.exists(font_path):
+        print("한글 폰트 없음 — OG 이미지 생성 건너뜀"); return
+    W, H = 1200, 630
+    PAPER, INK, GREEN, SOFT, FAINT = "#FAF9F6", "#1C2025", "#1F6B57", "#E7F1ED", "#9AA1A9"
+    out_dir = os.path.join(DOCS, "og"); os.makedirs(out_dir, exist_ok=True)
+    f_title = ImageFont.truetype(font_path, 62)
+    f_small = ImageFont.truetype(font_mono, 30)
+    f_chip  = ImageFont.truetype(font_mono, 26)
+
+    def wrap(draw, text, font, max_w):
+        lines, cur = [], ""
+        for ch in text:
+            if draw.textlength(cur + ch, font=font) > max_w and cur:
+                lines.append(cur); cur = ch
+            else:
+                cur += ch
+        if cur: lines.append(cur)
+        return lines[:4]
+
+    def card(title, chip_text, out_path):
+        img = Image.new("RGB", (W, H), PAPER)
+        d = ImageDraw.Draw(img)
+        d.rectangle([0, 0, W, 10], fill=GREEN)                       # 상단 그린 바
+        d.ellipse([64, 58, 84, 78], fill="#FF5F57")                  # 신호등
+        d.ellipse([94, 58, 114, 78], fill="#FEBC2E")
+        d.ellipse([124, 58, 144, 78], fill="#28C840")
+        d.text((64, 116), f"~/{SITE['handle']} $", font=f_small, fill=GREEN)
+        lines = wrap(d, title, f_title, W - 128)
+        y = 205
+        for ln in lines:
+            d.text((64, y), ln, font=f_title, fill=INK); y += 84
+        # 하단: 카테고리 칩 + 사이트명
+        cw = d.textlength(chip_text, font=f_chip)
+        d.rounded_rectangle([64, H-96, 64+cw+36, H-52], radius=22, fill=SOFT)
+        d.text((82, H-89), chip_text, font=f_chip, fill=GREEN)
+        sw = d.textlength(SITE["title"], font=f_chip)
+        d.text((W-64-sw, H-89), SITE["title"], font=f_chip, fill=FAINT)
+        img.save(out_path, "PNG")
+
+    card(SITE["tagline"].split("—")[0].strip(), "--home",
+         os.path.join(out_dir, "default.png"))
+    for p in posts:
+        card(p["title"], f'--{cat_slug(p["category"])}',
+             os.path.join(out_dir, p["slug"] + ".png"))
+    print(f"OG 이미지 {len(posts)+1}개 생성")
+
+def page(path_out, page_title, desc, content, root, og_type="website", nav_active="", og_image=None):
     rel = os.path.relpath(path_out, DOCS).replace(os.sep, "/")
     base = SITE["url"].rstrip("/")
     canonical = base + "/" if rel == "index.html" else f"{base}/{rel}"
@@ -140,6 +200,7 @@ def page(path_out, page_title, desc, content, root, og_type="website", nav_activ
         author=html.escape(SITE["author"]), content=content,
         canonical=html.escape(canonical), site_title=html.escape(SITE["title"]),
         verification=verification,
+        og_image=html.escape(og_image or f'{base}/og/default.png'),
     )
     os.makedirs(os.path.dirname(path_out), exist_ok=True)
     open(path_out, "w", encoding="utf-8").write(html_doc)
@@ -183,7 +244,8 @@ def main():
         content = f"<article>{meta}{title}{body_html}{rel_html}{pn}</article>"
         page(os.path.join(DOCS, "p", p["slug"] + ".html"),
              f'{p["title"]} · {SITE["title"]}', p.get("summary", ""),
-             content, root="../", og_type="article", nav_active=cslug)
+             content, root="../", og_type="article", nav_active=cslug,
+             og_image=f'{SITE["url"].rstrip("/")}/og/{p["slug"]}.png')
 
     # 홈
     entries = "".join(
@@ -221,12 +283,31 @@ def main():
         page(os.path.join(DOCS, "c", slug + ".html"),
              f'--{slug} · {SITE["title"]}', f'{name} 관련 글', body, root="../", nav_active=slug)
 
+    # ─── 아카이브 (월별 전체 글) ───
+    months = {}
+    for p in posts:
+        months.setdefault(p["date"][:7], []).append(p)
+    arch = ['<section class="list">']
+    for ym in sorted(months, reverse=True):
+        y, m = ym.split("-")
+        arch.append(f'<div class="list-head">{y}년 {int(m)}월 · {len(months[ym])}개</div>')
+        for p in months[ym]:
+            arch.append(
+                f'<article class="entry"><div class="meta"><span>{p["date"]}</span>'
+                f'<a class="chip" href="c/{cat_slug(p["category"])}.html">--{cat_slug(p["category"])}</a></div>'
+                f'<h2><a href="p/{p["slug"]}.html"><span class="g">&#10095;</span>{html.escape(p["title"])}</a></h2></article>')
+    arch.append("</section>")
+    page(os.path.join(DOCS, "archive.html"), f'전체 글 · {SITE["title"]}',
+         "월별 전체 글 목록", "".join(arch), root="", nav_active="archive")
+
     # ─── SEO: sitemap.xml / robots.txt / feed.xml ───
     import email.utils, calendar
     base = SITE["url"].rstrip("/")
     today = datetime.date.today().isoformat()
 
-    urls = [(base + "/", today)]
+    make_og_images(posts)
+
+    urls = [(base + "/", today), (base + "/archive.html", today)]
     urls += [(f'{base}/p/{p["slug"]}.html', p["date"]) for p in posts]
     for name, slug in CATEGORIES.items():
         if any(cat_slug(p["category"]) == slug for p in posts):
