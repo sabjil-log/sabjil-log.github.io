@@ -22,7 +22,7 @@ SITE = {
     "url": "https://sabjil-log.github.io",     # 절대 URL (canonical/sitemap용)
     # 검색엔진 소유확인 (값 받으면 여기에 붙여넣기 — content 값만)
     "google_verification": "",                 # 구글 서치 콘솔
-    "naver_verification": "",                  # 네이버 서치어드바이저
+    "naver_verification": "2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312",                  # 네이버 서치어드바이저
 }
 # 카테고리: 표시이름 → URL 슬러그
 CATEGORIES = {
