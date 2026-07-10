@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽 · 삽질노트</title>
+<meta name="description" content="서버는 멀쩡한데 LB가 자꾸 UNHEALTHY라면, 범인은 거의 항상 셋 중 하나입니다. 순서대로 확인하는 법을 정리했어요.">
+<meta property="og:title" content="로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽 · 삽질노트">
+<meta property="og:description" content="서버는 멀쩡한데 LB가 자꾸 UNHEALTHY라면, 범인은 거의 항상 셋 중 하나입니다. 순서대로 확인하는 법을 정리했어요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/lb-healthcheck.html">
+<meta property="og:site_name" content="삽질노트">
+<link rel="canonical" href="https://sabjil-log.github.io/p/lb-healthcheck.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-11</span><a class="chip" href="../c/cloud.html">--cloud</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 서버는 잘 도는데 로드밸런서가 UNHEALTHY라고 우기면, 범인은 거의 항상 <strong>① 체크 포트가 다르거나 ② 체크 경로가 200을 안 주거나 ③ 방화벽이 LB의 노크를 막거나</strong> — 이 셋 중 하나입니다.</p>
+</blockquote>
+<h2 id="_1">증상</h2>
+<p>배포는 성공했고 서버에 SSH로 들어가 <code>curl localhost</code> 하면 잘 나옵니다. 그런데 LB 콘솔엔 타겟이 계속 <strong>UNHEALTHY</strong>, 트래픽은 안 들어오죠. "서버 멀쩡한데 왜?"의 전형적인 상황입니다.</p>
+<h2 id="_2">비유: 경비원의 노크</h2>
+<p>로드밸런서는 몇 초마다 각 서버 방문을 <strong>노크(헬스체크)</strong> 하는 경비원입니다. 정해진 <strong>문(포트)</strong> 을, 정해진 <strong>암호(경로)</strong> 로 두드리고, 정해진 <strong>대답(상태코드 200)</strong> 이 와야 "살아있음" 도장을 찍어요. 셋 중 하나만 어긋나도 방에 사람이 있건 말건 "없음" 처리합니다.</p>
+<h2 id="1">1번 용의자 — 포트가 다르다</h2>
+<p>헬스체크 포트와 앱이 실제로 듣는 포트가 다른 경우. 특히 앱은 8080인데 체크는 80으로 가는 식이죠.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># 서버에서: 앱이 어느 포트/주소로 듣는지</span>
+ss<span class="w"> </span>-tlnp<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s1">&#39;:(80|8080|443)&#39;</span>
+</code></pre></div>
+
+<p>여기서 <code>127.0.0.1:8080</code> 으로만 떠 있다면 그 자체가 문제입니다 — LB는 외부에서 오니까 <strong><code>0.0.0.0</code> 바인딩</strong>이어야 해요. 콘솔의 타겟그룹 포트 설정과 이 출력이 일치하는지 맞춥니다.</p>
+<h2 id="2-200">2번 용의자 — 경로가 200을 안 준다</h2>
+<p>체크 경로(<code>/health</code> 등)가 404를 주거나, 인증에 걸려 401/302(리다이렉트)를 주는 경우. LB는 보통 <strong>200만</strong> 성공으로 봅니다(설정에 따라 2xx~3xx 허용 가능).</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># 서버 안에서 체크 경로를 직접 흉내</span>
+curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8080/health
+<span class="c1"># HTTP/1.1 200 OK 가 아니면 여기가 범인</span>
+</code></pre></div>
+
+<p>HTTPS 체크인데 서버가 HTTP만 하거나(프로토콜 불일치), <code>/health</code>가 DB까지 찔러서 느려 <strong>타임아웃</strong>(보통 수 초)에 걸리는 것도 이 계열입니다. 헬스 엔드포인트는 가볍게, 즉시 200만 주게 만드세요.</p>
+<h2 id="3">3번 용의자 — 방화벽이 노크를 막는다</h2>
+<p>가장 자주 놓칩니다. 헬스체크는 <strong>LB(의 내부 IP 대역)에서</strong> 옵니다. 서버 방화벽(ACG/보안그룹)이 그 출발지를 안 열어놨으면 노크 자체가 도착을 못 해요.</p>
+<ul>
+<li><strong>ACG/보안그룹(스테이트풀):</strong> 인바운드에 <strong>LB가 있는 서브넷 대역</strong>(또는 벤더가 안내하는 헬스체크 소스)을 체크 포트로 허용.</li>
+<li><strong>NACL(스테이트리스):</strong> 여기가 진짜 함정. 인바운드만 열면 안 되고, 응답이 나가는 <strong>아웃바운드 임시 포트(1024-65535)</strong> 도 열어야 합니다. 안 열면 "노크는 들리는데 대답이 문밖으로 못 나가는" 상태 — 간헐적/전체 UNHEALTHY의 단골 원인.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="c1"># 서버에서: 노크가 오긴 하는지 눈으로 확인 (체크 포트 기준)</span>
+sudo<span class="w"> </span>tcpdump<span class="w"> </span>-ni<span class="w"> </span>any<span class="w"> </span>port<span class="w"> </span><span class="m">8080</span>
+<span class="c1"># LB 대역에서 SYN이 주기적으로 보이면 방화벽 통과는 OK → 1·2번으로</span>
+<span class="c1"># 아무것도 안 보이면 → 방화벽(3번)이 범인</span>
+</code></pre></div>
+
+<h2 id="_3">진단 순서 요약</h2>
+<p><code>ss</code>로 포트·바인딩 확인 → <code>curl 127.0.0.1</code>로 경로·상태코드 확인 → <code>tcpdump</code>로 노크 도착 여부 확인. 이 세 명령이면 3대장 중 누가 범인인지 5분 안에 갈립니다.</p>
+<h2 id="_4">한 줄 정리</h2>
+<p>헬스체크 실패는 서버 문제가 아니라 <strong>약속 불일치</strong>입니다. <strong>포트·경로(200)·방화벽(특히 스테이트리스 NACL의 리턴 포트)</strong> — 노크가 닿고, 대답이 200으로 돌아가는지만 맞추면 끝나요.</p><nav class="pn"><a href="../p/what-is-token.html"><span class="lbl">newer</span>토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간</a><a href="../p/grep-awk-sed.html" style="text-align:right"><span class="lbl">older</span>grep·awk·sed 삼총사 — 로그에서 원하는 값만 뽑아내는 법</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

@@ -5,6 +5,27 @@
   <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
   <language>ko</language>
     <item>
+      <title>토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간</title>
+      <link>https://sabjil-log.github.io/p/what-is-token.html</link>
+      <guid>https://sabjil-log.github.io/p/what-is-token.html</guid>
+      <pubDate>Sat, 11 Jul 2026 00:00:00 -0000</pubDate>
+      <description>LLM은 글자도 단어도 아닌 &#x27;토큰&#x27; 단위로 읽고 씁니다. 레고 블록 비유로 이해하고, 한국어가 영어보다 토큰을 더 먹는 이유까지.</description>
+    </item>
+    <item>
+      <title>로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽</title>
+      <link>https://sabjil-log.github.io/p/lb-healthcheck.html</link>
+      <guid>https://sabjil-log.github.io/p/lb-healthcheck.html</guid>
+      <pubDate>Sat, 11 Jul 2026 00:00:00 -0000</pubDate>
+      <description>서버는 멀쩡한데 LB가 자꾸 UNHEALTHY라면, 범인은 거의 항상 셋 중 하나입니다. 순서대로 확인하는 법을 정리했어요.</description>
+    </item>
+    <item>
+      <title>grep·awk·sed 삼총사 — 로그에서 원하는 값만 뽑아내는 법</title>
+      <link>https://sabjil-log.github.io/p/grep-awk-sed.html</link>
+      <guid>https://sabjil-log.github.io/p/grep-awk-sed.html</guid>
+      <pubDate>Sat, 11 Jul 2026 00:00:00 -0000</pubDate>
+      <description>grep은 줄을 고르고, awk는 칸을 자르고, sed는 글자를 바꿉니다. 역할 분담만 알면 어떤 로그든 파이프 한 줄로 정리돼요.</description>
+    </item>
+    <item>
       <title>NCP Object Storage에 boto3 물릴 때 터지는 함정 — 체크섬과 서명</title>
       <link>https://sabjil-log.github.io/p/ncp-boto3-checksum.html</link>
       <guid>https://sabjil-log.github.io/p/ncp-boto3-checksum.html</guid>

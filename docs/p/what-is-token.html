@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간 · 삽질노트</title>
+<meta name="description" content="LLM은 글자도 단어도 아닌 &#x27;토큰&#x27; 단위로 읽고 씁니다. 레고 블록 비유로 이해하고, 한국어가 영어보다 토큰을 더 먹는 이유까지.">
+<meta property="og:title" content="토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간 · 삽질노트">
+<meta property="og:description" content="LLM은 글자도 단어도 아닌 &#x27;토큰&#x27; 단위로 읽고 씁니다. 레고 블록 비유로 이해하고, 한국어가 영어보다 토큰을 더 먹는 이유까지.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/what-is-token.html">
+<meta property="og:site_name" content="삽질노트">
+<link rel="canonical" href="https://sabjil-log.github.io/p/what-is-token.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-11</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간</h1><blockquote>
+<p><strong>한 줄 요약:</strong> LLM은 문장을 글자도 단어도 아닌 <strong>토큰</strong>이라는 조각으로 잘라 읽습니다. <strong>자주 나오는 덩어리일수록 큰 조각 하나</strong>로 처리되고, 요금·컨텍스트 한도·속도가 전부 이 조각 개수로 계산돼요.</p>
+</blockquote>
+<h2 id="_1">왜 알아야 하나</h2>
+<p>API 요금표는 "토큰당 얼마"고, 모델 스펙은 "컨텍스트 20만 토큰"이라고 적혀 있습니다. 그런데 토큰이 뭔지 모르면 이 숫자들이 감이 안 오죠. "A4 몇 장인데?"에 답을 못 하는 상태랄까요.</p>
+<h2 id="_2">비유: 레고 블록</h2>
+<p>토크나이저(문장을 토큰으로 자르는 도구)는 문장을 <strong>레고 블록</strong>으로 분해합니다. 규칙은 하나 — <strong>자주 쓰이는 덩어리일수록 전용 블록이 있다</strong>는 것.</p>
+<ul>
+<li><code>the</code>, <code>ing</code>, <code>안녕하세요</code> 처럼 흔한 덩어리 → <strong>큰 블록 하나</strong></li>
+<li>희귀한 단어, 오타, 신조어 → 전용 블록이 없어 <strong>작은 블록 여러 개</strong>로 쪼갬</li>
+</ul>
+<p>그래서 같은 뜻이라도 어떤 언어·표현이냐에 따라 블록 수가 달라집니다. 대략 영어는 <strong>1토큰 ≈ 0.75단어</strong>, 즉 100토큰이면 영어 단어 75개쯤이에요.</p>
+<h2 id="_3">한국어는 왜 더 먹나</h2>
+<p>토크나이저 학습 데이터에 영어가 압도적으로 많다 보니, 영어엔 큰 블록이 풍부하고 한국어는 상대적으로 잘게 쪼개집니다. 같은 내용의 문서라도 <strong>한국어가 영어보다 토큰을 1.5~2배쯤 더 쓰는</strong> 경우가 흔해요. 같은 API 예산으로 영어 문서는 더 길게, 한국어 문서는 더 짧게 들어간다는 뜻입니다. (모델·토크나이저마다 비율은 다릅니다.)</p>
+<h2 id="_4">직접 세어보기</h2>
+<p>감으로 때려잡지 말고 세보면 됩니다. OpenAI 계열은 <code>tiktoken</code>으로:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">tiktoken</span>
+
+<span class="n">enc</span> <span class="o">=</span> <span class="n">tiktoken</span><span class="o">.</span><span class="n">get_encoding</span><span class="p">(</span><span class="s2">&quot;cl100k_base&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;hello world&quot;</span><span class="p">,</span> <span class="s2">&quot;안녕하세요 세계&quot;</span><span class="p">]:</span>
+    <span class="n">ids</span> <span class="o">=</span> <span class="n">enc</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="s2">&quot;→&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">),</span> <span class="s2">&quot;tokens:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">enc</span><span class="o">.</span><span class="n">decode</span><span class="p">([</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">])</span>
+<span class="c1"># 같은 인사말인데 한국어가 더 많은 조각으로 쪼개지는 걸 볼 수 있음</span>
+</code></pre></div>
+
+<p>Anthropic·기타 모델은 각자 토크나이저가 달라 개수도 다릅니다. 정확한 값은 각 API의 토큰 카운트 기능으로 확인하는 게 맞아요.</p>
+<h2 id="_5">이 개수가 좌우하는 세 가지</h2>
+<ol>
+<li><strong>요금</strong> — 입력·출력 토큰 수 × 단가. 프롬프트에 매번 딸려 보내는 장문의 지시문은 그대로 고정비가 됩니다.</li>
+<li><strong>컨텍스트 한도</strong> — "20만 토큰"은 모델이 <strong>한 번에 볼 수 있는</strong> 총량(질문+문서+답변 전부 포함). 넘치면 앞부분이 잘리거나 요청이 거부돼요.</li>
+<li><strong>속도</strong> — 출력이 토큰 단위로 생성되므로, 긴 답 = 오래 걸림.</li>
+</ol>
+<p>그래서 실무 절약 포인트는 단순합니다. <strong>반복 프롬프트는 짧게 다듬고, 문서는 필요한 부분만 잘라 넣고(RAG가 하는 일이 정확히 이것), 출력 길이를 명시적으로 제한</strong>하는 것.</p>
+<h2 id="_6">한 줄 정리</h2>
+<p>토큰은 "자주 쓰는 덩어리일수록 큰 조각"으로 자른 레고 블록이고, LLM의 <strong>돈·기억력·속도가 전부 이 블록 개수</strong>로 굴러갑니다. 한국어는 영어보다 블록을 더 먹는다는 것까지 기억하면 예산 감이 잡혀요.</p><nav class="pn"><span></span><a href="../p/lb-healthcheck.html" style="text-align:right"><span class="lbl">older</span>로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
