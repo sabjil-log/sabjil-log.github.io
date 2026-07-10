@@ -19,6 +19,7 @@ SITE = {
     "tagline": "삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트",
     "author": "익명의 엔지니어",                 # ← 가명으로 바꾸세요
     "footer": "© 삽질노트 · 가명 운영",
+    "url": "https://sabjil-log.github.io",     # 절대 URL (canonical/sitemap용)
 }
 # 카테고리: 표시이름 → URL 슬러그
 CATEGORIES = {
@@ -78,6 +79,10 @@ BASE = Template("""<!DOCTYPE html>
 <meta property="og:title" content="$page_title">
 <meta property="og:description" content="$desc">
 <meta property="og:type" content="$og_type">
+<meta property="og:url" content="$canonical">
+<meta property="og:site_name" content="$site_title">
+<link rel="canonical" href="$canonical">
+<link rel="alternate" type="application/rss+xml" title="$site_title" href="${root}feed.xml">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
@@ -113,11 +118,15 @@ def build_nav(root, active=""):
     return "".join(items)
 
 def page(path_out, page_title, desc, content, root, og_type="website", nav_active=""):
+    rel = os.path.relpath(path_out, DOCS).replace(os.sep, "/")
+    base = SITE["url"].rstrip("/")
+    canonical = base + "/" if rel == "index.html" else f"{base}/{rel}"
     html_doc = BASE.safe_substitute(
         page_title=page_title, desc=html.escape(desc or SITE["tagline"]),
         og_type=og_type, root=root, handle=SITE["handle"], tagline=html.escape(SITE["tagline"]),
         nav=build_nav(root, nav_active), footer=html.escape(SITE["footer"]),
         author=html.escape(SITE["author"]), content=content,
+        canonical=html.escape(canonical), site_title=html.escape(SITE["title"]),
     )
     os.makedirs(os.path.dirname(path_out), exist_ok=True)
     open(path_out, "w", encoding="utf-8").write(html_doc)
@@ -183,7 +192,48 @@ def main():
         page(os.path.join(DOCS, "c", slug + ".html"),
              f'--{slug} · {SITE["title"]}', f'{name} 관련 글', body, root="../", nav_active=slug)
 
-    print(f"built: {len(posts)} posts, {len(CATEGORIES)} categories -> docs/")
+    # ─── SEO: sitemap.xml / robots.txt / feed.xml ───
+    import email.utils, calendar
+    base = SITE["url"].rstrip("/")
+    today = datetime.date.today().isoformat()
+
+    urls = [(base + "/", today)]
+    urls += [(f'{base}/p/{p["slug"]}.html', p["date"]) for p in posts]
+    for name, slug in CATEGORIES.items():
+        if any(cat_slug(p["category"]) == slug for p in posts):
+            urls.append((f"{base}/c/{slug}.html", today))
+    sm = ['<?xml version="1.0" encoding="UTF-8"?>',
+          '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for loc, mod in urls:
+        sm.append(f"  <url><loc>{html.escape(loc)}</loc><lastmod>{mod}</lastmod></url>")
+    sm.append("</urlset>\n")
+    open(os.path.join(DOCS, "sitemap.xml"), "w", encoding="utf-8").write("\n".join(sm))
+
+    open(os.path.join(DOCS, "robots.txt"), "w", encoding="utf-8").write(
+        "User-agent: *\nAllow: /\n\nSitemap: %s/sitemap.xml\n" % base)
+
+    items = []
+    for p in posts[:20]:
+        ts = calendar.timegm(datetime.datetime.strptime(p["date"], "%Y-%m-%d").timetuple())
+        items.append(
+            "    <item>\n"
+            f"      <title>{html.escape(p['title'])}</title>\n"
+            f"      <link>{base}/p/{p['slug']}.html</link>\n"
+            f"      <guid>{base}/p/{p['slug']}.html</guid>\n"
+            f"      <pubDate>{email.utils.formatdate(ts)}</pubDate>\n"
+            f"      <description>{html.escape(p.get('summary',''))}</description>\n"
+            "    </item>")
+    feed = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<rss version="2.0"><channel>\n'
+        f"  <title>{html.escape(SITE['title'])}</title>\n"
+        f"  <link>{base}/</link>\n"
+        f"  <description>{html.escape(SITE['tagline'])}</description>\n"
+        "  <language>ko</language>\n"
+        + "\n".join(items) + "\n</channel></rss>\n")
+    open(os.path.join(DOCS, "feed.xml"), "w", encoding="utf-8").write(feed)
+
+    print(f"built: {len(posts)} posts, {len(CATEGORIES)} categories -> docs/  (+sitemap/robots/feed)")
 
 if __name__ == "__main__":
     main()

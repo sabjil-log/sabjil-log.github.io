@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel>
+  <title>삽질노트</title>
+  <link>https://sabjil-log.github.io/</link>
+  <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
+  <language>ko</language>
+    <item>
+      <title>NCP Object Storage에 boto3 물릴 때 터지는 함정 — 체크섬과 서명</title>
+      <link>https://sabjil-log.github.io/p/ncp-boto3-checksum.html</link>
+      <guid>https://sabjil-log.github.io/p/ncp-boto3-checksum.html</guid>
+      <pubDate>Fri, 10 Jul 2026 00:00:00 -0000</pubDate>
+      <description>S3 호환이라 boto3가 그냥 될 줄 알았는데 업로드가 실패한다면, 최신 SDK의 기본 체크섬 헤더와 서명 방식이 원인일 때가 많습니다.</description>
+    </item>
+    <item>
+      <title>토큰은 딱 필요한 만큼만 — fine-grained PAT로 최소권한 실천하기</title>
+      <link>https://sabjil-log.github.io/p/least-privilege-tokens.html</link>
+      <guid>https://sabjil-log.github.io/p/least-privilege-tokens.html</guid>
+      <pubDate>Fri, 10 Jul 2026 00:00:00 -0000</pubDate>
+      <description>자동화에 쓰는 접근 토큰은 &#x27;모든 권한&#x27;이 아니라 &#x27;이 저장소, 이 동작&#x27;만 열어야 합니다. 사고가 나도 피해가 작아져요.</description>
+    </item>
+    <item>
+      <title>서버 없이 블로그 띄우기 — GitHub Pages가 공짜로 되는 원리</title>
+      <link>https://sabjil-log.github.io/p/github-pages.html</link>
+      <guid>https://sabjil-log.github.io/p/github-pages.html</guid>
+      <pubDate>Fri, 10 Jul 2026 00:00:00 -0000</pubDate>
+      <description>완성된 HTML만 저장소에 올리면 GitHub이 웹서버를 공짜로 대신해줍니다. &#x27;정적 사이트&#x27;라 가능한 일이에요.</description>
+    </item>
+    <item>
+      <title>도커 빌드가 매번 느린 이유 — 이미지 레이어와 캐시, Dockerfile 순서의 비밀</title>
+      <link>https://sabjil-log.github.io/p/docker-layer-cache.html</link>
+      <guid>https://sabjil-log.github.io/p/docker-layer-cache.html</guid>
+      <pubDate>Fri, 10 Jul 2026 00:00:00 -0000</pubDate>
+      <description>도커 이미지는 층층이 쌓인 레이어입니다. 이 구조를 알면 Dockerfile 한 줄 순서만 바꿔도 빌드가 몇 배 빨라져요.</description>
+    </item>
+    <item>
+      <title>cron이 새벽에 도는데 시간이 밀린다? — UTC 함정과 표현식 읽는 법</title>
+      <link>https://sabjil-log.github.io/p/cron-utc.html</link>
+      <guid>https://sabjil-log.github.io/p/cron-utc.html</guid>
+      <pubDate>Fri, 10 Jul 2026 00:00:00 -0000</pubDate>
+      <description>cron 5칸(분·시·일·월·요일)만 읽을 줄 알면 됩니다. 시간이 어긋나면 십중팔구 서버가 UTC로 돌기 때문이에요.</description>
+    </item>
+    <item>
+      <title>임베딩은 왜 &#x27;거리&#x27;가 아니라 &#x27;각도&#x27;로 비슷함을 재나 — 코사인 유사도</title>
+      <link>https://sabjil-log.github.io/p/cosine-similarity.html</link>
+      <guid>https://sabjil-log.github.io/p/cosine-similarity.html</guid>
+      <pubDate>Fri, 10 Jul 2026 00:00:00 -0000</pubDate>
+      <description>벡터가 얼마나 비슷한지 잴 때 길이는 무시하고 방향만 봅니다. 왜 각도가 &#x27;의미의 닮음&#x27;을 더 잘 잡는지 쉽게 풀어봐요.</description>
+    </item>
+    <item>
+      <title>RAG가 뭐길래 — LLM한테 &#x27;오픈북 시험&#x27;을 보게 하는 법</title>
+      <link>https://sabjil-log.github.io/p/what-is-rag.html</link>
+      <guid>https://sabjil-log.github.io/p/what-is-rag.html</guid>
+      <pubDate>Thu, 09 Jul 2026 00:00:00 -0000</pubDate>
+      <description>LLM은 외운 것만 답합니다. RAG는 답하기 직전에 관련 문서를 찾아 손에 쥐여주는 것 — 클로즈드북을 오픈북으로 바꾸는 기법이에요.</description>
+    </item>
+    <item>
+      <title>맥·윈도우 섞인 팀에서 OneDrive가 파일을 자꾸 두 개로 만드는 이유</title>
+      <link>https://sabjil-log.github.io/p/onedrive-unicode.html</link>
+      <guid>https://sabjil-log.github.io/p/onedrive-unicode.html</guid>
+      <pubDate>Thu, 09 Jul 2026 00:00:00 -0000</pubDate>
+      <description>이름이 똑같아 보여도 맥과 윈도우가 한글 이름을 다르게 저장해서 생기는 문제. 눈이 아니라 바이트로 봐야 답이 나옵니다.</description>
+    </item>
+    <item>
+      <title>&#x27;포트는 열렸다는데 접속이 안 돼요&#x27; — 계층별로 찔러보는 진단법</title>
+      <link>https://sabjil-log.github.io/p/network-triage.html</link>
+      <guid>https://sabjil-log.github.io/p/network-triage.html</guid>
+      <pubDate>Thu, 09 Jul 2026 00:00:00 -0000</pubDate>
+      <description>접속 실패는 한 곳이 아니라 여러 층 중 하나가 막힌 것. 아래층부터 한 칸씩 찌르면 범인이 나옵니다.</description>
+    </item>
+    <item>
+      <title>NCP와 AWS, 같은 걸 다르게 부른다 — 헷갈리는 서비스 이름 지도</title>
+      <link>https://sabjil-log.github.io/p/ncp-aws-map.html</link>
+      <guid>https://sabjil-log.github.io/p/ncp-aws-map.html</guid>
+      <pubDate>Thu, 09 Jul 2026 00:00:00 -0000</pubDate>
+      <description>개념은 거의 1:1인데 이름만 달라서 헤맵니다. 핵심 매핑만 외우면 두 클라우드 문서가 같은 언어로 읽혀요.</description>
+    </item>
+</channel></rss>
