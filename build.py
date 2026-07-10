@@ -20,6 +20,9 @@ SITE = {
     "author": "익명의 엔지니어",                 # ← 가명으로 바꾸세요
     "footer": "© 삽질노트 · 가명 운영",
     "url": "https://sabjil-log.github.io",     # 절대 URL (canonical/sitemap용)
+    # 검색엔진 소유확인 (값 받으면 여기에 붙여넣기 — content 값만)
+    "google_verification": "",                 # 구글 서치 콘솔
+    "naver_verification": "",                  # 네이버 서치어드바이저
 }
 # 카테고리: 표시이름 → URL 슬러그
 CATEGORIES = {
@@ -83,6 +86,7 @@ BASE = Template("""<!DOCTYPE html>
 <meta property="og:site_name" content="$site_title">
 <link rel="canonical" href="$canonical">
 <link rel="alternate" type="application/rss+xml" title="$site_title" href="${root}feed.xml">
+$verification<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
@@ -91,7 +95,10 @@ BASE = Template("""<!DOCTYPE html>
 </head>
 <body>
 <header class="site-head"><div class="wrap">
-  <a class="prompt" href="${root}index.html">~/<span class="dir">$handle</span>&nbsp;$$<span class="cur"></span></a>
+  <div class="head-row">
+    <a class="prompt" href="${root}index.html">~/<span class="dir">$handle</span>&nbsp;$$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
   <p class="tagline">$tagline</p>
   <nav class="nav">$nav</nav>
 </div></header>
@@ -103,7 +110,7 @@ $content
 </body>
 </html>""")
 
-ENTRY = Template("""<article class="entry">
+ENTRY = Template("""<article class="entry" data-search="$search">
   <div class="meta"><span>$date</span><a class="chip" href="${root}c/$cslug.html">--$cslug</a><span>$read min</span></div>
   <h2><a href="${root}p/$slug.html"><span class="g">&#10095;</span>$title</a></h2>
   <p class="sum">$summary</p>
@@ -121,12 +128,18 @@ def page(path_out, page_title, desc, content, root, og_type="website", nav_activ
     rel = os.path.relpath(path_out, DOCS).replace(os.sep, "/")
     base = SITE["url"].rstrip("/")
     canonical = base + "/" if rel == "index.html" else f"{base}/{rel}"
+    verification = ""
+    if SITE.get("google_verification"):
+        verification += f'<meta name="google-site-verification" content="{html.escape(SITE["google_verification"])}">\n'
+    if SITE.get("naver_verification"):
+        verification += f'<meta name="naver-site-verification" content="{html.escape(SITE["naver_verification"])}">\n'
     html_doc = BASE.safe_substitute(
         page_title=page_title, desc=html.escape(desc or SITE["tagline"]),
         og_type=og_type, root=root, handle=SITE["handle"], tagline=html.escape(SITE["tagline"]),
         nav=build_nav(root, nav_active), footer=html.escape(SITE["footer"]),
         author=html.escape(SITE["author"]), content=content,
         canonical=html.escape(canonical), site_title=html.escape(SITE["title"]),
+        verification=verification,
     )
     os.makedirs(os.path.dirname(path_out), exist_ok=True)
     open(path_out, "w", encoding="utf-8").write(html_doc)
@@ -160,7 +173,14 @@ def main():
         pn += (f'<a href="../p/{older["slug"]}.html" style="text-align:right"><span class="lbl">older</span>{html.escape(older["title"])}</a>'
                if older else '<span></span>')
         pn += '</nav>'
-        content = f"<article>{meta}{title}{body_html}{pn}</article>"
+        related = [q for q in posts if cat_slug(q["category"]) == cslug and q["slug"] != p["slug"]][:3]
+        rel_html = ""
+        if related:
+            links = "".join(
+                f'<a href="../p/{q["slug"]}.html"><span class="g">&#10095;</span>{html.escape(q["title"])}</a>'
+                for q in related)
+            rel_html = f'<aside class="related"><div class="rel-head">이어서 읽기 · --{cslug}</div>{links}</aside>'
+        content = f"<article>{meta}{title}{body_html}{rel_html}{pn}</article>"
         page(os.path.join(DOCS, "p", p["slug"] + ".html"),
              f'{p["title"]} · {SITE["title"]}', p.get("summary", ""),
              content, root="../", og_type="article", nav_active=cslug)
@@ -170,9 +190,17 @@ def main():
         ENTRY.safe_substitute(root="", date=p["date"], cslug=cat_slug(p["category"]),
                               read=p["read_min"], slug=p["slug"],
                               title=html.escape(p["title"]),
-                              summary=html.escape(p.get("summary", "")))
+                              summary=html.escape(p.get("summary", "")),
+                              search=html.escape(" ".join([p["title"], p.get("summary",""),
+                                     p["category"], cat_slug(p["category"]),
+                                     " ".join(map(str, p["tags"]))]).lower()))
         for p in posts)
-    home = f'<section class="list"><div class="list-head">최근 글 · {len(posts)}개</div>{entries}</section>'
+    search_box = ('<div class="search"><span class="sig">grep -i</span>'
+                  '<input id="q" type="search" placeholder="&quot;검색어&quot; — 제목·요약·태그" '
+                  'autocomplete="off" spellcheck="false"></div>')
+    home = (f'<section class="list">{search_box}'
+            f'<div class="list-head">최근 글 · {len(posts)}개</div>{entries}'
+            f'<div class="search-none">일치하는 글이 없어요. 다른 검색어로 시도해보세요.</div></section>')
     page(os.path.join(DOCS, "index.html"), SITE["title"], SITE["tagline"],
          home, root="", nav_active="home")
 
@@ -186,7 +214,8 @@ def main():
             e = "".join(
                 ENTRY.safe_substitute(root="../", date=p["date"], cslug=slug, read=p["read_min"],
                                       slug=p["slug"], title=html.escape(p["title"]),
-                                      summary=html.escape(p.get("summary", "")))
+                                      summary=html.escape(p.get("summary", "")),
+                                      search="")
                 for p in sel)
             body = f'<section class="list"><div class="list-head">--{slug} · {len(sel)}개</div>{e}</section>'
         page(os.path.join(DOCS, "c", slug + ".html"),

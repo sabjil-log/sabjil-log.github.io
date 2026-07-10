@@ -12,6 +12,7 @@
 <meta property="og:site_name" content="삽질노트">
 <link rel="canonical" href="https://sabjil-log.github.io/p/lb-healthcheck.html">
 <link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
@@ -20,7 +21,10 @@
 </head>
 <body>
 <header class="site-head"><div class="wrap">
-  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
   <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
   <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a></nav>
 </div></header>
@@ -62,7 +66,7 @@ sudo<span class="w"> </span>tcpdump<span class="w"> </span>-ni<span class="w"> <
 <h2 id="_3">진단 순서 요약</h2>
 <p><code>ss</code>로 포트·바인딩 확인 → <code>curl 127.0.0.1</code>로 경로·상태코드 확인 → <code>tcpdump</code>로 노크 도착 여부 확인. 이 세 명령이면 3대장 중 누가 범인인지 5분 안에 갈립니다.</p>
 <h2 id="_4">한 줄 정리</h2>
-<p>헬스체크 실패는 서버 문제가 아니라 <strong>약속 불일치</strong>입니다. <strong>포트·경로(200)·방화벽(특히 스테이트리스 NACL의 리턴 포트)</strong> — 노크가 닿고, 대답이 200으로 돌아가는지만 맞추면 끝나요.</p><nav class="pn"><a href="../p/what-is-token.html"><span class="lbl">newer</span>토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간</a><a href="../p/grep-awk-sed.html" style="text-align:right"><span class="lbl">older</span>grep·awk·sed 삼총사 — 로그에서 원하는 값만 뽑아내는 법</a></nav></article>
+<p>헬스체크 실패는 서버 문제가 아니라 <strong>약속 불일치</strong>입니다. <strong>포트·경로(200)·방화벽(특히 스테이트리스 NACL의 리턴 포트)</strong> — 노크가 닿고, 대답이 200으로 돌아가는지만 맞추면 끝나요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --cloud</div><a href="../p/ncp-boto3-checksum.html"><span class="g">&#10095;</span>NCP Object Storage에 boto3 물릴 때 터지는 함정 — 체크섬과 서명</a><a href="../p/github-pages.html"><span class="g">&#10095;</span>서버 없이 블로그 띄우기 — GitHub Pages가 공짜로 되는 원리</a><a href="../p/ncp-aws-map.html"><span class="g">&#10095;</span>NCP와 AWS, 같은 걸 다르게 부른다 — 헷갈리는 서비스 이름 지도</a></aside><nav class="pn"><a href="../p/what-is-token.html"><span class="lbl">newer</span>토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간</a><a href="../p/grep-awk-sed.html" style="text-align:right"><span class="lbl">older</span>grep·awk·sed 삼총사 — 로그에서 원하는 값만 뽑아내는 법</a></nav></article>
 </main>
 <footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
 <script src="../assets/app.js" defer></script>

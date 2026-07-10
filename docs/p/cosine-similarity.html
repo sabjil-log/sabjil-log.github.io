@@ -12,6 +12,7 @@
 <meta property="og:site_name" content="삽질노트">
 <link rel="canonical" href="https://sabjil-log.github.io/p/cosine-similarity.html">
 <link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
@@ -20,7 +21,10 @@
 </head>
 <body>
 <header class="site-head"><div class="wrap">
-  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
   <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
   <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a></nav>
 </div></header>
@@ -68,7 +72,7 @@
 <li>벡터 DB에서 거리 지표를 고를 때 <code>cosine</code> 또는 (정규화돼 있다면) <code>dot product</code> 를 선택하면 됩니다. 정규화 안 된 벡터에 유클리드 거리를 그냥 쓰면 문장 길이에 휘둘릴 수 있어요.</li>
 </ul>
 <h2 id="_5">한 줄 정리</h2>
-<p>의미의 닮음은 <strong>얼마나 멀리 있냐가 아니라 어느 쪽을 가리키냐</strong>로 잽니다. 그래서 임베딩 검색의 기본은 코사인 유사도 — 크기는 버리고 방향만 봅니다.</p><nav class="pn"><a href="../p/cron-utc.html"><span class="lbl">newer</span>cron이 새벽에 도는데 시간이 밀린다? — UTC 함정과 표현식 읽는 법</a><a href="../p/what-is-rag.html" style="text-align:right"><span class="lbl">older</span>RAG가 뭐길래 — LLM한테 &#x27;오픈북 시험&#x27;을 보게 하는 법</a></nav></article>
+<p>의미의 닮음은 <strong>얼마나 멀리 있냐가 아니라 어느 쪽을 가리키냐</strong>로 잽니다. 그래서 임베딩 검색의 기본은 코사인 유사도 — 크기는 버리고 방향만 봅니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/what-is-token.html"><span class="g">&#10095;</span>토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간</a><a href="../p/what-is-rag.html"><span class="g">&#10095;</span>RAG가 뭐길래 — LLM한테 &#x27;오픈북 시험&#x27;을 보게 하는 법</a></aside><nav class="pn"><a href="../p/cron-utc.html"><span class="lbl">newer</span>cron이 새벽에 도는데 시간이 밀린다? — UTC 함정과 표현식 읽는 법</a><a href="../p/what-is-rag.html" style="text-align:right"><span class="lbl">older</span>RAG가 뭐길래 — LLM한테 &#x27;오픈북 시험&#x27;을 보게 하는 법</a></nav></article>
 </main>
 <footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
 <script src="../assets/app.js" defer></script>

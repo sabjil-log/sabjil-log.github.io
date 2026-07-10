@@ -12,6 +12,7 @@
 <meta property="og:site_name" content="삽질노트">
 <link rel="canonical" href="https://sabjil-log.github.io/p/what-is-token.html">
 <link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
@@ -20,7 +21,10 @@
 </head>
 <body>
 <header class="site-head"><div class="wrap">
-  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
   <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
   <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a></nav>
 </div></header>
@@ -59,7 +63,7 @@
 </ol>
 <p>그래서 실무 절약 포인트는 단순합니다. <strong>반복 프롬프트는 짧게 다듬고, 문서는 필요한 부분만 잘라 넣고(RAG가 하는 일이 정확히 이것), 출력 길이를 명시적으로 제한</strong>하는 것.</p>
 <h2 id="_6">한 줄 정리</h2>
-<p>토큰은 "자주 쓰는 덩어리일수록 큰 조각"으로 자른 레고 블록이고, LLM의 <strong>돈·기억력·속도가 전부 이 블록 개수</strong>로 굴러갑니다. 한국어는 영어보다 블록을 더 먹는다는 것까지 기억하면 예산 감이 잡혀요.</p><nav class="pn"><span></span><a href="../p/lb-healthcheck.html" style="text-align:right"><span class="lbl">older</span>로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽</a></nav></article>
+<p>토큰은 "자주 쓰는 덩어리일수록 큰 조각"으로 자른 레고 블록이고, LLM의 <strong>돈·기억력·속도가 전부 이 블록 개수</strong>로 굴러갑니다. 한국어는 영어보다 블록을 더 먹는다는 것까지 기억하면 예산 감이 잡혀요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/cosine-similarity.html"><span class="g">&#10095;</span>임베딩은 왜 &#x27;거리&#x27;가 아니라 &#x27;각도&#x27;로 비슷함을 재나 — 코사인 유사도</a><a href="../p/what-is-rag.html"><span class="g">&#10095;</span>RAG가 뭐길래 — LLM한테 &#x27;오픈북 시험&#x27;을 보게 하는 법</a></aside><nav class="pn"><span></span><a href="../p/lb-healthcheck.html" style="text-align:right"><span class="lbl">older</span>로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽</a></nav></article>
 </main>
 <footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
 <script src="../assets/app.js" defer></script>

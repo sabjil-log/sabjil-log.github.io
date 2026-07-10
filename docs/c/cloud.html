@@ -12,6 +12,7 @@
 <meta property="og:site_name" content="삽질노트">
 <link rel="canonical" href="https://sabjil-log.github.io/c/cloud.html">
 <link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
@@ -20,24 +21,27 @@
 </head>
 <body>
 <header class="site-head"><div class="wrap">
-  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
   <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
   <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a></nav>
 </div></header>
 <main class="wrap">
-<section class="list"><div class="list-head">--cloud · 4개</div><article class="entry">
+<section class="list"><div class="list-head">--cloud · 4개</div><article class="entry" data-search="">
   <div class="meta"><span>2026-07-11</span><a class="chip" href="../c/cloud.html">--cloud</a><span>2 min</span></div>
   <h2><a href="../p/lb-healthcheck.html"><span class="g">&#10095;</span>로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽</a></h2>
   <p class="sum">서버는 멀쩡한데 LB가 자꾸 UNHEALTHY라면, 범인은 거의 항상 셋 중 하나입니다. 순서대로 확인하는 법을 정리했어요.</p>
-</article><article class="entry">
+</article><article class="entry" data-search="">
   <div class="meta"><span>2026-07-10</span><a class="chip" href="../c/cloud.html">--cloud</a><span>2 min</span></div>
   <h2><a href="../p/ncp-boto3-checksum.html"><span class="g">&#10095;</span>NCP Object Storage에 boto3 물릴 때 터지는 함정 — 체크섬과 서명</a></h2>
   <p class="sum">S3 호환이라 boto3가 그냥 될 줄 알았는데 업로드가 실패한다면, 최신 SDK의 기본 체크섬 헤더와 서명 방식이 원인일 때가 많습니다.</p>
-</article><article class="entry">
+</article><article class="entry" data-search="">
   <div class="meta"><span>2026-07-10</span><a class="chip" href="../c/cloud.html">--cloud</a><span>2 min</span></div>
   <h2><a href="../p/github-pages.html"><span class="g">&#10095;</span>서버 없이 블로그 띄우기 — GitHub Pages가 공짜로 되는 원리</a></h2>
   <p class="sum">완성된 HTML만 저장소에 올리면 GitHub이 웹서버를 공짜로 대신해줍니다. &#x27;정적 사이트&#x27;라 가능한 일이에요.</p>
-</article><article class="entry">
+</article><article class="entry" data-search="">
   <div class="meta"><span>2026-07-09</span><a class="chip" href="../c/cloud.html">--cloud</a><span>2 min</span></div>
   <h2><a href="../p/ncp-aws-map.html"><span class="g">&#10095;</span>NCP와 AWS, 같은 걸 다르게 부른다 — 헷갈리는 서비스 이름 지도</a></h2>
   <p class="sum">개념은 거의 1:1인데 이름만 달라서 헤맵니다. 핵심 매핑만 외우면 두 클라우드 문서가 같은 언어로 읽혀요.</p>

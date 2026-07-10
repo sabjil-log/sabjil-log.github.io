@@ -12,6 +12,7 @@
 <meta property="og:site_name" content="삽질노트">
 <link rel="canonical" href="https://sabjil-log.github.io/p/grep-awk-sed.html">
 <link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
@@ -20,7 +21,10 @@
 </head>
 <body>
 <header class="site-head"><div class="wrap">
-  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
   <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
   <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html" class="on">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a></nav>
 </div></header>
@@ -77,7 +81,7 @@ sed<span class="w"> </span><span class="s1">&#39;s/&quot;//g&#39;</span><span cl
 <li>구분자가 공백이 아니면 awk 에 <code>-F</code> 를 줍니다: <code>awk -F',' '{print $3}'</code> (CSV의 3번째 칸).</li>
 </ul>
 <h2 id="_6">한 줄 정리</h2>
-<p><strong>grep으로 줄을 고르고 → awk로 칸을 꺼내고 → sed로 글자를 다듬는다.</strong> 여기에 <code>sort | uniq -c | sort -rn</code> 랭킹 관용구까지 — 이 네 조각이면 로그 분석의 8할이 끝납니다.</p><nav class="pn"><a href="../p/lb-healthcheck.html"><span class="lbl">newer</span>로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽</a><a href="../p/ncp-boto3-checksum.html" style="text-align:right"><span class="lbl">older</span>NCP Object Storage에 boto3 물릴 때 터지는 함정 — 체크섬과 서명</a></nav></article>
+<p><strong>grep으로 줄을 고르고 → awk로 칸을 꺼내고 → sed로 글자를 다듬는다.</strong> 여기에 <code>sort | uniq -c | sort -rn</code> 랭킹 관용구까지 — 이 네 조각이면 로그 분석의 8할이 끝납니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --linux</div><a href="../p/cron-utc.html"><span class="g">&#10095;</span>cron이 새벽에 도는데 시간이 밀린다? — UTC 함정과 표현식 읽는 법</a></aside><nav class="pn"><a href="../p/lb-healthcheck.html"><span class="lbl">newer</span>로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽</a><a href="../p/ncp-boto3-checksum.html" style="text-align:right"><span class="lbl">older</span>NCP Object Storage에 boto3 물릴 때 터지는 함정 — 체크섬과 서명</a></nav></article>
 </main>
 <footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
 <script src="../assets/app.js" defer></script>

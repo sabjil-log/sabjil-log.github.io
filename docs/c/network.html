@@ -12,6 +12,7 @@
 <meta property="og:site_name" content="삽질노트">
 <link rel="canonical" href="https://sabjil-log.github.io/c/network.html">
 <link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
@@ -20,12 +21,15 @@
 </head>
 <body>
 <header class="site-head"><div class="wrap">
-  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
   <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
   <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html" class="on">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a></nav>
 </div></header>
 <main class="wrap">
-<section class="list"><div class="list-head">--network · 1개</div><article class="entry">
+<section class="list"><div class="list-head">--network · 1개</div><article class="entry" data-search="">
   <div class="meta"><span>2026-07-09</span><a class="chip" href="../c/network.html">--network</a><span>2 min</span></div>
   <h2><a href="../p/network-triage.html"><span class="g">&#10095;</span>&#x27;포트는 열렸다는데 접속이 안 돼요&#x27; — 계층별로 찔러보는 진단법</a></h2>
   <p class="sum">접속 실패는 한 곳이 아니라 여러 층 중 하나가 막힌 것. 아래층부터 한 칸씩 찌르면 범인이 나옵니다.</p>

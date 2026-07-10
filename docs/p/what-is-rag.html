@@ -12,6 +12,7 @@
 <meta property="og:site_name" content="삽질노트">
 <link rel="canonical" href="https://sabjil-log.github.io/p/what-is-rag.html">
 <link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
@@ -20,7 +21,10 @@
 </head>
 <body>
 <header class="site-head"><div class="wrap">
-  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
   <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
   <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a></nav>
 </div></header>
@@ -67,7 +71,7 @@
 <li><strong>"근거에 없으면 모른다고 해"</strong>를 프롬프트에 명시하지 않으면, 모델은 또 지어냅니다.</li>
 </ul>
 <h2 id="_4">한 줄 정리</h2>
-<p>RAG는 모델을 더 똑똑하게 만드는 게 아니라, <strong>답하기 직전에 정답 페이지를 쥐여주는</strong> 겁니다. 그래서 승부는 모델보다 <strong>"얼마나 관련 있는 조각을 잘 찾아 오느냐"</strong>에서 갈려요.</p><nav class="pn"><a href="../p/cosine-similarity.html"><span class="lbl">newer</span>임베딩은 왜 &#x27;거리&#x27;가 아니라 &#x27;각도&#x27;로 비슷함을 재나 — 코사인 유사도</a><a href="../p/onedrive-unicode.html" style="text-align:right"><span class="lbl">older</span>맥·윈도우 섞인 팀에서 OneDrive가 파일을 자꾸 두 개로 만드는 이유</a></nav></article>
+<p>RAG는 모델을 더 똑똑하게 만드는 게 아니라, <strong>답하기 직전에 정답 페이지를 쥐여주는</strong> 겁니다. 그래서 승부는 모델보다 <strong>"얼마나 관련 있는 조각을 잘 찾아 오느냐"</strong>에서 갈려요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/what-is-token.html"><span class="g">&#10095;</span>토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간</a><a href="../p/cosine-similarity.html"><span class="g">&#10095;</span>임베딩은 왜 &#x27;거리&#x27;가 아니라 &#x27;각도&#x27;로 비슷함을 재나 — 코사인 유사도</a></aside><nav class="pn"><a href="../p/cosine-similarity.html"><span class="lbl">newer</span>임베딩은 왜 &#x27;거리&#x27;가 아니라 &#x27;각도&#x27;로 비슷함을 재나 — 코사인 유사도</a><a href="../p/onedrive-unicode.html" style="text-align:right"><span class="lbl">older</span>맥·윈도우 섞인 팀에서 OneDrive가 파일을 자꾸 두 개로 만드는 이유</a></nav></article>
 </main>
 <footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
 <script src="../assets/app.js" defer></script>

@@ -12,6 +12,7 @@
 <meta property="og:site_name" content="삽질노트">
 <link rel="canonical" href="https://sabjil-log.github.io/p/ncp-aws-map.html">
 <link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
@@ -20,7 +21,10 @@
 </head>
 <body>
 <header class="site-head"><div class="wrap">
-  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
   <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
   <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a></nav>
 </div></header>
@@ -126,7 +130,7 @@
 <li><strong>부르는 단위가 다를 때:</strong> 같은 "관리형 DB"라도 지원 엔진·버전·백업 정책 세부는 벤더마다 다릅니다. 개념은 같아도 <strong>스펙은 반드시 각 문서에서 재확인</strong>하세요.</li>
 </ul>
 <h2 id="_4">한 줄 정리</h2>
-<p>개념 지도(왼쪽 열)를 외우면 두 클라우드가 같은 언어로 읽힙니다. 단, <strong>이름이 같아도 상태성·호환성 같은 동작 차이</strong>는 따로 확인 — 특히 스테이트리스 NACL이 사람 잡습니다.</p><nav class="pn"><a href="../p/network-triage.html"><span class="lbl">newer</span>&#x27;포트는 열렸다는데 접속이 안 돼요&#x27; — 계층별로 찔러보는 진단법</a><span></span></nav></article>
+<p>개념 지도(왼쪽 열)를 외우면 두 클라우드가 같은 언어로 읽힙니다. 단, <strong>이름이 같아도 상태성·호환성 같은 동작 차이</strong>는 따로 확인 — 특히 스테이트리스 NACL이 사람 잡습니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --cloud</div><a href="../p/lb-healthcheck.html"><span class="g">&#10095;</span>로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽</a><a href="../p/ncp-boto3-checksum.html"><span class="g">&#10095;</span>NCP Object Storage에 boto3 물릴 때 터지는 함정 — 체크섬과 서명</a><a href="../p/github-pages.html"><span class="g">&#10095;</span>서버 없이 블로그 띄우기 — GitHub Pages가 공짜로 되는 원리</a></aside><nav class="pn"><a href="../p/network-triage.html"><span class="lbl">newer</span>&#x27;포트는 열렸다는데 접속이 안 돼요&#x27; — 계층별로 찔러보는 진단법</a><span></span></nav></article>
 </main>
 <footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
 <script src="../assets/app.js" defer></script>

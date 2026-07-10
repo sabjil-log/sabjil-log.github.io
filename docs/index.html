@@ -12,6 +12,7 @@
 <meta property="og:site_name" content="삽질노트">
 <link rel="canonical" href="https://sabjil-log.github.io/">
 <link rel="alternate" type="application/rss+xml" title="삽질노트" href="feed.xml">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
@@ -20,64 +21,67 @@
 </head>
 <body>
 <header class="site-head"><div class="wrap">
-  <a class="prompt" href="index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <div class="head-row">
+    <a class="prompt" href="index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
   <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
   <nav class="nav"><a href="index.html" class="on">home</a><a href="c/troubleshooting.html">--troubleshooting</a><a href="c/linux.html">--linux</a><a href="c/cloud.html">--cloud</a><a href="c/network.html">--network</a><a href="c/security.html">--security</a><a href="c/ai.html">--ai</a></nav>
 </div></header>
 <main class="wrap">
-<section class="list"><div class="list-head">최근 글 · 13개</div><article class="entry">
+<section class="list"><div class="search"><span class="sig">grep -i</span><input id="q" type="search" placeholder="&quot;검색어&quot; — 제목·요약·태그" autocomplete="off" spellcheck="false"></div><div class="list-head">최근 글 · 13개</div><article class="entry" data-search="토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간 llm은 글자도 단어도 아닌 &#x27;토큰&#x27; 단위로 읽고 씁니다. 레고 블록 비유로 이해하고, 한국어가 영어보다 토큰을 더 먹는 이유까지. ai/llm ai 토큰 토크나이저 llm 컨텍스트">
   <div class="meta"><span>2026-07-11</span><a class="chip" href="c/ai.html">--ai</a><span>2 min</span></div>
   <h2><a href="p/what-is-token.html"><span class="g">&#10095;</span>토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간</a></h2>
   <p class="sum">LLM은 글자도 단어도 아닌 &#x27;토큰&#x27; 단위로 읽고 씁니다. 레고 블록 비유로 이해하고, 한국어가 영어보다 토큰을 더 먹는 이유까지.</p>
-</article><article class="entry">
+</article><article class="entry" data-search="로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽 서버는 멀쩡한데 lb가 자꾸 unhealthy라면, 범인은 거의 항상 셋 중 하나입니다. 순서대로 확인하는 법을 정리했어요. 클라우드 cloud 로드밸런서 헬스체크 acg nacl ncp aws">
   <div class="meta"><span>2026-07-11</span><a class="chip" href="c/cloud.html">--cloud</a><span>2 min</span></div>
   <h2><a href="p/lb-healthcheck.html"><span class="g">&#10095;</span>로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽</a></h2>
   <p class="sum">서버는 멀쩡한데 LB가 자꾸 UNHEALTHY라면, 범인은 거의 항상 셋 중 하나입니다. 순서대로 확인하는 법을 정리했어요.</p>
-</article><article class="entry">
+</article><article class="entry" data-search="grep·awk·sed 삼총사 — 로그에서 원하는 값만 뽑아내는 법 grep은 줄을 고르고, awk는 칸을 자르고, sed는 글자를 바꿉니다. 역할 분담만 알면 어떤 로그든 파이프 한 줄로 정리돼요. 리눅스 linux grep awk sed 로그분석 쉘">
   <div class="meta"><span>2026-07-11</span><a class="chip" href="c/linux.html">--linux</a><span>2 min</span></div>
   <h2><a href="p/grep-awk-sed.html"><span class="g">&#10095;</span>grep·awk·sed 삼총사 — 로그에서 원하는 값만 뽑아내는 법</a></h2>
   <p class="sum">grep은 줄을 고르고, awk는 칸을 자르고, sed는 글자를 바꿉니다. 역할 분담만 알면 어떤 로그든 파이프 한 줄로 정리돼요.</p>
-</article><article class="entry">
+</article><article class="entry" data-search="ncp object storage에 boto3 물릴 때 터지는 함정 — 체크섬과 서명 s3 호환이라 boto3가 그냥 될 줄 알았는데 업로드가 실패한다면, 최신 sdk의 기본 체크섬 헤더와 서명 방식이 원인일 때가 많습니다. 클라우드 cloud ncp object storage boto3 s3 체크섬">
   <div class="meta"><span>2026-07-10</span><a class="chip" href="c/cloud.html">--cloud</a><span>2 min</span></div>
   <h2><a href="p/ncp-boto3-checksum.html"><span class="g">&#10095;</span>NCP Object Storage에 boto3 물릴 때 터지는 함정 — 체크섬과 서명</a></h2>
   <p class="sum">S3 호환이라 boto3가 그냥 될 줄 알았는데 업로드가 실패한다면, 최신 SDK의 기본 체크섬 헤더와 서명 방식이 원인일 때가 많습니다.</p>
-</article><article class="entry">
+</article><article class="entry" data-search="토큰은 딱 필요한 만큼만 — fine-grained pat로 최소권한 실천하기 자동화에 쓰는 접근 토큰은 &#x27;모든 권한&#x27;이 아니라 &#x27;이 저장소, 이 동작&#x27;만 열어야 합니다. 사고가 나도 피해가 작아져요. 보안 security 최소권한 pat github 토큰 시크릿">
   <div class="meta"><span>2026-07-10</span><a class="chip" href="c/security.html">--security</a><span>1 min</span></div>
   <h2><a href="p/least-privilege-tokens.html"><span class="g">&#10095;</span>토큰은 딱 필요한 만큼만 — fine-grained PAT로 최소권한 실천하기</a></h2>
   <p class="sum">자동화에 쓰는 접근 토큰은 &#x27;모든 권한&#x27;이 아니라 &#x27;이 저장소, 이 동작&#x27;만 열어야 합니다. 사고가 나도 피해가 작아져요.</p>
-</article><article class="entry">
+</article><article class="entry" data-search="서버 없이 블로그 띄우기 — github pages가 공짜로 되는 원리 완성된 html만 저장소에 올리면 github이 웹서버를 공짜로 대신해줍니다. &#x27;정적 사이트&#x27;라 가능한 일이에요. 클라우드 cloud github pages 정적사이트 배포 nojekyll">
   <div class="meta"><span>2026-07-10</span><a class="chip" href="c/cloud.html">--cloud</a><span>2 min</span></div>
   <h2><a href="p/github-pages.html"><span class="g">&#10095;</span>서버 없이 블로그 띄우기 — GitHub Pages가 공짜로 되는 원리</a></h2>
   <p class="sum">완성된 HTML만 저장소에 올리면 GitHub이 웹서버를 공짜로 대신해줍니다. &#x27;정적 사이트&#x27;라 가능한 일이에요.</p>
-</article><article class="entry">
+</article><article class="entry" data-search="도커 빌드가 매번 느린 이유 — 이미지 레이어와 캐시, dockerfile 순서의 비밀 도커 이미지는 층층이 쌓인 레이어입니다. 이 구조를 알면 dockerfile 한 줄 순서만 바꿔도 빌드가 몇 배 빨라져요. 트러블슈팅 troubleshooting docker 이미지레이어 빌드캐시 dockerfile">
   <div class="meta"><span>2026-07-10</span><a class="chip" href="c/troubleshooting.html">--troubleshooting</a><span>2 min</span></div>
   <h2><a href="p/docker-layer-cache.html"><span class="g">&#10095;</span>도커 빌드가 매번 느린 이유 — 이미지 레이어와 캐시, Dockerfile 순서의 비밀</a></h2>
   <p class="sum">도커 이미지는 층층이 쌓인 레이어입니다. 이 구조를 알면 Dockerfile 한 줄 순서만 바꿔도 빌드가 몇 배 빨라져요.</p>
-</article><article class="entry">
+</article><article class="entry" data-search="cron이 새벽에 도는데 시간이 밀린다? — utc 함정과 표현식 읽는 법 cron 5칸(분·시·일·월·요일)만 읽을 줄 알면 됩니다. 시간이 어긋나면 십중팔구 서버가 utc로 돌기 때문이에요. 리눅스 linux cron 스케줄 utc 타임존 github actions">
   <div class="meta"><span>2026-07-10</span><a class="chip" href="c/linux.html">--linux</a><span>1 min</span></div>
   <h2><a href="p/cron-utc.html"><span class="g">&#10095;</span>cron이 새벽에 도는데 시간이 밀린다? — UTC 함정과 표현식 읽는 법</a></h2>
   <p class="sum">cron 5칸(분·시·일·월·요일)만 읽을 줄 알면 됩니다. 시간이 어긋나면 십중팔구 서버가 UTC로 돌기 때문이에요.</p>
-</article><article class="entry">
+</article><article class="entry" data-search="임베딩은 왜 &#x27;거리&#x27;가 아니라 &#x27;각도&#x27;로 비슷함을 재나 — 코사인 유사도 벡터가 얼마나 비슷한지 잴 때 길이는 무시하고 방향만 봅니다. 왜 각도가 &#x27;의미의 닮음&#x27;을 더 잘 잡는지 쉽게 풀어봐요. ai/llm ai 임베딩 코사인유사도 벡터검색 rag">
   <div class="meta"><span>2026-07-10</span><a class="chip" href="c/ai.html">--ai</a><span>2 min</span></div>
   <h2><a href="p/cosine-similarity.html"><span class="g">&#10095;</span>임베딩은 왜 &#x27;거리&#x27;가 아니라 &#x27;각도&#x27;로 비슷함을 재나 — 코사인 유사도</a></h2>
   <p class="sum">벡터가 얼마나 비슷한지 잴 때 길이는 무시하고 방향만 봅니다. 왜 각도가 &#x27;의미의 닮음&#x27;을 더 잘 잡는지 쉽게 풀어봐요.</p>
-</article><article class="entry">
+</article><article class="entry" data-search="rag가 뭐길래 — llm한테 &#x27;오픈북 시험&#x27;을 보게 하는 법 llm은 외운 것만 답합니다. rag는 답하기 직전에 관련 문서를 찾아 손에 쥐여주는 것 — 클로즈드북을 오픈북으로 바꾸는 기법이에요. ai/llm ai rag 임베딩 벡터검색 리랭커 llm">
   <div class="meta"><span>2026-07-09</span><a class="chip" href="c/ai.html">--ai</a><span>2 min</span></div>
   <h2><a href="p/what-is-rag.html"><span class="g">&#10095;</span>RAG가 뭐길래 — LLM한테 &#x27;오픈북 시험&#x27;을 보게 하는 법</a></h2>
   <p class="sum">LLM은 외운 것만 답합니다. RAG는 답하기 직전에 관련 문서를 찾아 손에 쥐여주는 것 — 클로즈드북을 오픈북으로 바꾸는 기법이에요.</p>
-</article><article class="entry">
+</article><article class="entry" data-search="맥·윈도우 섞인 팀에서 onedrive가 파일을 자꾸 두 개로 만드는 이유 이름이 똑같아 보여도 맥과 윈도우가 한글 이름을 다르게 저장해서 생기는 문제. 눈이 아니라 바이트로 봐야 답이 나옵니다. 트러블슈팅 troubleshooting onedrive 유니코드 맥 동기화">
   <div class="meta"><span>2026-07-09</span><a class="chip" href="c/troubleshooting.html">--troubleshooting</a><span>2 min</span></div>
   <h2><a href="p/onedrive-unicode.html"><span class="g">&#10095;</span>맥·윈도우 섞인 팀에서 OneDrive가 파일을 자꾸 두 개로 만드는 이유</a></h2>
   <p class="sum">이름이 똑같아 보여도 맥과 윈도우가 한글 이름을 다르게 저장해서 생기는 문제. 눈이 아니라 바이트로 봐야 답이 나옵니다.</p>
-</article><article class="entry">
+</article><article class="entry" data-search="&#x27;포트는 열렸다는데 접속이 안 돼요&#x27; — 계층별로 찔러보는 진단법 접속 실패는 한 곳이 아니라 여러 층 중 하나가 막힌 것. 아래층부터 한 칸씩 찌르면 범인이 나옵니다. 네트워크 network 트러블슈팅 네트워크 ss curl dig tcpdump">
   <div class="meta"><span>2026-07-09</span><a class="chip" href="c/network.html">--network</a><span>2 min</span></div>
   <h2><a href="p/network-triage.html"><span class="g">&#10095;</span>&#x27;포트는 열렸다는데 접속이 안 돼요&#x27; — 계층별로 찔러보는 진단법</a></h2>
   <p class="sum">접속 실패는 한 곳이 아니라 여러 층 중 하나가 막힌 것. 아래층부터 한 칸씩 찌르면 범인이 나옵니다.</p>
-</article><article class="entry">
+</article><article class="entry" data-search="ncp와 aws, 같은 걸 다르게 부른다 — 헷갈리는 서비스 이름 지도 개념은 거의 1:1인데 이름만 달라서 헤맵니다. 핵심 매핑만 외우면 두 클라우드 문서가 같은 언어로 읽혀요. 클라우드 cloud ncp aws vpc acg 멀티클라우드">
   <div class="meta"><span>2026-07-09</span><a class="chip" href="c/cloud.html">--cloud</a><span>2 min</span></div>
   <h2><a href="p/ncp-aws-map.html"><span class="g">&#10095;</span>NCP와 AWS, 같은 걸 다르게 부른다 — 헷갈리는 서비스 이름 지도</a></h2>
   <p class="sum">개념은 거의 1:1인데 이름만 달라서 헤맵니다. 핵심 매핑만 외우면 두 클라우드 문서가 같은 언어로 읽혀요.</p>
-</article></section>
+</article><div class="search-none">일치하는 글이 없어요. 다른 검색어로 시도해보세요.</div></section>
 </main>
 <footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
 <script src="assets/app.js" defer></script>

@@ -12,6 +12,7 @@
 <meta property="og:site_name" content="삽질노트">
 <link rel="canonical" href="https://sabjil-log.github.io/p/ncp-boto3-checksum.html">
 <link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
@@ -20,7 +21,10 @@
 </head>
 <body>
 <header class="site-head"><div class="wrap">
-  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
   <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
   <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a></nav>
 </div></header>
@@ -68,7 +72,7 @@
 </code></pre></div>
 
 <h2 id="_5">한 줄 정리</h2>
-<p>"S3 호환 = boto3 그냥 됨"이 아닙니다. <strong>SigV4 고정 + path-style + 자동 체크섬 조정</strong>, 그리고 안 될 땐 <strong>DEBUG 로그로 오가는 헤더 확인</strong>. 대부분 이 선에서 정리됩니다.</p><nav class="pn"><a href="../p/grep-awk-sed.html"><span class="lbl">newer</span>grep·awk·sed 삼총사 — 로그에서 원하는 값만 뽑아내는 법</a><a href="../p/least-privilege-tokens.html" style="text-align:right"><span class="lbl">older</span>토큰은 딱 필요한 만큼만 — fine-grained PAT로 최소권한 실천하기</a></nav></article>
+<p>"S3 호환 = boto3 그냥 됨"이 아닙니다. <strong>SigV4 고정 + path-style + 자동 체크섬 조정</strong>, 그리고 안 될 땐 <strong>DEBUG 로그로 오가는 헤더 확인</strong>. 대부분 이 선에서 정리됩니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --cloud</div><a href="../p/lb-healthcheck.html"><span class="g">&#10095;</span>로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽</a><a href="../p/github-pages.html"><span class="g">&#10095;</span>서버 없이 블로그 띄우기 — GitHub Pages가 공짜로 되는 원리</a><a href="../p/ncp-aws-map.html"><span class="g">&#10095;</span>NCP와 AWS, 같은 걸 다르게 부른다 — 헷갈리는 서비스 이름 지도</a></aside><nav class="pn"><a href="../p/grep-awk-sed.html"><span class="lbl">newer</span>grep·awk·sed 삼총사 — 로그에서 원하는 값만 뽑아내는 법</a><a href="../p/least-privilege-tokens.html" style="text-align:right"><span class="lbl">older</span>토큰은 딱 필요한 만큼만 — fine-grained PAT로 최소권한 실천하기</a></nav></article>
 </main>
 <footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
 <script src="../assets/app.js" defer></script>

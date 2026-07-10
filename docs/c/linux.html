@@ -12,6 +12,7 @@
 <meta property="og:site_name" content="삽질노트">
 <link rel="canonical" href="https://sabjil-log.github.io/c/linux.html">
 <link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
@@ -20,16 +21,19 @@
 </head>
 <body>
 <header class="site-head"><div class="wrap">
-  <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
   <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
   <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html" class="on">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a></nav>
 </div></header>
 <main class="wrap">
-<section class="list"><div class="list-head">--linux · 2개</div><article class="entry">
+<section class="list"><div class="list-head">--linux · 2개</div><article class="entry" data-search="">
   <div class="meta"><span>2026-07-11</span><a class="chip" href="../c/linux.html">--linux</a><span>2 min</span></div>
   <h2><a href="../p/grep-awk-sed.html"><span class="g">&#10095;</span>grep·awk·sed 삼총사 — 로그에서 원하는 값만 뽑아내는 법</a></h2>
   <p class="sum">grep은 줄을 고르고, awk는 칸을 자르고, sed는 글자를 바꿉니다. 역할 분담만 알면 어떤 로그든 파이프 한 줄로 정리돼요.</p>
-</article><article class="entry">
+</article><article class="entry" data-search="">
   <div class="meta"><span>2026-07-10</span><a class="chip" href="../c/linux.html">--linux</a><span>1 min</span></div>
   <h2><a href="../p/cron-utc.html"><span class="g">&#10095;</span>cron이 새벽에 도는데 시간이 밀린다? — UTC 함정과 표현식 읽는 법</a></h2>
   <p class="sum">cron 5칸(분·시·일·월·요일)만 읽을 줄 알면 됩니다. 시간이 어긋나면 십중팔구 서버가 UTC로 돌기 때문이에요.</p>
