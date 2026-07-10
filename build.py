@@ -71,6 +71,31 @@ def render_md(text):
     ], extension_configs={"codehilite": {"css_class": "highlight", "guess_lang": False}})
     return conv.convert(text)
 
+
+def fence_langs(md_text):
+    """마크다운 소스에서 코드펜스 언어를 등장 순서대로 수집 (언어 없으면 "")."""
+    langs, inb = [], False
+    for ln in md_text.splitlines():
+        st = ln.strip()
+        if st.startswith("```"):
+            if not inb:
+                langs.append(st[3:].strip().lower())
+                inb = True
+            else:
+                inb = False
+    return langs
+
+def inject_langs(body_html, langs):
+    """렌더된 HTML의 코드블록 <pre> 에 data-lang 속성을 순서대로 부여."""
+    marker = '<div class="highlight"><pre>'
+    parts = body_html.split(marker)
+    out = parts[0]
+    for i, part in enumerate(parts[1:]):
+        lang = langs[i] if i < len(langs) else ""
+        attr = f' data-lang="{html.escape(lang)}"' if lang else ""
+        out += f'<div class="highlight"><pre{attr}>' + part
+    return out
+
 # ─── 템플릿 ───
 BASE = Template("""<!DOCTYPE html>
 <html lang="ko">
@@ -102,10 +127,9 @@ $verification<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t
     <a class="prompt" href="${root}index.html">~/<span class="dir">$handle</span>&nbsp;$$<span class="cur"></span></a>
     <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
   </div>
-  <p class="tagline">$tagline</p>
-  <nav class="nav">$nav</nav>
+$tagline_html  <nav class="nav">$nav</nav>
 </div></header>
-<main class="wrap">
+$facade<main class="wrap">
 $content
 </main>
 <footer class="site-foot"><div class="wrap"><span>$footer</span><span>$author</span></div></footer>
@@ -184,7 +208,7 @@ def make_og_images(posts):
              os.path.join(out_dir, p["slug"] + ".png"))
     print(f"OG 이미지 {len(posts)+1}개 생성")
 
-def page(path_out, page_title, desc, content, root, og_type="website", nav_active="", og_image=None):
+def page(path_out, page_title, desc, content, root, og_type="website", nav_active="", og_image=None, facade="", show_tagline=True):
     rel = os.path.relpath(path_out, DOCS).replace(os.sep, "/")
     base = SITE["url"].rstrip("/")
     canonical = base + "/" if rel == "index.html" else f"{base}/{rel}"
@@ -201,6 +225,8 @@ def page(path_out, page_title, desc, content, root, og_type="website", nav_activ
         canonical=html.escape(canonical), site_title=html.escape(SITE["title"]),
         verification=verification,
         og_image=html.escape(og_image or f'{base}/og/default.png'),
+        facade=facade,
+        tagline_html=(f'  <p class="tagline">{html.escape(SITE["tagline"])}</p>\n' if show_tagline else ""),
     )
     os.makedirs(os.path.dirname(path_out), exist_ok=True)
     open(path_out, "w", encoding="utf-8").write(html_doc)
@@ -223,7 +249,7 @@ def main():
     for i, p in enumerate(posts):
         newer = posts[i - 1] if i > 0 else None      # 정렬이 최신순이라 i-1 이 더 최신
         older = posts[i + 1] if i + 1 < len(posts) else None
-        body_html = render_md(p["body_md"])
+        body_html = inject_langs(render_md(p["body_md"]), fence_langs(p["body_md"]))
         cslug = cat_slug(p["category"])
         tags = f'<a class="chip" href="../c/{cslug}.html">--{cslug}</a>'
         meta = f'<div class="post-meta"><span>{p["date"]}</span>{tags}<span>{p["read_min"]} min read</span></div>'
@@ -260,11 +286,23 @@ def main():
     search_box = ('<div class="search"><span class="sig">grep -i</span>'
                   '<input id="q" type="search" placeholder="&quot;검색어&quot; — 제목·요약·태그" '
                   'autocomplete="off" spellcheck="false"></div>')
+    facade = (
+        '<div class="wrap"><section class="facade" aria-label="삽질노트">'
+        '<div class="fac-bar"><span class="fac-dots"></span>'
+        f'<span class="fac-title">{SITE["handle"]} — bash</span></div>'
+        '<div class="fac-body">'
+        '<div class="fac-line"><span class="fac-p">$</span> whoami</div>'
+        f'<div class="fac-name">{html.escape(SITE["title"])}</div>'
+        '<div class="fac-line"><span class="fac-p">$</span> cat tagline.txt</div>'
+        '<div class="fac-out">삽질해서 배운 걸, 남은 안 삽질하게.<br>'
+        '리눅스 · 클라우드 · AI — 매일 쌓는 실무 노트</div>'
+        '<div class="fac-line"><span class="fac-p">$</span><span class="cur"></span></div>'
+        '</div></section></div>')
     home = (f'<section class="list">{search_box}'
             f'<div class="list-head">최근 글 · {len(posts)}개</div>{entries}'
             f'<div class="search-none">일치하는 글이 없어요. 다른 검색어로 시도해보세요.</div></section>')
     page(os.path.join(DOCS, "index.html"), SITE["title"], SITE["tagline"],
-         home, root="", nav_active="home")
+         home, root="", nav_active="home", facade=facade, show_tagline=False)
 
     # 카테고리별
     for name, slug in CATEGORIES.items():

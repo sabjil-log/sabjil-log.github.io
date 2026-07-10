@@ -48,14 +48,14 @@
 <p>도커는 빌드할 때 <strong>어떤 필름부터 바뀌었는지</strong> 봅니다. 바뀐 필름과 <strong>그 위의 모든 필름</strong>은 다시 그리고, 그 아래는 <strong>캐시</strong>를 재사용합니다.</p>
 <h2 id="_3">그래서 순서가 전부다</h2>
 <p>문제는 이런 Dockerfile입니다.</p>
-<div class="highlight"><pre><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.12-slim</span>
+<div class="highlight"><pre data-lang="dockerfile"><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.12-slim</span>
 <span class="k">COPY</span><span class="w"> </span>.<span class="w"> </span>.<span class="w">                      </span>#<span class="w"> </span>코드가<span class="w"> </span>여기서<span class="w"> </span>통째로<span class="w"> </span>들어옴
 <span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
 </code></pre></div>
 
 <p>코드를 한 줄만 고쳐도 <code>COPY . .</code> 필름이 바뀌고, <strong>그 위의 <code>pip install</code>도 무효화</strong>됩니다. 그래서 매번 라이브러리를 새로 깔죠.</p>
 <p>순서만 바꾸면 해결됩니다.</p>
-<div class="highlight"><pre><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.12-slim</span>
+<div class="highlight"><pre data-lang="dockerfile"><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.12-slim</span>
 <span class="k">COPY</span><span class="w"> </span>requirements.txt<span class="w"> </span>.<span class="w">        </span>#<span class="w"> </span>의존성<span class="w"> </span>목록만<span class="w"> </span>먼저
 <span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt<span class="w">   </span>#<span class="w"> </span>목록이<span class="w"> </span>안<span class="w"> </span>바뀌면<span class="w"> </span>이<span class="w"> </span>층은<span class="w"> </span>캐시!
 <span class="k">COPY</span><span class="w"> </span>.<span class="w"> </span>.<span class="w">                       </span>#<span class="w"> </span>자주<span class="w"> </span>바뀌는<span class="w"> </span>코드는<span class="w"> </span>맨<span class="w"> </span>마지막
@@ -64,7 +64,7 @@
 <p>이제 <code>requirements.txt</code>가 그대로면 <code>pip install</code> 층은 캐시가 유지되고, 코드만 다시 복사됩니다. 빌드가 몇 분 → 몇 초로 줄어요.</p>
 <h2 id="_4">확인하는 법</h2>
 <p>빌드 로그에서 <code>CACHED</code> 표시를 보면 어느 층이 재사용됐는지 바로 압니다.</p>
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>myapp<span class="w"> </span>.
+<div class="highlight"><pre data-lang="bash"><span></span><code>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>myapp<span class="w"> </span>.
 <span class="c1">#  =&gt; [2/4] COPY requirements.txt .        CACHED</span>
 <span class="c1">#  =&gt; [3/4] RUN pip install -r ...         CACHED   ← 이게 목표</span>
 <span class="c1">#  =&gt; [4/4] COPY . .</span>
@@ -74,7 +74,7 @@ docker<span class="w"> </span><span class="nb">history</span><span class="w"> </
 
 <h2 id="_5">팁 하나 더</h2>
 <p><code>RUN</code> 을 여러 줄로 쪼개면 그만큼 필름이 늘어 이미지가 커집니다. 관련 명령은 <code>&amp;&amp;</code> 로 묶고, 캐시 정리까지 한 층에서 끝내세요.</p>
-<div class="highlight"><pre><span></span><code><span class="k">RUN</span><span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>curl<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre data-lang="dockerfile"><span></span><code><span class="k">RUN</span><span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>curl<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>/var/lib/apt/lists/*
 </code></pre></div>
 

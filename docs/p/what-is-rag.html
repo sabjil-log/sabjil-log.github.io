@@ -49,7 +49,7 @@
 </ol>
 <h2 id="_2">개념 코드 스케치</h2>
 <p>실제 구현이 아니라 흐름만 보여주는 뼈대입니다.</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># 1) 문서를 잘라 임베딩해서 저장</span>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="c1"># 1) 문서를 잘라 임베딩해서 저장</span>
 <span class="n">chunks</span> <span class="o">=</span> <span class="n">split</span><span class="p">(</span><span class="n">document</span><span class="p">)</span>
 <span class="n">index</span> <span class="o">=</span> <span class="p">[(</span><span class="n">embed</span><span class="p">(</span><span class="n">c</span><span class="p">),</span> <span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">chunks</span><span class="p">]</span>      <span class="c1"># (벡터, 원문) 쌍</span>
 

@@ -50,7 +50,7 @@
 <h2 id="_4">진짜인지 확인하는 법</h2>
 <p><code>한</code>은 눈으로 한 글자지만, NFC면 코드포인트 1개, NFD면 3개(ㅎ, ㅏ, ㄴ)입니다. 글자 수만 세보면 바로 드러나요.</p>
 <p>파이썬 — 이름 하나 찍어보기:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">unicodedata</span>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">unicodedata</span>
 
 <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;한&quot;</span>
 <span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>                                <span class="c1"># NFC면 1, NFD면 3</span>
@@ -59,13 +59,13 @@
 </code></pre></div>
 
 <p>PowerShell(윈도우) — 폴더에서 NFD 파일명만 골라내기:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">Get-ChildItem</span> <span class="p">|</span> <span class="nb">Where-Object</span> <span class="p">{</span>
+<div class="highlight"><pre data-lang="powershell"><span></span><code><span class="nb">Get-ChildItem</span> <span class="p">|</span> <span class="nb">Where-Object</span> <span class="p">{</span>
   <span class="nv">$_</span><span class="p">.</span><span class="n">Name</span> <span class="o">-ne</span> <span class="nv">$_</span><span class="p">.</span><span class="n">Name</span><span class="p">.</span><span class="n">Normalize</span><span class="p">(</span><span class="no">[Text.NormalizationForm]</span><span class="p">::</span><span class="n">FormC</span><span class="p">)</span>
 <span class="p">}</span> <span class="p">|</span> <span class="nb">Select-Object</span> <span class="n">Name</span>
 </code></pre></div>
 
 <p>맥/리눅스 터미널 — 이름 길이 비교:</p>
-<div class="highlight"><pre><span></span><code><span class="k">for</span><span class="w"> </span>f<span class="w"> </span><span class="k">in</span><span class="w"> </span>*<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="k">for</span><span class="w"> </span>f<span class="w"> </span><span class="k">in</span><span class="w"> </span>*<span class="p">;</span><span class="w"> </span><span class="k">do</span>
 <span class="w">  </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import sys,unicodedata as u; n=sys.argv[1]; print(len(n), len(u.normalize(&#39;NFC&#39;,n)), n)&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$f</span><span class="s2">&quot;</span>
 <span class="k">done</span>
 <span class="c1"># 앞 두 숫자가 다른 줄이 NFD 파일</span>
@@ -73,7 +73,7 @@
 
 <h2 id="_5">해결책</h2>
 <p><strong>1. 업로드 전에 폴더 전체를 NFC로 일괄 변환</strong> — 가장 확실합니다.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">unicodedata</span>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">unicodedata</span>
 
 <span class="n">target</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span>  <span class="c1"># 정규화할 폴더</span>
 <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">target</span><span class="p">):</span>

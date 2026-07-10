@@ -212,3 +212,55 @@ article hr{border:none;border-top:1px solid var(--line);margin:34px 0;}
   .prompt .cur{animation:none;}
   body,.entry{transition:none;}
 }
+
+/* ---- 파사드 (홈 대문: 터미널 창 + 레트로 스캔라인) ---- */
+.facade{
+  position:relative;background:#14181D;border-radius:18px;overflow:hidden;
+  margin:24px 0 4px;box-shadow:0 12px 34px rgba(10,20,16,.16);
+}
+[data-theme="dark"] .facade{box-shadow:0 12px 34px rgba(0,0,0,.5);border:1px solid var(--line);}
+.facade::after{               /* CRT 스캔라인 */
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg, rgba(255,255,255,.045) 0 1px, transparent 1px 3px);
+}
+.fac-bar{
+  display:flex;align-items:center;justify-content:center;position:relative;
+  padding:13px 16px;background:rgba(255,255,255,.055);
+}
+.fac-dots{
+  position:absolute;left:16px;top:50%;transform:translateY(-50%);
+  width:11px;height:11px;border-radius:50%;background:var(--dot-r);
+  box-shadow:19px 0 0 var(--dot-y), 38px 0 0 var(--dot-g);
+}
+.fac-title{font-family:var(--mono);font-size:12.5px;color:#8A94A0;}
+.fac-body{padding:26px 28px 28px;font-family:var(--mono);}
+.fac-line{color:#D6DBE0;font-size:14.5px;margin:4px 0;}
+.fac-p{color:#4CC49A;font-weight:700;margin-right:9px;}
+.fac-name{
+  font-family:var(--sans);font-size:44px;font-weight:800;letter-spacing:-0.02em;
+  color:#FFFFFF;margin:8px 0 20px;line-height:1.15;
+}
+.fac-out{color:#9AA6B2;font-size:14.5px;line-height:1.8;margin:6px 0 18px;}
+.fac-body .cur{
+  display:inline-block;width:9px;height:1.05em;margin-left:2px;
+  transform:translateY(2px);background:#4CC49A;animation:blink 1.15s steps(1) infinite;
+}
+
+/* ---- 코드블록 언어 라벨 (타이틀바 우측) ---- */
+article pre[data-lang]::after{
+  content:attr(data-lang);
+  position:absolute;top:11px;right:14px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.04em;
+  color:#8A94A0;text-transform:lowercase;
+  transition:opacity .15s;
+}
+article pre[data-lang]:hover::after{opacity:0;}   /* hover 시 copy 버튼에 자리 양보 */
+
+@media (max-width:560px){
+  .fac-name{font-size:30px;}
+  .fac-body{padding:20px 18px 22px;}
+  .facade{border-radius:14px;margin-top:18px;}
+}
+@media (prefers-reduced-motion:reduce){
+  .fac-body .cur{animation:none;}
+}

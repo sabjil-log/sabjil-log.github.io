@@ -48,33 +48,33 @@
 <p>파이프(<code>|</code>)는 접시를 다음 사람에게 넘기는 컨베이어고요.</p>
 <h2 id="_3">하나씩 최소한만</h2>
 <p><strong>grep — 이 줄 줘</strong></p>
-<div class="highlight"><pre><span></span><code>grep<span class="w"> </span><span class="s2">&quot; 500 &quot;</span><span class="w"> </span>access.log<span class="w">            </span><span class="c1"># 500 이 포함된 줄</span>
+<div class="highlight"><pre data-lang="bash"><span></span><code>grep<span class="w"> </span><span class="s2">&quot; 500 &quot;</span><span class="w"> </span>access.log<span class="w">            </span><span class="c1"># 500 이 포함된 줄</span>
 grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">&quot;health&quot;</span><span class="w"> </span>access.log<span class="w">        </span><span class="c1"># health 는 빼고 (-v = 반전)</span>
 grep<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot; 500 &quot;</span><span class="w"> </span>access.log<span class="w">         </span><span class="c1"># 몇 줄인지 개수만</span>
 grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">&quot;50[023]&quot;</span><span class="w"> </span>access.log<span class="w">       </span><span class="c1"># 정규식: 500/502/503</span>
 </code></pre></div>
 
 <p><strong>awk — 이 칸 줘</strong> (기본 구분자는 공백)</p>
-<div class="highlight"><pre><span></span><code>awk<span class="w"> </span><span class="s1">&#39;{print $1}&#39;</span><span class="w"> </span>access.log<span class="w">        </span><span class="c1"># 1번째 칸 (보통 IP)</span>
+<div class="highlight"><pre data-lang="bash"><span></span><code>awk<span class="w"> </span><span class="s1">&#39;{print $1}&#39;</span><span class="w"> </span>access.log<span class="w">        </span><span class="c1"># 1번째 칸 (보통 IP)</span>
 awk<span class="w"> </span><span class="s1">&#39;{print $1, $9}&#39;</span><span class="w"> </span>access.log<span class="w">    </span><span class="c1"># 1번째와 9번째 칸</span>
 awk<span class="w"> </span><span class="s1">&#39;$9 == 500 {print $1}&#39;</span><span class="w"> </span>access.log<span class="w">   </span><span class="c1"># 9번 칸이 500인 줄의 IP만 — grep 없이도 조건 가능</span>
 </code></pre></div>
 
 <p><strong>sed — 이 글자 바꿔 줘</strong></p>
-<div class="highlight"><pre><span></span><code>sed<span class="w"> </span><span class="s1">&#39;s/오류/ERROR/&#39;</span><span class="w"> </span>app.log<span class="w">        </span><span class="c1"># 각 줄 첫 &#39;오류&#39; → ERROR</span>
+<div class="highlight"><pre data-lang="bash"><span></span><code>sed<span class="w"> </span><span class="s1">&#39;s/오류/ERROR/&#39;</span><span class="w"> </span>app.log<span class="w">        </span><span class="c1"># 각 줄 첫 &#39;오류&#39; → ERROR</span>
 sed<span class="w"> </span><span class="s1">&#39;s/오류/ERROR/g&#39;</span><span class="w"> </span>app.log<span class="w">       </span><span class="c1"># 줄 안 전부 (g)</span>
 sed<span class="w"> </span><span class="s1">&#39;s/&quot;//g&#39;</span><span class="w"> </span>data.txt<span class="w">              </span><span class="c1"># 따옴표 제거</span>
 </code></pre></div>
 
 <h2 id="_4">조합 — 실전 한 줄</h2>
 <p>"500 에러 낸 IP를 많이 나온 순으로 톱10":</p>
-<div class="highlight"><pre><span></span><code>grep<span class="w"> </span><span class="s2">&quot; 500 &quot;</span><span class="w"> </span>access.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $1}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn<span class="w"> </span><span class="p">|</span><span class="w"> </span>head
+<div class="highlight"><pre data-lang="bash"><span></span><code>grep<span class="w"> </span><span class="s2">&quot; 500 &quot;</span><span class="w"> </span>access.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $1}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn<span class="w"> </span><span class="p">|</span><span class="w"> </span>head
 <span class="c1">#      ↑ 500 줄만          ↑ IP만        ↑ 정렬  ↑ 중복 세기  ↑ 많은 순   ↑ 10개</span>
 </code></pre></div>
 
 <p><code>sort | uniq -c | sort -rn</code> 은 "세어서 랭킹 만들기" 관용구입니다. 통째로 외워두면 평생 씁니다.</p>
 <p>하나 더 — "에러 시각과 메시지만, 따옴표 떼고":</p>
-<div class="highlight"><pre><span></span><code>grep<span class="w"> </span>ERROR<span class="w"> </span>app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $1, $2, $NF}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/&quot;//g&#39;</span>
+<div class="highlight"><pre data-lang="bash"><span></span><code>grep<span class="w"> </span>ERROR<span class="w"> </span>app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $1, $2, $NF}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/&quot;//g&#39;</span>
 <span class="c1"># $NF = 마지막 칸</span>
 </code></pre></div>
 

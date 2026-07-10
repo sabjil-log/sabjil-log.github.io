@@ -42,7 +42,7 @@
 <p>S3 호환 스토리지는 S3의 <strong>핵심 규격</strong>을 따르지만, AWS가 새로 추가하는 최신 동작까지 전부 따라가진 못합니다. 특히 최근 boto3/AWS SDK는 업로드할 때 <strong>무결성 체크섬 헤더(CRC32 등)를 기본으로 자동 첨부</strong>하기 시작했는데, 호환 스토리지가 이 최신 헤더를 아직 그대로 처리하지 못하면 요청이 거부됩니다. "표준어는 통하는데 신조어는 못 알아듣는" 상황이에요.</p>
 <h2 id="_3">해결 — 클라이언트 설정 맞추기</h2>
 <p>핵심은 두 가지입니다. <strong>서명 방식을 SigV4로 고정</strong>하고, <strong>자동 체크섬을 요청할 때만 붙이도록</strong> 낮춰줍니다.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">boto3</span>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">boto3</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">botocore.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
 
 <span class="n">s3</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">client</span><span class="p">(</span>
@@ -59,7 +59,7 @@
 </code></pre></div>
 
 <p>그래도 업로드 때 체크섬 관련 오류가 남으면, 최신 SDK의 자동 체크섬 동작을 낮춥니다. (botocore 버전에 따라 방식이 다르니 버전을 먼저 확인하세요.)</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># 예: 요청 시에만 체크섬을 계산하도록 환경변수로 조정</span>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="c1"># 예: 요청 시에만 체크섬을 계산하도록 환경변수로 조정</span>
 <span class="c1"># AWS_REQUEST_CHECKSUM_CALCULATION=when_required</span>
 <span class="c1"># AWS_RESPONSE_CHECKSUM_VALIDATION=when_required</span>
 </code></pre></div>
@@ -67,12 +67,12 @@
 <p>값이 안 먹으면 botocore를 호환이 검증된 버전으로 <strong>핀 고정</strong>하는 것도 현실적인 우회책입니다.</p>
 <h2 id="_4">확인하는 법</h2>
 <p>무엇이 오가는지 보면 원인이 빨리 잡힙니다.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">boto3</span>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">boto3</span>
 <span class="n">boto3</span><span class="o">.</span><span class="n">set_stream_logger</span><span class="p">(</span><span class="s2">&quot;botocore&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">)</span>   <span class="c1"># 요청 헤더/서명 전부 출력</span>
 </code></pre></div>
 
 <p>로그에서 <code>x-amz-checksum-*</code> 헤더가 붙는지, 서명 버전이 <code>AWS4</code>(=SigV4)인지 확인하세요. 그리고 CLI로 단순 검증:</p>
-<div class="highlight"><pre><span></span><code>aws<span class="w"> </span>--endpoint-url<span class="w"> </span>https://kr.object.ncloudstorage.com<span class="w"> </span>s3<span class="w"> </span>ls
+<div class="highlight"><pre data-lang="bash"><span></span><code>aws<span class="w"> </span>--endpoint-url<span class="w"> </span>https://kr.object.ncloudstorage.com<span class="w"> </span>s3<span class="w"> </span>ls
 </code></pre></div>
 
 <h2 id="_5">한 줄 정리</h2>

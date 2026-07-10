@@ -55,7 +55,7 @@
 <p>GitHub Pages는 기본적으로 올라온 파일을 <strong>Jekyll로 한 번 빌드</strong>하려 합니다. 그런데 이미 완성된 HTML을 올리는 경우엔 그 빌드가 오히려 방해가 돼요(엉뚱한 파일에서 에러). 발행 폴더에 내용이 빈 <strong><code>.nojekyll</code></strong> 파일 하나만 두면 "빌드하지 말고 그냥 서빙해" 라는 뜻이 됩니다. 빌드 단계가 사라지니 깨질 일도 없어져요.</p>
 <h2 id="_2">올리기 전에 로컬에서 미리보기</h2>
 <p>파이썬만 있으면 웹서버 흉내를 바로 낼 수 있습니다.</p>
-<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>사이트폴더
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="nb">cd</span><span class="w"> </span>사이트폴더
 python3<span class="w"> </span>-m<span class="w"> </span>http.server<span class="w"> </span><span class="m">8000</span>
 <span class="c1"># 브라우저에서 http://localhost:8000 열기</span>
 </code></pre></div>
