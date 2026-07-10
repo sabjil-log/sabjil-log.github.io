@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>public 서브넷과 private 서브넷, 뭐가 다른 걸까 — 라우팅 테이블이 전부다 · 삽질노트</title>
+<meta name="description" content="서브넷에 &#x27;public&#x27;이라는 속성이 따로 있는 게 아닙니다. 라우팅 테이블에 인터넷으로 가는 길이 있느냐 없느냐, 그 한 줄 차이예요.">
+<meta property="og:title" content="public 서브넷과 private 서브넷, 뭐가 다른 걸까 — 라우팅 테이블이 전부다 · 삽질노트">
+<meta property="og:description" content="서브넷에 &#x27;public&#x27;이라는 속성이 따로 있는 게 아닙니다. 라우팅 테이블에 인터넷으로 가는 길이 있느냐 없느냐, 그 한 줄 차이예요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/public-private-subnet.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/public-private-subnet.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/public-private-subnet.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/public-private-subnet.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html" class="on">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-11</span><a class="chip" href="../c/network.html">--network</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>public 서브넷과 private 서브넷, 뭐가 다른 걸까 — 라우팅 테이블이 전부다</h1><blockquote>
+<p><strong>한 줄 요약:</strong> public/private은 서브넷에 붙은 딱지가 아니라 <strong>라우팅 테이블의 한 줄 차이</strong>입니다. <code>0.0.0.0/0 → 인터넷 게이트웨이</code> 경로가 <strong>있으면 public, 없으면 private.</strong> 그게 전부예요.</p>
+</blockquote>
+<h2 id="_1">왜 나누나</h2>
+<p>건물로 비유하면 VPC는 회사 사옥, 서브넷은 층입니다.</p>
+<ul>
+<li><strong>public 서브넷</strong> = 1층 로비. 외부 손님이 드나드는 층 — 로드밸런서, 배스천(점프) 서버가 삽니다.</li>
+<li><strong>private 서브넷</strong> = 카드 찍어야 들어가는 사무층. 외부에서 직접 못 들어옵니다 — WAS, DB가 삽니다.</li>
+</ul>
+<p>DB를 로비에 두는 회사는 없죠. <strong>공격 표면을 줄이기 위해</strong> 인터넷을 직접 만나야 하는 것만 public에 두고, 나머지는 전부 private에 넣는 게 기본 설계입니다.</p>
+<h2 id="public">그런데 "public"이라는 설정은 없다</h2>
+<p>콘솔에서 서브넷을 만들 때 public/private 체크박스가 있긴 하지만(NCP처럼), 본질은 <strong>그 서브넷이 어떤 라우팅 테이블을 쓰느냐</strong>입니다. 라우팅 테이블은 "이 목적지로 가려면 어느 문으로 나가라"는 안내판이에요.</p>
+<div class="highlight"><pre><span></span><code># public 서브넷의 라우팅 테이블
+10.0.0.0/16   → local            (VPC 안은 서로 직통)
+0.0.0.0/0     → igw-xxxx         (그 외 전부 = 인터넷 게이트웨이로)
+
+# private 서브넷의 라우팅 테이블
+10.0.0.0/16   → local
+(끝. 인터넷으로 가는 길 자체가 없음)
+</code></pre></div>
+
+<p><code>0.0.0.0/0</code>(기본 경로)이 <strong>인터넷 게이트웨이(IGW)</strong> 를 가리키면 public, 그 줄이 없으면 private. 서브넷의 정체성은 이 한 줄이 결정합니다.</p>
+<h2 id="private-nat">private 서버도 밖엔 나가야 한다 — NAT</h2>
+<p>private에 있는 WAS도 패키지 설치나 외부 API 호출은 해야죠. 그래서 <strong>NAT Gateway</strong>를 씁니다. 사무층 직원이 "대표번호"로 외부에 전화 거는 것과 같아요 — <strong>나가는 건 되지만, 밖에서 그 번호로 직원 자리에 직접 걸 수는 없습니다.</strong></p>
+<div class="highlight"><pre><span></span><code># private 서브넷 + NAT 조합
+10.0.0.0/16   → local
+0.0.0.0/0     → nat-xxxx          (밖으로 나갈 땐 NAT을 통해서만)
+</code></pre></div>
+
+<p>IGW는 양방향 문, NAT은 <strong>나가기 전용 문</strong>이라는 게 핵심 차이입니다. (NAT Gateway 자체는 public 서브넷에 놓입니다 — 대표전화기가 로비에 있는 셈이죠.)</p>
+<h2 id="_2">서버에서 직접 확인하기</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># 이 서버가 인터넷에 나갈 수 있나</span>
+curl<span class="w"> </span>-m<span class="w"> </span><span class="m">5</span><span class="w"> </span>-s<span class="w"> </span>https://ifconfig.me<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;밖으로 못 나감&quot;</span>
+<span class="c1"># 나갈 수 있다면, 찍히는 IP가 NAT의 공인 IP인지 내 공인 IP인지로</span>
+<span class="c1"># private(NAT 경유)인지 public(직접)인지도 구분됩니다</span>
+
+ip<span class="w"> </span>route<span class="w">        </span><span class="c1"># 서버 입장의 라우팅 확인 (기본 게이트웨이가 어디인지)</span>
+</code></pre></div>
+
+<h2 id="_3">흔한 함정</h2>
+<ul>
+<li><strong>private 서버에 공인 IP만 붙이면 되는 줄 안다</strong> — 라우팅 테이블에 IGW 경로가 없으면 공인 IP가 있어도 통신이 안 됩니다. IP보다 경로가 먼저예요.</li>
+<li><strong>NAT 없이 private에 서버를 넣고 "yum이 안 돼요"</strong> — 당연합니다. 나가는 문이 없으니까요. NAT을 달거나, 내부 미러/엔드포인트를 쓰세요.</li>
+<li><strong>다 public에 넣는 설계</strong> — 편하지만 DB까지 인터넷에 노출하는 셈. 방화벽이 한 겹 실수하는 순간 사고가 됩니다.</li>
+</ul>
+<h2 id="_4">한 줄 정리</h2>
+<p>서브넷의 public/private은 <strong>라우팅 테이블의 <code>0.0.0.0/0</code> 한 줄</strong>이 정합니다. 인터넷을 만나야 하는 최소한만 public(IGW), 나머지는 private(+나가기 전용 NAT) — 이게 VPC 설계의 기본 뼈대예요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --network</div><a href="../p/network-triage.html"><span class="g">&#10095;</span>&#x27;포트는 열렸다는데 접속이 안 돼요&#x27; — 계층별로 찔러보는 진단법</a></aside><nav class="pn"><a href="../p/what-is-token.html"><span class="lbl">newer</span>토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간</a><a href="../p/lb-healthcheck.html" style="text-align:right"><span class="lbl">older</span>로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

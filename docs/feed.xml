@@ -12,6 +12,13 @@
       <description>LLM은 글자도 단어도 아닌 &#x27;토큰&#x27; 단위로 읽고 씁니다. 레고 블록 비유로 이해하고, 한국어가 영어보다 토큰을 더 먹는 이유까지.</description>
     </item>
     <item>
+      <title>public 서브넷과 private 서브넷, 뭐가 다른 걸까 — 라우팅 테이블이 전부다</title>
+      <link>https://sabjil-log.github.io/p/public-private-subnet.html</link>
+      <guid>https://sabjil-log.github.io/p/public-private-subnet.html</guid>
+      <pubDate>Sat, 11 Jul 2026 00:00:00 -0000</pubDate>
+      <description>서브넷에 &#x27;public&#x27;이라는 속성이 따로 있는 게 아닙니다. 라우팅 테이블에 인터넷으로 가는 길이 있느냐 없느냐, 그 한 줄 차이예요.</description>
+    </item>
+    <item>
       <title>로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽</title>
       <link>https://sabjil-log.github.io/p/lb-healthcheck.html</link>
       <guid>https://sabjil-log.github.io/p/lb-healthcheck.html</guid>
@@ -19,11 +26,25 @@
       <description>서버는 멀쩡한데 LB가 자꾸 UNHEALTHY라면, 범인은 거의 항상 셋 중 하나입니다. 순서대로 확인하는 법을 정리했어요.</description>
     </item>
     <item>
+      <title>디스크 여유는 있는데 &#x27;No space left on device&#x27;? — inode 고갈 이야기</title>
+      <link>https://sabjil-log.github.io/p/inode-exhaustion.html</link>
+      <guid>https://sabjil-log.github.io/p/inode-exhaustion.html</guid>
+      <pubDate>Sat, 11 Jul 2026 00:00:00 -0000</pubDate>
+      <description>df -h는 30% 사용인데 파일이 안 만들어진다면, 용량이 아니라 inode가 바닥난 겁니다. 주차장 비유로 이해하고 5분 만에 범인 찾는 법.</description>
+    </item>
+    <item>
       <title>grep·awk·sed 삼총사 — 로그에서 원하는 값만 뽑아내는 법</title>
       <link>https://sabjil-log.github.io/p/grep-awk-sed.html</link>
       <guid>https://sabjil-log.github.io/p/grep-awk-sed.html</guid>
       <pubDate>Sat, 11 Jul 2026 00:00:00 -0000</pubDate>
       <description>grep은 줄을 고르고, awk는 칸을 자르고, sed는 글자를 바꿉니다. 역할 분담만 알면 어떤 로그든 파이프 한 줄로 정리돼요.</description>
+    </item>
+    <item>
+      <title>RAG 품질은 자르기에서 갈린다 — 청크 크기와 오버랩의 감각</title>
+      <link>https://sabjil-log.github.io/p/chunking.html</link>
+      <guid>https://sabjil-log.github.io/p/chunking.html</guid>
+      <pubDate>Sat, 11 Jul 2026 00:00:00 -0000</pubDate>
+      <description>문서를 너무 크게 자르면 잡음이 섞이고, 너무 잘게 자르면 문맥이 끊깁니다. 책 인덱스카드 비유로 청킹의 감을 잡아봐요.</description>
     </item>
     <item>
       <title>NCP Object Storage에 boto3 물릴 때 터지는 함정 — 체크섬과 서명</title>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAG 품질은 자르기에서 갈린다 — 청크 크기와 오버랩의 감각 · 삽질노트</title>
+<meta name="description" content="문서를 너무 크게 자르면 잡음이 섞이고, 너무 잘게 자르면 문맥이 끊깁니다. 책 인덱스카드 비유로 청킹의 감을 잡아봐요.">
+<meta property="og:title" content="RAG 품질은 자르기에서 갈린다 — 청크 크기와 오버랩의 감각 · 삽질노트">
+<meta property="og:description" content="문서를 너무 크게 자르면 잡음이 섞이고, 너무 잘게 자르면 문맥이 끊깁니다. 책 인덱스카드 비유로 청킹의 감을 잡아봐요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/chunking.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/chunking.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/chunking.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/chunking.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-11</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>RAG 품질은 자르기에서 갈린다 — 청크 크기와 오버랩의 감각</h1><blockquote>
+<p><strong>한 줄 요약:</strong> RAG에서 문서를 자르는 단위(청크)가 검색 품질을 좌우합니다. <strong>크면 잡음, 작으면 문맥 상실.</strong> 정답 크기는 없지만, "한 청크 = 하나의 완결된 생각"이라는 기준과 <strong>오버랩</strong>이라는 안전장치가 있습니다.</p>
+</blockquote>
+<h2 id="_1">왜 잘라야 하나</h2>
+<p>RAG는 질문과 비슷한 문서 조각을 찾아 LLM에게 건네주는 구조입니다. 그런데 문서를 통째로 임베딩하면 안 될까요? 안 됩니다. 임베딩은 조각 하나를 <strong>벡터 하나</strong>로 요약하는데, 100페이지를 벡터 하나에 욱여넣으면 온갖 주제가 평균돼 <strong>아무것도 아닌 방향</strong>을 가리키게 돼요. 그래서 자릅니다.</p>
+<h2 id="_2">비유: 책을 인덱스카드로 만들기</h2>
+<p>책 내용을 카드에 옮겨 적어 검색용 카드함을 만든다고 해봅시다.</p>
+<ul>
+<li><strong>카드가 너무 크면(장 단위):</strong> "환불 규정" 카드를 뽑았는데 배송·교환·회원가입 얘기까지 다 적혀 있습니다. 질문과 상관없는 <strong>잡음이 함께 딸려와</strong> LLM을 헷갈리게 하고, 토큰도 낭비돼요.</li>
+<li><strong>카드가 너무 작으면(문장 단위):</strong> "단, 예외로 한다" 라는 카드만 뽑혔습니다. <strong>뭐의 예외인지</strong>가 앞 카드에 있어서 알 수 없죠. 문맥이 끊긴 겁니다.</li>
+<li><strong>적당하면(문단~절 단위):</strong> "환불은 7일 이내 가능하며, 단 개봉 시 예외로 한다" — 하나의 완결된 규칙이 카드 한 장에. 이게 목표입니다.</li>
+</ul>
+<h2 id="_3">숫자 감각</h2>
+<p>절대 정답은 없지만 실무에서 통용되는 출발점은 이렇습니다.</p>
+<ul>
+<li><strong>일반 문서:</strong> 청크 300~800토큰 근처에서 시작 (짧은 FAQ는 더 작게, 논문·규정은 더 크게)</li>
+<li><strong>오버랩:</strong> 청크 크기의 10~20%</li>
+<li><strong>평가로 조정:</strong> 시작값으로 돌려보고, 검색 결과가 잡음이 많으면 줄이고 문맥이 끊기면 늘립니다. 청킹은 <strong>한 번 정하고 끝이 아니라 평가와 함께 튜닝하는 값</strong>이에요.</li>
+</ul>
+<h2 id="_4">오버랩 — 경계에서 잘리는 문장 구하기</h2>
+<p>문서를 기계적으로 자르면 하필 중요한 문장이 <strong>청크 경계에 걸쳐</strong> 두 동강 나는 사고가 생깁니다. 그래서 이웃 청크끼리 <strong>겹치는 구간</strong>을 둡니다. 카드를 만들 때 앞 카드의 마지막 두어 줄을 다음 카드 첫머리에 한 번 더 적어두는 것 — 경계에 걸린 문장도 어느 한쪽 카드에는 온전히 담기게요.</p>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">chunk</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;단순 문자 기준 청킹 (개념 시연용). 실전은 문단/문장 경계 우선.&quot;&quot;&quot;</span>
+    <span class="n">out</span><span class="p">,</span> <span class="n">start</span> <span class="o">=</span> <span class="p">[],</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">start</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">text</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">size</span><span class="p">])</span>
+        <span class="n">start</span> <span class="o">+=</span> <span class="n">size</span> <span class="o">-</span> <span class="n">overlap</span>        <span class="c1"># overlap 만큼 겹치며 전진</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+<span class="n">pieces</span> <span class="o">=</span> <span class="n">chunk</span><span class="p">(</span><span class="n">document</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pieces</span><span class="p">),</span> <span class="s2">&quot;chunks&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>실전에서는 글자 수로 뚝뚝 자르기보다, <strong>문단 → 문장 순으로 경계를 존중하며</strong> 목표 크기에 맞추는 방식(재귀적 분할)이 표준입니다. 마크다운·규정문서라면 제목/조항 구조를 그대로 경계로 쓰는 게 가장 좋고요.</p>
+<h2 id="_5">한 가지 더 — 청크에 '주소'를 달아라</h2>
+<p>같은 내용이라도 "어느 문서, 어느 장의 조각인지" 메타데이터(제목, 섹션, 날짜)를 청크에 함께 저장하면, 검색 필터링도 되고 LLM이 출처를 밝히며 답할 수 있게 됩니다. 카드 귀퉁이에 책 제목과 페이지를 적어두는 습관이에요.</p>
+<h2 id="_6">한 줄 정리</h2>
+<p>청킹의 기준은 <strong>"한 조각 = 하나의 완결된 생각"</strong>. 300~800토큰에서 시작해 평가로 조정하고, 10~20% 오버랩으로 경계 사고를 막고, 메타데이터로 주소를 달아두세요. RAG 품질 문제의 절반은 모델이 아니라 <strong>자르기</strong>에서 옵니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/what-is-token.html"><span class="g">&#10095;</span>토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간</a><a href="../p/cosine-similarity.html"><span class="g">&#10095;</span>임베딩은 왜 &#x27;거리&#x27;가 아니라 &#x27;각도&#x27;로 비슷함을 재나 — 코사인 유사도</a><a href="../p/what-is-rag.html"><span class="g">&#10095;</span>RAG가 뭐길래 — LLM한테 &#x27;오픈북 시험&#x27;을 보게 하는 법</a></aside><nav class="pn"><a href="../p/grep-awk-sed.html"><span class="lbl">newer</span>grep·awk·sed 삼총사 — 로그에서 원하는 값만 뽑아내는 법</a><a href="../p/ncp-boto3-checksum.html" style="text-align:right"><span class="lbl">older</span>NCP Object Storage에 boto3 물릴 때 터지는 함정 — 체크섬과 서명</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
