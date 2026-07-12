@@ -5,6 +5,27 @@
   <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
   <language>ko</language>
     <item>
+      <title>temperature와 top-p — LLM의 &#x27;창의성 다이얼&#x27;은 실제로 뭘 돌리는 걸까</title>
+      <link>https://sabjil-log.github.io/p/temperature-top-p.html</link>
+      <guid>https://sabjil-log.github.io/p/temperature-top-p.html</guid>
+      <pubDate>Mon, 13 Jul 2026 00:00:00 -0000</pubDate>
+      <description>LLM은 다음 단어를 &#x27;확률 뽑기&#x27;로 고릅니다. temperature는 뽑기통을 흔드는 세기, top-p는 뽑기통에 넣을 후보의 범위예요.</description>
+    </item>
+    <item>
+      <title>CrashLoopBackOff — 쿠버네티스가 &#x27;재시도 중&#x27;이라고 말하는 방식</title>
+      <link>https://sabjil-log.github.io/p/crashloopbackoff.html</link>
+      <guid>https://sabjil-log.github.io/p/crashloopbackoff.html</guid>
+      <pubDate>Mon, 13 Jul 2026 00:00:00 -0000</pubDate>
+      <description>CrashLoopBackOff는 병명이 아니라 증상입니다. &#x27;컨테이너가 죽어서 점점 천천히 재시도 중&#x27;이라는 뜻 — 진짜 원인 찾는 순서를 정리했어요.</description>
+    </item>
+    <item>
+      <title>오토스케일링이 늘어나기만 하고 줄지 않는 이유 — 쿨다운과 지표의 함정</title>
+      <link>https://sabjil-log.github.io/p/autoscaling-scalein.html</link>
+      <guid>https://sabjil-log.github.io/p/autoscaling-scalein.html</guid>
+      <pubDate>Mon, 13 Jul 2026 00:00:00 -0000</pubDate>
+      <description>스케일아웃은 잘 되는데 새벽에도 서버가 안 줄어 요금만 나간다면, 범인은 대개 지표 선택과 쿨다운·정책 설정입니다.</description>
+    </item>
+    <item>
       <title>코드에 DB 비밀번호를 박으면 생기는 일 — Secret Manager를 쓰는 이유</title>
       <link>https://sabjil-log.github.io/p/secret-manager.html</link>
       <guid>https://sabjil-log.github.io/p/secret-manager.html</guid>
@@ -122,19 +143,5 @@
       <guid>https://sabjil-log.github.io/p/onedrive-unicode.html</guid>
       <pubDate>Thu, 09 Jul 2026 00:00:00 -0000</pubDate>
       <description>이름이 똑같아 보여도 맥과 윈도우가 한글 이름을 다르게 저장해서 생기는 문제. 눈이 아니라 바이트로 봐야 답이 나옵니다.</description>
-    </item>
-    <item>
-      <title>&#x27;포트는 열렸다는데 접속이 안 돼요&#x27; — 계층별로 찔러보는 진단법</title>
-      <link>https://sabjil-log.github.io/p/network-triage.html</link>
-      <guid>https://sabjil-log.github.io/p/network-triage.html</guid>
-      <pubDate>Thu, 09 Jul 2026 00:00:00 -0000</pubDate>
-      <description>접속 실패는 한 곳이 아니라 여러 층 중 하나가 막힌 것. 아래층부터 한 칸씩 찌르면 범인이 나옵니다.</description>
-    </item>
-    <item>
-      <title>NCP와 AWS, 같은 걸 다르게 부른다 — 헷갈리는 서비스 이름 지도</title>
-      <link>https://sabjil-log.github.io/p/ncp-aws-map.html</link>
-      <guid>https://sabjil-log.github.io/p/ncp-aws-map.html</guid>
-      <pubDate>Thu, 09 Jul 2026 00:00:00 -0000</pubDate>
-      <description>개념은 거의 1:1인데 이름만 달라서 헤맵니다. 핵심 매핑만 외우면 두 클라우드 문서가 같은 언어로 읽혀요.</description>
     </item>
 </channel></rss>

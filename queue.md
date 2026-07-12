@@ -11,7 +11,6 @@
 - `ss`로 보는 소켓 상태 — TIME_WAIT가 잔뜩 쌓이는 건 문제인가 :: 네트워크
 - MTU와 패킷 조각화 — VPN 붙이면 특정 사이트만 안 열리는 이유 :: 네트워크
 - 도커 컨테이너에서 `localhost`가 안 통하는 이유와 네트워크 모드 :: 트러블슈팅
-- 쿠버네티스 Pod가 `CrashLoopBackOff` 일 때 읽어야 할 것들 :: 트러블슈팅
 - 쿠버네티스 Service/Ingress가 뭔지 — 트래픽이 Pod까지 오는 길 :: 네트워크
 - `kubectl` 필수 디버깅 명령 5개 (logs/describe/exec/get -o/port-forward) :: 리눅스
 - 리눅스 파일 권한 `chmod 755`의 숫자가 진짜 뜻하는 것 :: 리눅스
@@ -24,7 +23,6 @@
 ## 기둥2 — NCP / AWS 서비스
 - NCP Object Storage에 boto3 물릴 때 checksum·서명 함정 :: 클라우드
 - NAT Gateway가 뭔지 — private 서버가 외부로 나가는 문 :: 네트워크
-- 오토스케일링이 커지기만 하고 안 줄어드는 이유 (쿨다운/지표) :: 클라우드
 - 클라우드 비용이 새는 곳 톱5와 확인법 :: 클라우드
 - 관리형 DB로 옮길 때 놓치는 것 (파라미터그룹/백업/장애조치) :: 클라우드
 - KMS 봉투암호화(envelope encryption)가 뭔지 그림으로 :: 보안
@@ -36,7 +34,6 @@
 - 임베딩 거리(코사인 유사도)가 뭔지 — 왜 각도로 재나 :: AI/LLM
 - 벡터 DB가 일반 DB와 뭐가 다른지 — 근사 최근접 검색(ANN) :: AI/LLM
 - 컨텍스트 윈도우가 꽉 차면 생기는 일과 대처 :: AI/LLM
-- 온도(temperature)와 top-p — 창의성 다이얼 읽는 법 :: AI/LLM
 - 양자화(4-bit)가 뭐길래 16GB VRAM에 14B 모델이 올라가나 :: AI/LLM
 - 프롬프트에 "근거만 써라"를 넣어야 환각이 주는 이유 :: AI/LLM
 - LLM이 최신 정보를 모르는 이유(지식 컷오프)와 해결책 :: AI/LLM

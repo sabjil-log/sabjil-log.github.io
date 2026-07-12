@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrashLoopBackOff — 쿠버네티스가 '재시도 중'이라고 말하는 방식 · 삽질노트</title>
+<meta name="description" content="CrashLoopBackOff는 병명이 아니라 증상입니다. &#x27;컨테이너가 죽어서 점점 천천히 재시도 중&#x27;이라는 뜻 — 진짜 원인 찾는 순서를 정리했어요.">
+<meta property="og:title" content="CrashLoopBackOff — 쿠버네티스가 '재시도 중'이라고 말하는 방식 · 삽질노트">
+<meta property="og:description" content="CrashLoopBackOff는 병명이 아니라 증상입니다. &#x27;컨테이너가 죽어서 점점 천천히 재시도 중&#x27;이라는 뜻 — 진짜 원인 찾는 순서를 정리했어요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/crashloopbackoff.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/crashloopbackoff.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/crashloopbackoff.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/crashloopbackoff.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html" class="on">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-13</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>CrashLoopBackOff — 쿠버네티스가 &#x27;재시도 중&#x27;이라고 말하는 방식</h1><blockquote>
+<p><strong>한 줄 요약:</strong> CrashLoopBackOff는 에러의 <strong>원인이 아니라 상태</strong>입니다. "컨테이너가 시작하자마자 죽어서, 쿠버네티스가 <strong>점점 간격을 늘려가며 재시도 중</strong>"이라는 뜻이에요. 원인은 따로 찾아야 하고, 찾는 순서가 있습니다.</p>
+</blockquote>
+<h2 id="_1">이 상태의 정체</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>pods
+<span class="c1"># NAME        READY   STATUS             RESTARTS   AGE</span>
+<span class="c1"># myapp-xxx   0/1     CrashLoopBackOff   7          10m</span>
+</code></pre></div>
+
+<p>비유하면 이렇습니다. 시동이 꺼지는 차를 계속 다시 걸어보는 건데, 매번 바로 꺼지니까 <strong>"좀 기다렸다 다시 걸어보자"</strong> 하며 대기 시간을 10초 → 20초 → 40초… 점점 늘리는(BackOff) 상태. <code>RESTARTS</code> 숫자가 그 재시도 횟수입니다. 차가 왜 꺼지는지는 이 상태명이 말해주지 않아요 — 우리가 봐야 합니다.</p>
+<h2 id="1">1순위 — 죽기 직전에 뭐라고 했나</h2>
+<p>가장 많은 정보는 컨테이너의 <strong>마지막 유언(로그)</strong>에 있습니다. 핵심은 <code>--previous</code> — 지금 도는(방금 재시작된) 컨테이너 말고 <strong>직전에 죽은</strong> 컨테이너의 로그를 봐야 해요.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>kubectl<span class="w"> </span>logs<span class="w"> </span>myapp-xxx<span class="w"> </span>--previous
+<span class="c1"># 앱의 스택트레이스, &quot;config not found&quot;, &quot;connection refused&quot; 등</span>
+<span class="c1"># 십중팔구 여기서 답이 나옵니다</span>
+</code></pre></div>
+
+<p>앱이 로그를 남길 새도 없이 죽으면 출력이 비어 있을 수 있습니다. 그럼 2순위로.</p>
+<h2 id="2">2순위 — 쿠버네티스가 본 사망 정황</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>kubectl<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>myapp-xxx
+</code></pre></div>
+
+<p>여기서 볼 곳은 두 군데입니다.</p>
+<ul>
+<li><strong>Last State / Exit Code:</strong></li>
+<li><code>Exit Code: 1</code> — 앱이 스스로 에러로 종료 (설정 오류, 예외)</li>
+<li><code>Exit Code: 137</code> — <strong>외부에서 죽임 당함.</strong> <code>Reason: OOMKilled</code> 면 메모리 한도 초과가 범인</li>
+<li><code>Exit Code: 127</code> / <code>Error: executable not found</code> — 명령어/엔트리포인트 오타</li>
+<li><strong>Events (하단):</strong> 이미지 풀 실패, 볼륨/ConfigMap 마운트 실패, 프로브 실패가 여기 찍힙니다.</li>
+</ul>
+<h2 id="4">범인 톱4와 각각의 대처</h2>
+<p><strong>① 설정/시크릿 누락</strong> — 로그에 "env not set", "config not found". ConfigMap/Secret 이름 오타, 키 누락이 대부분.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>configmap,secret<span class="w">            </span><span class="c1"># 참조하는 게 실제로 존재하는지</span>
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>myapp-xxx<span class="w"> </span>--<span class="w"> </span>env<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w">   </span><span class="c1"># (잠깐 떠있는 사이) 주입된 env 확인</span>
+</code></pre></div>
+
+<p><strong>② OOMKilled (137)</strong> — 메모리 limit이 앱의 실제 사용량보다 작음. limit을 올리거나 앱 메모리를 줄입니다. JVM처럼 힙 옵션이 별도인 런타임은 limit과 힙 설정을 <strong>같이</strong> 맞춰야 해요.</p>
+<p><strong>③ liveness 프로브가 성급함</strong> — 앱은 정상 기동 중인데 헬스체크가 너무 일찍/빡빡하게 찔러서 쿠버네티스가 "죽었네" 하고 재시작시키는 경우. describe의 Events에 <code>Liveness probe failed</code>가 반복되면 이 케이스입니다. <code>initialDelaySeconds</code>를 앱 기동 시간보다 넉넉히 주거나 <code>startupProbe</code>를 도입하세요. 로드밸런서 헬스체크 3대장과 같은 원리가 Pod 안에서도 벌어지는 셈이죠.</p>
+<p><strong>④ 의존 서비스 미준비</strong> — DB가 아직 안 떠서 connection refused로 사망 → 재시작 → 또 사망. 앱에 재시도 로직을 넣거나 initContainer로 의존성 대기를 거는 게 정석입니다.</p>
+<h2 id="_2">그래도 모르겠으면 — 시동 끄고 타보기</h2>
+<p>컨테이너가 계속 죽으니 안에 들어가 볼 수가 없죠. 그럴 땐 <strong>엔트리포인트를 잠재우고</strong> 쉘로 들어가 손으로 실행해봅니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>kubectl<span class="w"> </span>run<span class="w"> </span>debug<span class="w"> </span>--rm<span class="w"> </span>-it<span class="w"> </span>--image<span class="o">=</span>&lt;같은이미지&gt;<span class="w"> </span>--command<span class="w"> </span>--<span class="w"> </span>sleep<span class="w"> </span><span class="m">3600</span>
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>debug<span class="w"> </span>--<span class="w"> </span>sh
+<span class="c1"># 안에서 원래 명령을 직접 실행 → 에러를 눈으로 확인</span>
+</code></pre></div>
+
+<h2 id="_3">한 줄 정리</h2>
+<p>CrashLoopBackOff를 보면 반사적으로 이 순서: <strong><code>logs --previous</code> (유언) → <code>describe</code> (Exit Code·Events) → 톱4 대조 (설정·OOM 137·프로브·의존성)</strong>. 상태명에 겁먹지 마세요 — 그건 그냥 "재시도 중"이라는 뜻입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --troubleshooting</div><a href="../p/inode-exhaustion.html"><span class="g">&#10095;</span>디스크 여유는 있는데 &#x27;No space left on device&#x27;? — inode 고갈 이야기</a><a href="../p/docker-layer-cache.html"><span class="g">&#10095;</span>도커 빌드가 매번 느린 이유 — 이미지 레이어와 캐시, Dockerfile 순서의 비밀</a><a href="../p/onedrive-unicode.html"><span class="g">&#10095;</span>맥·윈도우 섞인 팀에서 OneDrive가 파일을 자꾸 두 개로 만드는 이유</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/temperature-top-p.html"><span class="lbl">newer</span>temperature와 top-p — LLM의 &#x27;창의성 다이얼&#x27;은 실제로 뭘 돌리는 걸까</a><a href="../p/autoscaling-scalein.html" style="text-align:right"><span class="lbl">older</span>오토스케일링이 늘어나기만 하고 줄지 않는 이유 — 쿨다운과 지표의 함정</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

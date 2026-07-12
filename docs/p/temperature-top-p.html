@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>temperature와 top-p — LLM의 '창의성 다이얼'은 실제로 뭘 돌리는 걸까 · 삽질노트</title>
+<meta name="description" content="LLM은 다음 단어를 &#x27;확률 뽑기&#x27;로 고릅니다. temperature는 뽑기통을 흔드는 세기, top-p는 뽑기통에 넣을 후보의 범위예요.">
+<meta property="og:title" content="temperature와 top-p — LLM의 '창의성 다이얼'은 실제로 뭘 돌리는 걸까 · 삽질노트">
+<meta property="og:description" content="LLM은 다음 단어를 &#x27;확률 뽑기&#x27;로 고릅니다. temperature는 뽑기통을 흔드는 세기, top-p는 뽑기통에 넣을 후보의 범위예요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/temperature-top-p.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/temperature-top-p.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/temperature-top-p.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/temperature-top-p.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-13</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>temperature와 top-p — LLM의 &#x27;창의성 다이얼&#x27;은 실제로 뭘 돌리는 걸까</h1><blockquote>
+<p><strong>한 줄 요약:</strong> LLM은 다음 토큰을 <strong>확률 뽑기</strong>로 고릅니다. <strong>temperature는 그 확률 분포를 얼마나 평평하게 만들지</strong>(흔들기 세기), <strong>top-p는 뽑기통에 넣을 후보를 어디까지 허용할지</strong>(후보 컷오프)를 정하는 다이얼이에요. 목적에 따라 돌리는 법이 다릅니다.</p>
+</blockquote>
+<h2 id="llm">전제: LLM은 매번 뽑기를 한다</h2>
+<p>"대한민국의 수도는" 다음에 올 토큰으로 모델은 후보마다 확률을 매깁니다.</p>
+<div class="highlight"><pre><span></span><code>서울   92%
+서울특  4%
+바로   2%
+과연   1%
+...
+</code></pre></div>
+
+<p>여기서 그냥 1등만 뽑으면(greedy) 항상 같은 답이 나오고, 확률대로 <strong>추첨</strong>하면 가끔 2, 3등도 뽑혀 다양성이 생깁니다. temperature와 top-p는 이 <strong>추첨 방식</strong>을 조절하는 두 개의 다이얼이에요.</p>
+<h2 id="temperature">temperature — 뽑기통을 흔드는 세기</h2>
+<p>temperature는 확률 분포의 <strong>뾰족함</strong>을 조절합니다.</p>
+<ul>
+<li><strong>낮음 (0~0.3):</strong> 분포가 더 뾰족해짐 → 1등이 거의 독식. 정답이 정해진 일(코드, 요약, 분류, 사실 질의)에 적합. 0에 가까우면 사실상 매번 같은 답.</li>
+<li><strong>중간 (0.7 전후):</strong> 자연스러운 다양성. 일반 대화의 무난한 기본값.</li>
+<li><strong>높음 (1.0~):</strong> 분포가 평평해짐 → 하위 후보도 곧잘 뽑힘. 브레인스토밍·창작에선 신선하지만, 사실 질의에선 <strong>헛소리 확률도 같이 올라갑니다.</strong></li>
+</ul>
+<p>비유하면 복권 추첨통을 흔드는 세기입니다. 살살 흔들면 위에 있던 공(1등 후보)이 나오고, 세게 흔들수록 바닥의 공도 올라와요.</p>
+<h2 id="top-p">top-p — 뽑기통에 넣을 후보의 컷오프</h2>
+<p>top-p(nucleus sampling)는 <strong>누적 확률이 p가 될 때까지의 상위 후보만</strong> 추첨 대상에 넣습니다.</p>
+<div class="highlight"><pre><span></span><code>top_p = 0.9 라면:
+서울(92%) → 누적 92% ≥ 90%  → 여기서 컷.
+&#39;서울&#39; 하나만 뽑기통에 들어감
+
+애매한 문장에서 후보가 고르게 퍼져 있다면:
+후보 A(30%) + B(25%) + C(20%) + D(15%) → 누적 90% → 4개가 들어감
+</code></pre></div>
+
+<p>핵심은 <strong>컷이 상황에 따라 유동적</strong>이라는 것. 모델이 확신할 땐 후보 1~2개, 애매할 땐 여러 개 — 그래서 "확률 꼬리의 이상한 후보"만 깔끔하게 잘라냅니다. temperature를 높여 다양성을 살리더라도 top-p가 최후의 안전망으로 헛소리 후보를 걸러주는 관계예요.</p>
+<h2 id="_1">실전 레시피</h2>
+<table>
+<thead>
+<tr>
+<th>용도</th>
+<th>temperature</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>코드 생성, 데이터 추출, 분류</td>
+<td>0 ~ 0.3</td>
+<td>재현성·정확성 우선</td>
+</tr>
+<tr>
+<td>일반 답변, 문서 작성</td>
+<td>0.5 ~ 0.8</td>
+<td>무난한 기본값</td>
+</tr>
+<tr>
+<td>브레인스토밍, 창작, 카피</td>
+<td>0.9 ~ 1.2</td>
+<td>사실성 검증은 별도로</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="c1"># 같은 프롬프트, 다른 다이얼 — 직접 체감해보기</span>
+<span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">):</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">MODEL</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="n">t</span><span class="p">,</span>
+        <span class="n">messages</span><span class="o">=</span><span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;신제품 텀블러 이름 5개만&quot;</span><span class="p">}],</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--- temperature=</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2"> ---</span><span class="se">\n</span><span class="si">{</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="c1"># 0.0: 무난한 이름 반복 / 1.2: 기발하지만 가끔 산으로 감</span>
+</code></pre></div>
+
+<p>주의 둘. <strong>temperature와 top-p를 동시에 극단으로 조정하지 마세요</strong> — 상호작용이 직관을 벗어나 디버깅이 어려워집니다. 보통 하나만 움직이는 걸 권장해요. 그리고 <strong>temperature=0이어도 완전한 결정성은 보장되지 않을 수 있습니다</strong>(구현·하드웨어에 따라 미세한 변동). "거의 같다" 정도로 기대하세요.</p>
+<h2 id="_2">흔한 오해</h2>
+<ul>
+<li><strong>"temperature 높으면 더 똑똑해진다"</strong> — 아닙니다. 모델의 지식은 그대로고, <strong>뽑기 방식</strong>만 바뀝니다. 창의적으로 보이는 건 낮은 확률의 후보가 뽑혀서예요.</li>
+<li><strong>"환각은 temperature 0으로 막는다"</strong> — 줄긴 하지만 못 막습니다. 모델이 애초에 틀린 확률 분포를 갖고 있으면 1등 후보 자체가 틀린 답이니까요. 환각 대책은 근거 주입(RAG)이 본질입니다.</li>
+</ul>
+<h2 id="_3">한 줄 정리</h2>
+<p>temperature는 <strong>흔드는 세기</strong>, top-p는 <strong>후보 컷오프</strong>. 정답이 있는 일엔 낮게, 발상이 필요한 일엔 높게 — 그리고 다이얼은 한 번에 하나만 돌리세요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/reranker.html"><span class="g">&#10095;</span>1차 검색은 왜 부족한가 — 리랭커가 RAG에서 하는 일</a><a href="../p/what-is-token.html"><span class="g">&#10095;</span>토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간</a><a href="../p/chunking.html"><span class="g">&#10095;</span>RAG 품질은 자르기에서 갈린다 — 청크 크기와 오버랩의 감각</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><span></span><a href="../p/crashloopbackoff.html" style="text-align:right"><span class="lbl">older</span>CrashLoopBackOff — 쿠버네티스가 &#x27;재시도 중&#x27;이라고 말하는 방식</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
