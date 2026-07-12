@@ -33,7 +33,7 @@
   <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../archive.html">--all</a></nav>
 </div></header>
 <main class="wrap">
-<article><div class="post-meta"><span>2026-07-13</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>temperature와 top-p — LLM의 &#x27;창의성 다이얼&#x27;은 실제로 뭘 돌리는 걸까</h1><blockquote>
+<article><div class="post-meta"><span>2026-07-13</span><a class="chip" href="../c/ai.html">--ai</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>temperature와 top-p — LLM의 &#x27;창의성 다이얼&#x27;은 실제로 뭘 돌리는 걸까</h1><blockquote>
 <p><strong>한 줄 요약:</strong> LLM은 다음 토큰을 <strong>확률 뽑기</strong>로 고릅니다. <strong>temperature는 그 확률 분포를 얼마나 평평하게 만들지</strong>(흔들기 세기), <strong>top-p는 뽑기통에 넣을 후보를 어디까지 허용할지</strong>(후보 컷오프)를 정하는 다이얼이에요. 목적에 따라 돌리는 법이 다릅니다.</p>
 </blockquote>
 <h2 id="llm">전제: LLM은 매번 뽑기를 한다</h2>
@@ -51,8 +51,9 @@
 <ul>
 <li><strong>낮음 (0~0.3):</strong> 분포가 더 뾰족해짐 → 1등이 거의 독식. 정답이 정해진 일(코드, 요약, 분류, 사실 질의)에 적합. 0에 가까우면 사실상 매번 같은 답.</li>
 <li><strong>중간 (0.7 전후):</strong> 자연스러운 다양성. 일반 대화의 무난한 기본값.</li>
-<li><strong>높음 (1.0~):</strong> 분포가 평평해짐 → 하위 후보도 곧잘 뽑힘. 브레인스토밍·창작에선 신선하지만, 사실 질의에선 <strong>헛소리 확률도 같이 올라갑니다.</strong></li>
+<li><strong>높음 (1.0 근처~그 이상):</strong> 분포가 평평해짐 → 하위 후보도 곧잘 뽑힘. 브레인스토밍·창작에선 신선하지만, 사실 질의에선 <strong>헛소리 확률도 같이 올라갑니다.</strong></li>
 </ul>
+<p>참고로 <strong>상한은 제공자마다 다릅니다.</strong> 개념적으로 temperature에 1.0이라는 천장은 없지만, Anthropic API는 0~1.0까지만 받고, OpenAI API는 0~2까지, 로컬 서빙(vLLM 등)은 대개 제한이 느슨합니다. 쓰는 API의 문서를 확인하세요.</p>
 <p>비유하면 복권 추첨통을 흔드는 세기입니다. 살살 흔들면 위에 있던 공(1등 후보)이 나오고, 세게 흔들수록 바닥의 공도 올라와요.</p>
 <h2 id="top-p">top-p — 뽑기통에 넣을 후보의 컷오프</h2>
 <p>top-p(nucleus sampling)는 <strong>누적 확률이 p가 될 때까지의 상위 후보만</strong> 추첨 대상에 넣습니다.</p>
@@ -87,19 +88,19 @@
 </tr>
 <tr>
 <td>브레인스토밍, 창작, 카피</td>
-<td>0.9 ~ 1.2</td>
+<td>0.9 ~ 1.0 (API가 허용하면 그 이상)</td>
 <td>사실성 검증은 별도로</td>
 </tr>
 </tbody>
 </table>
-<div class="highlight"><pre data-lang="python"><span></span><code><span class="c1"># 같은 프롬프트, 다른 다이얼 — 직접 체감해보기</span>
-<span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">):</span>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="c1"># 같은 프롬프트, 다른 다이얼 — 직접 체감해보기 (Anthropic API는 0~1.0 범위)</span>
+<span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">):</span>
     <span class="n">r</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
         <span class="n">model</span><span class="o">=</span><span class="n">MODEL</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="n">t</span><span class="p">,</span>
         <span class="n">messages</span><span class="o">=</span><span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;신제품 텀블러 이름 5개만&quot;</span><span class="p">}],</span>
     <span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--- temperature=</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2"> ---</span><span class="se">\n</span><span class="si">{</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="c1"># 0.0: 무난한 이름 반복 / 1.2: 기발하지만 가끔 산으로 감</span>
+<span class="c1"># 0.0: 무난한 이름 반복 / 1.0: 기발하지만 가끔 산으로 감</span>
 </code></pre></div>
 
 <p>주의 둘. <strong>temperature와 top-p를 동시에 극단으로 조정하지 마세요</strong> — 상호작용이 직관을 벗어나 디버깅이 어려워집니다. 보통 하나만 움직이는 걸 권장해요. 그리고 <strong>temperature=0이어도 완전한 결정성은 보장되지 않을 수 있습니다</strong>(구현·하드웨어에 따라 미세한 변동). "거의 같다" 정도로 기대하세요.</p>
