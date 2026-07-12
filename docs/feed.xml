@@ -5,6 +5,27 @@
   <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
   <language>ko</language>
     <item>
+      <title>코드에 DB 비밀번호를 박으면 생기는 일 — Secret Manager를 쓰는 이유</title>
+      <link>https://sabjil-log.github.io/p/secret-manager.html</link>
+      <guid>https://sabjil-log.github.io/p/secret-manager.html</guid>
+      <pubDate>Sun, 12 Jul 2026 00:00:00 -0000</pubDate>
+      <description>비밀번호를 코드나 설정 파일에 넣는 순간, 그 비밀은 git 히스토리를 타고 영원히 삽니다. 시크릿 저장소가 해결하는 진짜 문제를 정리했어요.</description>
+    </item>
+    <item>
+      <title>1차 검색은 왜 부족한가 — 리랭커가 RAG에서 하는 일</title>
+      <link>https://sabjil-log.github.io/p/reranker.html</link>
+      <guid>https://sabjil-log.github.io/p/reranker.html</guid>
+      <pubDate>Sun, 12 Jul 2026 00:00:00 -0000</pubDate>
+      <description>벡터 검색은 빠르지만 거칠고, 리랭커는 느리지만 정확합니다. 서류전형과 면접, 두 단계를 나눠 쓰는 이유를 정리했어요.</description>
+    </item>
+    <item>
+      <title>load average 4.0은 위험한가 — top 숫자를 읽을 줄 안다는 것</title>
+      <link>https://sabjil-log.github.io/p/load-average.html</link>
+      <guid>https://sabjil-log.github.io/p/load-average.html</guid>
+      <pubDate>Sun, 12 Jul 2026 00:00:00 -0000</pubDate>
+      <description>load average는 %가 아니라 &#x27;줄 서 있는 일감 개수&#x27;입니다. CPU 코어 수와 비교해야 비로소 의미가 생기는 숫자예요.</description>
+    </item>
+    <item>
       <title>토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간</title>
       <link>https://sabjil-log.github.io/p/what-is-token.html</link>
       <guid>https://sabjil-log.github.io/p/what-is-token.html</guid>

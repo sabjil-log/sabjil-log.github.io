@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1차 검색은 왜 부족한가 — 리랭커가 RAG에서 하는 일 · 삽질노트</title>
+<meta name="description" content="벡터 검색은 빠르지만 거칠고, 리랭커는 느리지만 정확합니다. 서류전형과 면접, 두 단계를 나눠 쓰는 이유를 정리했어요.">
+<meta property="og:title" content="1차 검색은 왜 부족한가 — 리랭커가 RAG에서 하는 일 · 삽질노트">
+<meta property="og:description" content="벡터 검색은 빠르지만 거칠고, 리랭커는 느리지만 정확합니다. 서류전형과 면접, 두 단계를 나눠 쓰는 이유를 정리했어요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/reranker.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/reranker.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/reranker.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/reranker.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-12</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>1차 검색은 왜 부족한가 — 리랭커가 RAG에서 하는 일</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 벡터 검색(1차)은 <strong>빠르지만 대충</strong> 고르고, 리랭커(2차)는 <strong>느리지만 꼼꼼히</strong> 다시 줄 세웁니다. 채용으로 치면 <strong>서류전형 → 면접</strong> — 이 2단 구조가 RAG 검색 품질의 표준 레시피예요.</p>
+</blockquote>
+<h2 id="_1">증상: 분명 문서에 있는데 엉뚱한 게 뽑힌다</h2>
+<p>RAG를 돌려보면 이런 일이 생깁니다. "환불 수수료가 얼마야?"라고 물었는데, 뽑혀온 청크는 "수수료 관련 문의가 많습니다" 같은 <strong>비슷하지만 답이 없는</strong> 조각들. 답이 든 조각은 5등, 8등쯤에 밀려 있고요. 임베딩 검색의 태생적 한계입니다.</p>
+<h2 id="1">왜 1차 검색은 거친가</h2>
+<p>임베딩 검색(bi-encoder)은 질문과 문서를 <strong>각자 따로</strong> 벡터로 만들어 놓고, 거리만 잽니다. 문서 벡터는 질문이 뭔지 <strong>모르는 상태에서 미리</strong> 만들어진 요약이에요.</p>
+<p>비유하면 <strong>서류전형</strong>입니다. 지원서(문서 벡터)는 회사가 뭘 물어볼지 모른 채 미리 써둔 것이고, 심사관은 지원서 요약본만 훑어 1초에 수천 장을 거릅니다. 빠른 대신, "질문과 딱 맞물리는지"는 못 봐요. 그래서 <strong>어휘가 비슷한 오답</strong>이 상위에 섞입니다.</p>
+<h2 id="_2">리랭커는 뭘 다르게 하나</h2>
+<p>리랭커(cross-encoder)는 <strong>질문과 문서를 한 쌍으로 같이</strong> 모델에 넣고, "이 문서가 이 질문에 답이 되는가"를 직접 채점합니다.</p>
+<p>이건 <strong>면접</strong>입니다. 질문을 실제로 던져보고 반응을 보는 것. 정확하지만 한 쌍마다 모델을 한 번씩 돌려야 해서 느리죠. 그래서 전체 문서에는 못 쓰고, <strong>서류전형 통과자에게만</strong> 씁니다.</p>
+<h2 id="2">2단 파이프라인</h2>
+<div class="highlight"><pre><span></span><code>질문 → [1차: 벡터 검색] 수만 개 중 top-50 후보   (빠름, 거침)
+     → [2차: 리랭커]   50개를 재채점해 top-5     (느림, 정확)
+     → LLM에 top-5 만 근거로 전달
+</code></pre></div>
+
+<p>개념 코드로는 이렇습니다.</p>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="c1"># 1차: 벡터 검색으로 넉넉히 후보 수집</span>
+<span class="n">candidates</span> <span class="o">=</span> <span class="n">vector_db</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">embed</span><span class="p">(</span><span class="n">question</span><span class="p">),</span> <span class="n">k</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+
+<span class="c1"># 2차: 리랭커가 (질문, 문서) 쌍을 직접 채점</span>
+<span class="n">scores</span> <span class="o">=</span> <span class="n">reranker</span><span class="o">.</span><span class="n">score</span><span class="p">([(</span><span class="n">question</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">])</span>
+<span class="n">top5</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">candidates</span><span class="p">,</span> <span class="n">scores</span><span class="p">),</span>
+                             <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="o">-</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])][:</span><span class="mi">5</span><span class="p">]</span>
+
+<span class="n">answer</span> <span class="o">=</span> <span class="n">llm</span><span class="p">(</span><span class="n">prompt_with</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">top5</span><span class="p">))</span>
+</code></pre></div>
+
+<p>핵심 감각 두 가지:</p>
+<ul>
+<li><strong>1차는 넉넉하게 (k=30~100).</strong> 리랭커가 구제할 수 있게, 정답이 후보군에 들어오기만 하면 됩니다. 1차에서 k=5로 좁혀버리면 리랭커가 손쓸 재료가 없어요.</li>
+<li><strong>2차는 야박하게 (top 3~5).</strong> LLM에 잡음을 덜 주는 게 답변 품질에 직결됩니다.</li>
+</ul>
+<h2 id="_3">비용 감각</h2>
+<p>리랭커는 후보 개수만큼 모델 추론이 돕니다. 50개 재채점이면 추론 50번 — 그래도 문서 전체가 아니라 후보만이라 감당 가능한 수준이고, 보통 수십~수백 ms가 추가됩니다. <strong>정확도가 중요한 사내 문서 QA라면 남는 장사</strong>고, 초저지연이 생명인 자동완성 같은 데선 뺄 수도 있는 트레이드오프예요.</p>
+<h2 id="_4">언제 리랭커부터 의심하나</h2>
+<ul>
+<li>답이 문서에 <strong>분명히 있는데</strong> 자꾸 못 찾는다 → 1차 상위권 잡음 → 리랭커 도입</li>
+<li>리랭커를 넣었는데도 못 찾는다 → 후보군(k)을 늘리거나, 애초에 <strong>청킹</strong>이 문제일 가능성 (완결된 생각 단위로 잘렸는지부터 재점검)</li>
+</ul>
+<h2 id="_5">한 줄 정리</h2>
+<p>벡터 검색은 서류전형, 리랭커는 면접입니다. <strong>넉넉히 거르고(1차 k=50), 꼼꼼히 줄 세워(2차 top-5)</strong> LLM에는 정예만 넘기세요. RAG 답변 품질이 한 계단 다르게 올라갑니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/what-is-token.html"><span class="g">&#10095;</span>토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간</a><a href="../p/chunking.html"><span class="g">&#10095;</span>RAG 품질은 자르기에서 갈린다 — 청크 크기와 오버랩의 감각</a><a href="../p/cosine-similarity.html"><span class="g">&#10095;</span>임베딩은 왜 &#x27;거리&#x27;가 아니라 &#x27;각도&#x27;로 비슷함을 재나 — 코사인 유사도</a></aside><nav class="pn"><a href="../p/secret-manager.html"><span class="lbl">newer</span>코드에 DB 비밀번호를 박으면 생기는 일 — Secret Manager를 쓰는 이유</a><a href="../p/load-average.html" style="text-align:right"><span class="lbl">older</span>load average 4.0은 위험한가 — top 숫자를 읽을 줄 안다는 것</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
