@@ -52,3 +52,18 @@ document.querySelectorAll('article pre').forEach(function (pre) {
     if (head) head.textContent = q ? ('검색 결과 · ' + shown + '개') : ('최근 글 · ' + total + '개');
   });
 })();
+
+/* ---- giscus 테마 동기화 ---- */
+(function () {
+  function giscusTheme() {
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var frame = document.querySelector('iframe.giscus-frame');
+    if (frame) frame.contentWindow.postMessage(
+      { giscus: { setConfig: { theme: dark ? 'dark' : 'light' } } }, 'https://giscus.app');
+  }
+  var btn = document.getElementById('theme-toggle');
+  if (btn) btn.addEventListener('click', function(){ setTimeout(giscusTheme, 60); });
+  window.addEventListener('message', function (e) {   // giscus 로드 완료 시 1회 맞춤
+    if (e.origin === 'https://giscus.app') giscusTheme();
+  });
+})();

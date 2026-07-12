@@ -20,6 +20,11 @@ SITE = {
     "author": "익명의 엔지니어",                 # ← 가명으로 바꾸세요
     "footer": "© 삽질노트 · 가명 운영",
     "url": "https://sabjil-log.github.io",     # 절대 URL (canonical/sitemap용)
+    # giscus 댓글 (Discussions 켜고 앱 설치 후 category ID 채우면 활성화)
+    "giscus_repo": "sabjil-log/sabjil-log.github.io",
+    "giscus_repo_id": "R_kgDOTSag4A",
+    "giscus_category": "Announcements",
+    "giscus_category_id": "DIC_kwDOTSag4M4DBCac",
     # 검색엔진 소유확인 (값 받으면 여기에 붙여넣기 — content 값만)
     "google_verification": "",                 # 구글 서치 콘솔
     "naver_verification": "2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312",                  # 네이버 서치어드바이저
@@ -267,7 +272,17 @@ def main():
                 f'<a href="../p/{q["slug"]}.html"><span class="g">&#10095;</span>{html.escape(q["title"])}</a>'
                 for q in related)
             rel_html = f'<aside class="related"><div class="rel-head">이어서 읽기 · --{cslug}</div>{links}</aside>'
-        content = f"<article>{meta}{title}{body_html}{rel_html}{pn}</article>"
+        giscus_html = ""
+        if SITE.get("giscus_category_id"):
+            giscus_html = (
+                '<section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div>'
+                '<script src="https://giscus.app/client.js" '
+                f'data-repo="{SITE["giscus_repo"]}" data-repo-id="{SITE["giscus_repo_id"]}" '
+                f'data-category="{SITE["giscus_category"]}" data-category-id="{SITE["giscus_category_id"]}" '
+                'data-mapping="pathname" data-strict="0" data-reactions-enabled="1" '
+                'data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" '
+                'data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section>')
+        content = f"<article>{meta}{title}{body_html}{rel_html}{giscus_html}{pn}</article>"
         page(os.path.join(DOCS, "p", p["slug"] + ".html"),
              f'{p["title"]} · {SITE["title"]}', p.get("summary", ""),
              content, root="../", og_type="article", nav_active=cslug,
