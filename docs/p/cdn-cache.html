@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>배포했는데 예전 화면이 나와요 — CDN 캐시가 안 갱신되는 3가지 이유 · 삽질노트</title>
+<meta name="description" content="CDN은 &#x27;기한이 남은 복사본&#x27;을 성실하게 나눠줄 뿐입니다. TTL, 무효화, 캐시 키 — 세 개념만 잡으면 &#x27;옛날 화면&#x27; 미스터리가 풀려요.">
+<meta property="og:title" content="배포했는데 예전 화면이 나와요 — CDN 캐시가 안 갱신되는 3가지 이유 · 삽질노트">
+<meta property="og:description" content="CDN은 &#x27;기한이 남은 복사본&#x27;을 성실하게 나눠줄 뿐입니다. TTL, 무효화, 캐시 키 — 세 개념만 잡으면 &#x27;옛날 화면&#x27; 미스터리가 풀려요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/cdn-cache.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/cdn-cache.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/cdn-cache.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/cdn-cache.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-14</span><a class="chip" href="../c/cloud.html">--cloud</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>배포했는데 예전 화면이 나와요 — CDN 캐시가 안 갱신되는 3가지 이유</h1><blockquote>
+<p><strong>한 줄 요약:</strong> CDN은 원본의 복사본을 <strong>약속된 기한(TTL)까지</strong> 나눠주는 편의점 체인입니다. 배포를 해도 옛 화면이 나오는 건 CDN이 고장 나서가 아니라 <strong>약속대로 아직 유효한 복사본을 주고 있는 것</strong> — 해법은 TTL 설계, 무효화, 캐시 키 세 가지에 있습니다.</p>
+</blockquote>
+<h2 id="_1">상황</h2>
+<p>새 버전을 배포하고 자신 있게 새로고침. 그런데 예전 화면이 그대로 나옵니다. 서버 로그를 보니 요청이 <strong>오지도 않았어요.</strong> 범인은 중간에서 복사본을 나눠주고 있는 CDN입니다.</p>
+<h2 id="_2">비유: 본사 공장과 동네 편의점</h2>
+<ul>
+<li><strong>원본 서버(오리진)</strong> = 본사 공장</li>
+<li><strong>CDN 엣지</strong> = 전국 편의점. 공장에서 물건(파일)을 받아다 두고 손님에게 팝니다.</li>
+<li><strong>TTL</strong> = 유통기한. "이 물건은 1시간 동안 그대로 팔아도 됨"이라는 약속.</li>
+</ul>
+<p>배포는 <strong>공장의 물건을 바꾼 것</strong>이지, 편의점 진열대를 바꾼 게 아닙니다. 편의점은 유통기한이 남은 옛 물건을 계속 팔죠 — 계약대로요.</p>
+<h2 id="cdn">먼저: 정말 CDN이 범인인지 확인</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>curl<span class="w"> </span>-sI<span class="w"> </span>https://example.com/app.js<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-iE<span class="w"> </span><span class="s2">&quot;cache-control|age|x-cache|etag&quot;</span>
+<span class="c1"># Cache-Control: max-age=86400      ← 유통기한 하루짜리 약속</span>
+<span class="c1"># Age: 4520                          ← 이 복사본이 만들어진 지 4520초</span>
+<span class="c1"># X-Cache: Hit from cloudfront       ← 편의점(엣지)에서 나온 물건이라는 증거</span>
+</code></pre></div>
+
+<p><code>X-Cache: Hit</code>(벤더마다 헤더명은 조금씩 다름)에 <code>Age</code>가 크면 확진 — 엣지의 오래된 복사본입니다. <code>Miss</code>인데도 옛날 화면이면 CDN이 아니라 <strong>브라우저 캐시</strong>나 배포 자체를 의심하세요.</p>
+<h2 id="1-invalidation">해법 ① — 급한 불: 무효화(invalidation)</h2>
+<p>편의점 전 지점에 "그 물건 회수!" 공문을 보내는 겁니다. 콘솔이나 CLI에서 경로를 지정해 캐시를 강제로 버리게 합니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># CloudFront 예시 (NCP CDN+ 등도 콘솔/API에 동일 개념의 purge 존재)</span>
+aws<span class="w"> </span>cloudfront<span class="w"> </span>create-invalidation<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--distribution-id<span class="w"> </span>EXXXXXX<span class="w"> </span>--paths<span class="w"> </span><span class="s2">&quot;/app.js&quot;</span><span class="w"> </span><span class="s2">&quot;/index.html&quot;</span>
+</code></pre></div>
+
+<p>단점: 전파에 시간이 걸리고, 벤더에 따라 횟수 제한·비용이 있습니다. <strong>응급처치지 운영 방식은 아니에요.</strong> 매 배포마다 <code>/*</code> 전체 무효화를 날리는 팀이 많은데, 그건 다음 방법을 모를 때의 임시방편입니다.</p>
+<h2 id="2-cache-busting">해법 ② — 근본: 파일명에 버전 박기 (cache busting)</h2>
+<p>발상 전환: 물건을 회수하지 말고 <strong>신제품은 새 이름으로</strong> 내놓는 겁니다.</p>
+<div class="highlight"><pre><span></span><code>app.js         →  기한 5분 (짧게)
+app.3f9c2a.js  →  기한 1년 (사실상 영구)
+</code></pre></div>
+
+<p>빌드 도구(webpack/Vite 등)가 파일 내용의 해시를 파일명에 박아줍니다. 내용이 바뀌면 파일명이 바뀌고, HTML이 새 파일명을 가리키니 <strong>캐시 충돌 자체가 불가능</strong>해져요. 그래서 표준 설계는:</p>
+<ul>
+<li><strong>HTML (index.html):</strong> TTL 짧게 또는 <code>no-cache</code> — 늘 최신 목차를 받게</li>
+<li><strong>해시 박힌 정적 자원(js/css/img):</strong> <code>max-age=31536000, immutable</code> — 1년짜리 유통기한</li>
+</ul>
+<p>이렇게 하면 무효화가 거의 필요 없어집니다. 배포 = 새 파일명 업로드 + HTML 갱신, 끝.</p>
+<h2 id="3">해법 ③ — 헷갈림 방지: 캐시 키</h2>
+<p>CDN은 "같은 요청인지"를 <strong>캐시 키</strong>(기본: URL, 설정에 따라 쿼리스트링·헤더·쿠키 포함)로 판단합니다. 여기서 두 방향의 사고가 납니다.</p>
+<ul>
+<li><strong>키에 쿼리스트링이 포함 안 됨</strong> → <code>app.js?v=2</code>로 부숴보려 해도 <code>app.js</code>와 같은 물건 취급 — 캐시 버스팅이 안 먹힘</li>
+<li><strong>키에 불필요한 것까지 포함</strong> → <code>?utm_source=...</code> 가 붙을 때마다 딴 물건 취급 — 캐시 적중률 폭락, 오리진만 두들겨 맞음</li>
+</ul>
+<p>캐시 키 설정을 열어 <strong>무엇으로 물건을 구분하는지</strong> 확인하세요. "무효화도 했는데 안 바뀐다"는 미스터리의 단골 범인이 캐시 키 불일치입니다. 그리고 마지막 관문인 <strong>브라우저 캐시</strong>도 같은 Cache-Control 약속을 따른다는 것 — CDN을 비웠어도 브라우저가 제 복사본을 쓰고 있을 수 있으니, 검증할 땐 시크릿 창이나 강력 새로고침으로요.</p>
+<h2 id="_3">한 줄 정리</h2>
+<p>CDN은 약속(TTL)대로 일하고 있을 뿐입니다. <strong>급하면 무효화, 근본은 해시 파일명 + HTML만 짧은 TTL, 미스터리는 캐시 키 확인.</strong> 이 셋이면 "옛날 화면" 문제는 설계 단계에서 사라집니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --cloud</div><a href="../p/autoscaling-scalein.html"><span class="g">&#10095;</span>오토스케일링이 늘어나기만 하고 줄지 않는 이유 — 쿨다운과 지표의 함정</a><a href="../p/lb-healthcheck.html"><span class="g">&#10095;</span>로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽</a><a href="../p/ncp-boto3-checksum.html"><span class="g">&#10095;</span>NCP Object Storage에 boto3 물릴 때 터지는 함정 — 체크섬과 서명</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/context-window.html"><span class="lbl">newer</span>컨텍스트 윈도우가 꽉 차면 무슨 일이 벌어지나 — LLM의 책상 크기</a><a href="../p/temperature-top-p.html" style="text-align:right"><span class="lbl">older</span>temperature와 top-p — LLM의 &#x27;창의성 다이얼&#x27;은 실제로 뭘 돌리는 걸까</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>컨테이너에서 localhost가 안 통하는 이유 — 도커 네트워크의 착각 · 삽질노트</title>
+<meta name="description" content="컨테이너 안의 localhost는 호스트가 아니라 컨테이너 자신입니다. &#x27;각자 다른 집&#x27;이라는 그림 하나만 잡히면 연결 문제의 대부분이 풀려요.">
+<meta property="og:title" content="컨테이너에서 localhost가 안 통하는 이유 — 도커 네트워크의 착각 · 삽질노트">
+<meta property="og:description" content="컨테이너 안의 localhost는 호스트가 아니라 컨테이너 자신입니다. &#x27;각자 다른 집&#x27;이라는 그림 하나만 잡히면 연결 문제의 대부분이 풀려요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/docker-localhost.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/docker-localhost.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/docker-localhost.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/docker-localhost.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html" class="on">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-14</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>컨테이너에서 localhost가 안 통하는 이유 — 도커 네트워크의 착각</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 컨테이너 안에서 <code>localhost</code>는 <strong>호스트 머신이 아니라 컨테이너 자기 자신</strong>입니다. 컨테이너마다 자기만의 네트워크 공간(집)을 갖기 때문 — 호스트나 옆 컨테이너로 가려면 <strong>다른 주소</strong>로 불러야 해요.</p>
+</blockquote>
+<h2 id="3">증상 3종 세트</h2>
+<ul>
+<li>컨테이너 안 앱이 호스트에 띄운 DB(<code>localhost:5432</code>)에 연결 실패</li>
+<li>컨테이너 A에서 컨테이너 B를 <code>localhost:8080</code>으로 호출했더니 connection refused</li>
+<li>반대로, 컨테이너에서 서버를 띄웠는데 호스트 브라우저에서 <code>localhost</code>로 안 열림</li>
+</ul>
+<p>전부 원인이 같습니다 — <strong>localhost가 가리키는 곳이 서로 다르다</strong>는 걸 놓친 거예요.</p>
+<h2 id="_1">비유: 아파트의 각 세대</h2>
+<p>도커의 기본 네트워크(bridge)에서 컨테이너는 <strong>각자 현관문과 주소가 있는 세대</strong>입니다. 호스트는 그 아파트 건물이고요.</p>
+<ul>
+<li>컨테이너 안에서 <code>localhost</code> = <strong>우리 집 안</strong> (자기 자신)</li>
+<li>옆 컨테이너 = <strong>옆집</strong> — 옆집 주소(컨테이너 이름)로 불러야 함</li>
+<li>호스트 = <strong>건물 관리실</strong> — 별도의 주소가 필요함</li>
+</ul>
+<p>우리 집에서 "여기요(localhost)!"라고 외쳐봐야 옆집이나 관리실에는 안 들립니다.</p>
+<h2 id="_2">케이스별 해법</h2>
+<p><strong>① 컨테이너 → 호스트의 서비스</strong></p>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># Mac/Windows (Docker Desktop): 예약된 이름 사용</span>
+psql<span class="w"> </span>-h<span class="w"> </span>host.docker.internal<span class="w"> </span>-p<span class="w"> </span><span class="m">5432</span>
+
+<span class="c1"># Linux: 기본으론 이 이름이 없음 → 실행 시 매핑 추가</span>
+docker<span class="w"> </span>run<span class="w"> </span>--add-host<span class="o">=</span>host.docker.internal:host-gateway<span class="w"> </span>myapp
+</code></pre></div>
+
+<p>한 가지 더 — 호스트 쪽 서비스가 <code>127.0.0.1</code>에만 바인딩돼 있으면 컨테이너에서 못 붙습니다. <code>0.0.0.0</code>으로 듣게 하세요. (헬스체크 글에서 본 그 바인딩 문제와 같은 뿌리입니다.)</p>
+<p><strong>② 컨테이너 → 컨테이너</strong></p>
+<p>localhost가 아니라 <strong>컨테이너 이름</strong>으로 부릅니다. 단, 같은 사용자 정의 네트워크에 있어야 이름 해석이 됩니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>docker<span class="w"> </span>network<span class="w"> </span>create<span class="w"> </span>mynet
+docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>--name<span class="w"> </span>db<span class="w">  </span>--network<span class="w"> </span>mynet<span class="w"> </span>postgres
+docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>--name<span class="w"> </span>app<span class="w"> </span>--network<span class="w"> </span>mynet<span class="w"> </span>myapp
+<span class="c1"># app 안에서: psql -h db -p 5432   ← &quot;db&quot;라는 이름이 곧 주소</span>
+</code></pre></div>
+
+<p>docker-compose를 쓰면 서비스들이 자동으로 한 네트워크에 묶여서, <strong>서비스 이름이 곧 호스트명</strong>이 됩니다. compose 파일의 <code>db:</code> 서비스는 그냥 <code>db</code>로 부르면 돼요.</p>
+<p><strong>③ 호스트 → 컨테이너</strong></p>
+<p>컨테이너의 포트는 기본적으로 아파트 담장 안입니다. <code>-p</code>로 <strong>포트를 건물 외벽에 내놔야</strong> 호스트에서 접근됩니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>-p<span class="w"> </span><span class="m">8080</span>:80<span class="w"> </span>nginx
+<span class="c1"># 호스트에서: curl localhost:8080  → 컨테이너의 80으로 전달</span>
+<span class="c1"># -p 를 안 했으면 호스트에서 접근 불가가 정상</span>
+</code></pre></div>
+
+<h2 id="_3">확인하는 법</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>docker<span class="w"> </span>network<span class="w"> </span>ls<span class="w">                               </span><span class="c1"># 네트워크 목록</span>
+docker<span class="w"> </span>inspect<span class="w"> </span>app<span class="w"> </span>--format<span class="w"> </span><span class="s1">&#39;{{json .NetworkSettings.Networks}}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-m<span class="w"> </span>json.tool
+<span class="c1"># 어느 네트워크 소속인지, IP가 뭔지</span>
+
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>app<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;getent hosts db&quot;</span><span class="w">    </span><span class="c1"># 컨테이너 안에서 이름이 풀리는지</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>app<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;nc -vz db 5432&quot;</span><span class="w">     </span><span class="c1"># 옆집 포트가 열려 있는지</span>
+</code></pre></div>
+
+<p>②가 안 될 때 십중팔구는 <strong>두 컨테이너가 다른 네트워크에 있는</strong> 경우입니다. inspect로 소속부터 확인하세요.</p>
+<h2 id="-network-host">예외: --network host</h2>
+<p><code>docker run --network host</code> 를 쓰면 컨테이너가 자기 집을 포기하고 <strong>호스트의 네트워크를 그대로</strong> 씁니다. 이때는 localhost가 정말 호스트를 가리켜요. 담장이 없어져 편하지만 포트 충돌·격리 상실이 따라오고, Linux에서만 온전히 동작합니다. "왜 어떤 서버에선 localhost가 되지?"의 범인이 대개 이 모드예요.</p>
+<h2 id="_4">한 줄 정리</h2>
+<p>컨테이너의 localhost는 <strong>자기 자신</strong>입니다. 호스트는 <code>host.docker.internal</code>, 옆 컨테이너는 <strong>같은 네트워크 + 컨테이너 이름</strong>, 호스트에서 컨테이너는 <code>-p</code> 포트 공개 — 이 세 주소 체계만 잡으면 도커 연결 문제의 8할이 사라집니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --troubleshooting</div><a href="../p/crashloopbackoff.html"><span class="g">&#10095;</span>CrashLoopBackOff — 쿠버네티스가 &#x27;재시도 중&#x27;이라고 말하는 방식</a><a href="../p/inode-exhaustion.html"><span class="g">&#10095;</span>디스크 여유는 있는데 &#x27;No space left on device&#x27;? — inode 고갈 이야기</a><a href="../p/docker-layer-cache.html"><span class="g">&#10095;</span>도커 빌드가 매번 느린 이유 — 이미지 레이어와 캐시, Dockerfile 순서의 비밀</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><span></span><a href="../p/context-window.html" style="text-align:right"><span class="lbl">older</span>컨텍스트 윈도우가 꽉 차면 무슨 일이 벌어지나 — LLM의 책상 크기</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

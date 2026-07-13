@@ -2,6 +2,9 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://sabjil-log.github.io/</loc><lastmod>2026-07-13</lastmod></url>
   <url><loc>https://sabjil-log.github.io/archive.html</loc><lastmod>2026-07-13</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/p/docker-localhost.html</loc><lastmod>2026-07-14</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/p/context-window.html</loc><lastmod>2026-07-14</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/p/cdn-cache.html</loc><lastmod>2026-07-14</lastmod></url>
   <url><loc>https://sabjil-log.github.io/p/temperature-top-p.html</loc><lastmod>2026-07-13</lastmod></url>
   <url><loc>https://sabjil-log.github.io/p/quantization.html</loc><lastmod>2026-07-13</lastmod></url>
   <url><loc>https://sabjil-log.github.io/p/journalctl-debug.html</loc><lastmod>2026-07-13</lastmod></url>

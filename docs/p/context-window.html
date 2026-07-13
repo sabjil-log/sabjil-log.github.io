@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>컨텍스트 윈도우가 꽉 차면 무슨 일이 벌어지나 — LLM의 책상 크기 · 삽질노트</title>
+<meta name="description" content="컨텍스트 윈도우는 모델의 기억력이 아니라 &#x27;한 번에 펼칠 수 있는 책상 크기&#x27;입니다. 꽉 차면 생기는 일과, 긴 대화·긴 문서를 다루는 실전 요령을 정리했어요.">
+<meta property="og:title" content="컨텍스트 윈도우가 꽉 차면 무슨 일이 벌어지나 — LLM의 책상 크기 · 삽질노트">
+<meta property="og:description" content="컨텍스트 윈도우는 모델의 기억력이 아니라 &#x27;한 번에 펼칠 수 있는 책상 크기&#x27;입니다. 꽉 차면 생기는 일과, 긴 대화·긴 문서를 다루는 실전 요령을 정리했어요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/context-window.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/context-window.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/context-window.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/context-window.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-14</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>컨텍스트 윈도우가 꽉 차면 무슨 일이 벌어지나 — LLM의 책상 크기</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 컨텍스트 윈도우는 모델이 <strong>한 번에 볼 수 있는 토큰의 총량</strong>(질문+문서+대화 이력+답변 전부 포함)입니다. 책상 크기와 같아서, 넘치면 <strong>요청이 거부되거나 오래된 서류부터 책상 밖으로</strong> 밀려나요. 밀려난 건 모델에게 처음부터 없던 것과 같습니다.</p>
+</blockquote>
+<h2 id="_1">착각부터 바로잡기</h2>
+<p>"20만 토큰 컨텍스트"를 모델의 <strong>기억 용량</strong>으로 오해하기 쉽습니다. 아니에요. LLM은 요청과 요청 사이에 아무것도 기억하지 않습니다. 매 요청마다 <strong>책상 위에 올려준 서류(프롬프트 전체)만</strong> 보고 답하죠. 컨텍스트 윈도우는 그 <strong>책상의 크기</strong>입니다. 챗봇이 대화를 "기억"하는 것처럼 보이는 건, 매번 <strong>지난 대화 전체를 책상에 다시 올려주고 있기 때문</strong>이에요.</p>
+<h2 id="_2">꽉 차면 벌어지는 일</h2>
+<p>책상이 넘치면 시스템 구현에 따라 둘 중 하나가 일어납니다.</p>
+<ol>
+<li><strong>요청 거부</strong> — API가 토큰 초과 에러를 반환. (원시 API의 기본 동작)</li>
+<li><strong>조용한 잘림</strong> — 챗 서비스들이 흔히 쓰는 방식. <strong>오래된 대화부터 소리 없이 버리고</strong> 요청을 보냅니다.</li>
+</ol>
+<p>2번이 무섭습니다. 에러가 없으니 눈치를 못 채는데, 모델은 어느 순간부터 대화 초반의 약속을 모릅니다. "아까 말한 형식으로 해줘"가 갑자기 안 먹히고, 초반에 정해둔 규칙이 무시되기 시작하죠. <strong>긴 대화 끝물에 모델이 멍청해지는 것처럼 느껴지는 주요 원인</strong>이 이겁니다.</p>
+<h2 id="_3">그리고 꽉 차기 전에도 — 가운데가 흐릿하다</h2>
+<p>책상이 크다고 서류를 다 똑같이 잘 보는 것도 아닙니다. 긴 컨텍스트에서 모델은 <strong>맨 앞과 맨 뒤 정보는 잘 쓰는데 한가운데 묻힌 정보는 놓치는 경향</strong>이 있어요(이른바 "lost in the middle"). 100페이지 서류 더미의 중간쯤 낀 메모가 눈에 안 들어오는 것과 같습니다.</p>
+<p>실전 함의는 명확합니다 — <strong>중요한 지시는 프롬프트의 맨 앞이나 맨 뒤에</strong>, 핵심 근거는 질문 가까이에 배치하세요.</p>
+<h2 id="_4">실전 요령 — 책상을 크게 쓰는 법</h2>
+<p><strong>① 지금 얼마나 쓰는지 알기.</strong> 감이 아니라 숫자로. API의 응답에는 사용 토큰이 찍혀 나오고(usage 필드), 보내기 전 계산도 가능합니다.</p>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="c1"># Anthropic API — 보내기 전에 토큰 수 미리 세기</span>
+<span class="n">count</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">count_tokens</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">MODEL</span><span class="p">,</span>
+    <span class="n">messages</span><span class="o">=</span><span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">long_prompt</span><span class="p">}],</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">count</span><span class="o">.</span><span class="n">input_tokens</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>② 긴 대화는 요약으로 접기.</strong> 대화가 길어지면 오래된 부분을 통째로 들고 다니지 말고, <strong>요약본으로 교체</strong>합니다.</p>
+<div class="highlight"><pre><span></span><code>[시스템] 이전 대화 요약: 사용자는 NCP 환경 구성 중. 서브넷은 public/private 분리,
+         DB는 private 배치로 결정. 말투는 반말 요청.
+[최근 대화 원문 몇 턴]
+[새 질문]
+</code></pre></div>
+
+<p>결정사항·제약조건만 남기고 수다는 버리는 게 요령입니다.</p>
+<p><strong>③ 문서는 통째로 넣지 말기.</strong> 100페이지를 다 올리는 건 책상을 서류로 덮는 짓입니다. 필요한 부분만 골라 올리는 것 — 그게 정확히 RAG가 하는 일이죠. 큰 컨텍스트와 RAG는 대체재가 아니라, "책상이 커져도 <strong>관련 서류만 올리는 게</strong> 더 정확하고 싸다"는 보완 관계입니다.</p>
+<p><strong>④ 비용 감각.</strong> 입력 토큰도 과금됩니다. 대화 이력을 통째로 끌고 다니면 <strong>매 턴마다 과거 전체를 다시 사는 셈</strong> — 요약 접기는 품질만이 아니라 지갑 문제이기도 해요.</p>
+<h2 id="_5">한 줄 정리</h2>
+<p>컨텍스트 윈도우는 기억력이 아니라 <strong>책상 크기</strong>입니다. 넘치면 조용히 잘리고, 크더라도 가운데는 흐릿해요. <strong>토큰을 세고, 긴 대화는 요약으로 접고, 문서는 골라서 올리고(RAG), 중요한 건 앞뒤에</strong> — 이 네 가지가 긴 컨텍스트 시대의 기본기입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/temperature-top-p.html"><span class="g">&#10095;</span>temperature와 top-p — LLM의 &#x27;창의성 다이얼&#x27;은 실제로 뭘 돌리는 걸까</a><a href="../p/quantization.html"><span class="g">&#10095;</span>16GB 그래픽카드에 14B 모델이 들어가는 마법 — 4-bit 양자화</a><a href="../p/reranker.html"><span class="g">&#10095;</span>1차 검색은 왜 부족한가 — 리랭커가 RAG에서 하는 일</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/docker-localhost.html"><span class="lbl">newer</span>컨테이너에서 localhost가 안 통하는 이유 — 도커 네트워크의 착각</a><a href="../p/cdn-cache.html" style="text-align:right"><span class="lbl">older</span>배포했는데 예전 화면이 나와요 — CDN 캐시가 안 갱신되는 3가지 이유</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

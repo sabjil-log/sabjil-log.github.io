@@ -5,6 +5,27 @@
   <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
   <language>ko</language>
     <item>
+      <title>컨테이너에서 localhost가 안 통하는 이유 — 도커 네트워크의 착각</title>
+      <link>https://sabjil-log.github.io/p/docker-localhost.html</link>
+      <guid>https://sabjil-log.github.io/p/docker-localhost.html</guid>
+      <pubDate>Tue, 14 Jul 2026 00:00:00 -0000</pubDate>
+      <description>컨테이너 안의 localhost는 호스트가 아니라 컨테이너 자신입니다. &#x27;각자 다른 집&#x27;이라는 그림 하나만 잡히면 연결 문제의 대부분이 풀려요.</description>
+    </item>
+    <item>
+      <title>컨텍스트 윈도우가 꽉 차면 무슨 일이 벌어지나 — LLM의 책상 크기</title>
+      <link>https://sabjil-log.github.io/p/context-window.html</link>
+      <guid>https://sabjil-log.github.io/p/context-window.html</guid>
+      <pubDate>Tue, 14 Jul 2026 00:00:00 -0000</pubDate>
+      <description>컨텍스트 윈도우는 모델의 기억력이 아니라 &#x27;한 번에 펼칠 수 있는 책상 크기&#x27;입니다. 꽉 차면 생기는 일과, 긴 대화·긴 문서를 다루는 실전 요령을 정리했어요.</description>
+    </item>
+    <item>
+      <title>배포했는데 예전 화면이 나와요 — CDN 캐시가 안 갱신되는 3가지 이유</title>
+      <link>https://sabjil-log.github.io/p/cdn-cache.html</link>
+      <guid>https://sabjil-log.github.io/p/cdn-cache.html</guid>
+      <pubDate>Tue, 14 Jul 2026 00:00:00 -0000</pubDate>
+      <description>CDN은 &#x27;기한이 남은 복사본&#x27;을 성실하게 나눠줄 뿐입니다. TTL, 무효화, 캐시 키 — 세 개념만 잡으면 &#x27;옛날 화면&#x27; 미스터리가 풀려요.</description>
+    </item>
+    <item>
       <title>temperature와 top-p — LLM의 &#x27;창의성 다이얼&#x27;은 실제로 뭘 돌리는 걸까</title>
       <link>https://sabjil-log.github.io/p/temperature-top-p.html</link>
       <guid>https://sabjil-log.github.io/p/temperature-top-p.html</guid>
@@ -122,26 +143,5 @@
       <guid>https://sabjil-log.github.io/p/least-privilege-tokens.html</guid>
       <pubDate>Fri, 10 Jul 2026 00:00:00 -0000</pubDate>
       <description>자동화에 쓰는 접근 토큰은 &#x27;모든 권한&#x27;이 아니라 &#x27;이 저장소, 이 동작&#x27;만 열어야 합니다. 사고가 나도 피해가 작아져요.</description>
-    </item>
-    <item>
-      <title>서버 없이 블로그 띄우기 — GitHub Pages가 공짜로 되는 원리</title>
-      <link>https://sabjil-log.github.io/p/github-pages.html</link>
-      <guid>https://sabjil-log.github.io/p/github-pages.html</guid>
-      <pubDate>Fri, 10 Jul 2026 00:00:00 -0000</pubDate>
-      <description>완성된 HTML만 저장소에 올리면 GitHub이 웹서버를 공짜로 대신해줍니다. &#x27;정적 사이트&#x27;라 가능한 일이에요.</description>
-    </item>
-    <item>
-      <title>도커 빌드가 매번 느린 이유 — 이미지 레이어와 캐시, Dockerfile 순서의 비밀</title>
-      <link>https://sabjil-log.github.io/p/docker-layer-cache.html</link>
-      <guid>https://sabjil-log.github.io/p/docker-layer-cache.html</guid>
-      <pubDate>Fri, 10 Jul 2026 00:00:00 -0000</pubDate>
-      <description>도커 이미지는 층층이 쌓인 레이어입니다. 이 구조를 알면 Dockerfile 한 줄 순서만 바꿔도 빌드가 몇 배 빨라져요.</description>
-    </item>
-    <item>
-      <title>cron이 새벽에 도는데 시간이 밀린다? — UTC 함정과 표현식 읽는 법</title>
-      <link>https://sabjil-log.github.io/p/cron-utc.html</link>
-      <guid>https://sabjil-log.github.io/p/cron-utc.html</guid>
-      <pubDate>Fri, 10 Jul 2026 00:00:00 -0000</pubDate>
-      <description>cron 5칸(분·시·일·월·요일)만 읽을 줄 알면 됩니다. 시간이 어긋나면 십중팔구 서버가 UTC로 돌기 때문이에요.</description>
     </item>
 </channel></rss>
