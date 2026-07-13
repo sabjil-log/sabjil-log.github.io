@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>16GB 그래픽카드에 14B 모델이 들어가는 마법 — 4-bit 양자화 · 삽질노트</title>
+<meta name="description" content="14B 모델은 원래 28GB가 필요합니다. 그런데 16GB 카드에서 돌아가죠. 파라미터를 &#x27;반올림&#x27;해서 저장하는 양자화의 원리와 트레이드오프를 정리했어요.">
+<meta property="og:title" content="16GB 그래픽카드에 14B 모델이 들어가는 마법 — 4-bit 양자화 · 삽질노트">
+<meta property="og:description" content="14B 모델은 원래 28GB가 필요합니다. 그런데 16GB 카드에서 돌아가죠. 파라미터를 &#x27;반올림&#x27;해서 저장하는 양자화의 원리와 트레이드오프를 정리했어요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/quantization.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/quantization.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/quantization.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/quantization.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-13</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>16GB 그래픽카드에 14B 모델이 들어가는 마법 — 4-bit 양자화</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 모델 무게의 정체는 <strong>파라미터 개수 × 숫자 하나의 크기</strong>입니다. 양자화는 숫자 하나를 16비트에서 4비트로 <strong>줄여서(반올림해서)</strong> 저장하는 것 — 크기가 1/4로 줄어 14B 모델이 16GB 카드에 들어갑니다. 대가는 약간의 정밀도예요.</p>
+</blockquote>
+<h2 id="_1">계산부터 해보자</h2>
+<p>모델 용량은 곱셈 하나로 감이 옵니다.</p>
+<div class="highlight"><pre><span></span><code>14B 모델의 무게:
+FP16 (16bit = 2byte):  14B × 2byte = 28 GB   → 16GB 카드에 안 들어감
+INT4 ( 4bit = 0.5byte): 14B × 0.5byte = 7 GB  → 여유 있게 들어감
+</code></pre></div>
+
+<p>여기에 추론 중 대화 기억용 캐시(KV cache)와 오버헤드가 얹히지만, 가중치가 7GB면 16GB 카드에서 컨텍스트까지 넉넉히 돌릴 수 있습니다. <strong>모델을 줄인 게 아니라 숫자 하나하나를 짧게 적은 것</strong> — 이게 양자화입니다.</p>
+<h2 id="_2">비유: 소수점 반올림</h2>
+<p>파라미터는 <code>0.73412885...</code> 같은 실수 수십억 개입니다. 양자화는 이걸 <strong>"0.73쯤"으로 반올림해 저장</strong>하는 겁니다. 지도의 축척과도 같아요 — 1:5,000 지도를 1:50,000으로 줄이면 골목길 몇 개는 뭉개지지만, 서울에서 부산 가는 데는 아무 지장이 없죠. LLM의 파라미터도 상당한 중복과 여유가 있어서, 웬만한 반올림엔 성능이 크게 안 무너집니다.</p>
+<p>다만 <strong>모든 골목이 똑같이 중요하진 않습니다.</strong> 어떤 파라미터는 뭉개지면 티가 확 나요. 그래서 좋은 양자화 기법(AWQ, GPTQ 등)은 실제 데이터를 흘려보며 <strong>중요한 가중치를 골라 정밀도를 지켜주고</strong> 나머지를 과감히 줄입니다. 무지성 반올림과 결과 차이가 꽤 큽니다.</p>
+<h2 id="_3">얼마나 잃는가</h2>
+<ul>
+<li><strong>8-bit:</strong> 손실이 거의 체감 안 되는 수준. "고민되면 8비트"가 안전한 선택.</li>
+<li><strong>4-bit:</strong> 대부분의 대화·요약·코딩 작업에서 준수합니다. 다만 수학·논리 추론처럼 정밀한 작업에서 미세한 열화가 먼저 드러나요.</li>
+<li><strong>3-bit 이하:</strong> 열화가 눈에 띄기 시작. 특수한 상황 아니면 비추.</li>
+</ul>
+<p>실무 감각으로는 <strong>"같은 VRAM이면, 작은 모델 FP16보다 큰 모델 4-bit가 보통 더 낫다"</strong>는 경험칙이 있습니다. 7B를 FP16으로 돌리는 것보다 14B를 4-bit로 돌리는 쪽이 체감 품질이 좋은 경우가 많아요.</p>
+<h2 id="awq-gptq-gguf">이름들 정리 — AWQ, GPTQ, GGUF</h2>
+<p>모델 파일명에 붙는 꼬리표들의 정체:</p>
+<ul>
+<li><strong>AWQ / GPTQ:</strong> 4-bit 양자화 <strong>기법</strong> 이름. 중요 가중치를 보호하는 방식이 다름. GPU 서빙(vLLM 등)에서 주로 사용.</li>
+<li><strong>GGUF:</strong> llama.cpp 진영의 <strong>파일 포맷</strong>. <code>Q4_K_M</code> 같은 접미사가 양자화 수준(4비트 계열 중 중간 품질)을 표시. CPU/맥북 로컬 실행의 표준.</li>
+<li><strong>bitsandbytes:</strong> 로드 시점에 즉석 양자화하는 라이브러리(<code>load_in_4bit=True</code>). 파일은 원본 그대로 두고 메모리에서만 줄이는 방식.</li>
+</ul>
+<h2 id="_4">내 카드에 들어갈지 미리 계산</h2>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">vram_estimate</span><span class="p">(</span><span class="n">params_b</span><span class="p">,</span> <span class="n">bits</span><span class="p">,</span> <span class="n">overhead_gb</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;대략적 가중치 VRAM (GB). KV cache는 컨텍스트 길이에 따라 별도 증가.&quot;&quot;&quot;</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">params_b</span> <span class="o">*</span> <span class="n">bits</span> <span class="o">/</span> <span class="mi">8</span>          <span class="c1"># B 파라미터 × byte</span>
+    <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="n">weights</span> <span class="o">+</span> <span class="n">overhead_gb</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">bits</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;14B @ </span><span class="si">{</span><span class="n">bits</span><span class="si">}</span><span class="s2">bit ≈ </span><span class="si">{</span><span class="n">vram_estimate</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span><span class="w"> </span><span class="n">bits</span><span class="p">)</span><span class="si">}</span><span class="s2"> GB&quot;</span><span class="p">)</span>
+<span class="c1"># 14B @ 16bit ≈ 30.0 GB  → 16GB 불가</span>
+<span class="c1"># 14B @  8bit ≈ 16.0 GB  → 아슬아슬 (컨텍스트 못 늘림)</span>
+<span class="c1"># 14B @  4bit ≈  9.0 GB  → 여유. 긴 컨텍스트도 가능</span>
+</code></pre></div>
+
+<p>실행 확인은 로드 후 한 줄이면 됩니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>nvidia-smi<span class="w"> </span>--query-gpu<span class="o">=</span>memory.used,memory.total<span class="w"> </span>--format<span class="o">=</span>csv
+</code></pre></div>
+
+<h2 id="_5">한 줄 정리</h2>
+<p>양자화는 <strong>숫자 하나의 자릿수를 줄이는 반올림</strong>이고, 4-bit면 크기가 1/4 — 그래서 16GB 카드에 14B가 들어갑니다. 손실은 있지만 잘 만든 기법(AWQ 등)은 중요한 부분을 지켜주고, 같은 VRAM이면 <strong>큰 모델의 4-bit</strong>가 대개 이깁니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/temperature-top-p.html"><span class="g">&#10095;</span>temperature와 top-p — LLM의 &#x27;창의성 다이얼&#x27;은 실제로 뭘 돌리는 걸까</a><a href="../p/reranker.html"><span class="g">&#10095;</span>1차 검색은 왜 부족한가 — 리랭커가 RAG에서 하는 일</a><a href="../p/what-is-token.html"><span class="g">&#10095;</span>토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/temperature-top-p.html"><span class="lbl">newer</span>temperature와 top-p — LLM의 &#x27;창의성 다이얼&#x27;은 실제로 뭘 돌리는 걸까</a><a href="../p/journalctl-debug.html" style="text-align:right"><span class="lbl">older</span>systemd 서비스가 자꾸 죽을 때 — journalctl로 원인 찾는 순서</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

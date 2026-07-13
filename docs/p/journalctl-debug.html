@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>systemd 서비스가 자꾸 죽을 때 — journalctl로 원인 찾는 순서 · 삽질노트</title>
+<meta name="description" content="서비스가 죽었다는 사실은 알겠는데 왜 죽었는지 모르겠다면, 볼 곳은 정해져 있습니다. status → journalctl -u → 원인별 대처 순서를 정리했어요.">
+<meta property="og:title" content="systemd 서비스가 자꾸 죽을 때 — journalctl로 원인 찾는 순서 · 삽질노트">
+<meta property="og:description" content="서비스가 죽었다는 사실은 알겠는데 왜 죽었는지 모르겠다면, 볼 곳은 정해져 있습니다. status → journalctl -u → 원인별 대처 순서를 정리했어요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/journalctl-debug.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/journalctl-debug.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/journalctl-debug.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/journalctl-debug.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html" class="on">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-13</span><a class="chip" href="../c/linux.html">--linux</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>systemd 서비스가 자꾸 죽을 때 — journalctl로 원인 찾는 순서</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 서비스가 죽으면 <strong><code>systemctl status</code>로 사망 요약 → <code>journalctl -u 서비스명</code>으로 유언 전문</strong> 순서로 봅니다. 죽는 이유의 대부분은 <strong>앱 에러 / OOM / 의존성·권한 / 재시작 한도 초과</strong> 넷 중 하나예요.</p>
+</blockquote>
+<h2 id="_1">상황</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>systemctl<span class="w"> </span>status<span class="w"> </span>myapp
+<span class="c1"># ● myapp.service - My Application</span>
+<span class="c1">#    Active: failed (Result: exit-code) since ...</span>
+<span class="c1">#    Process: 1234 ExecStart=/usr/bin/myapp (code=exited, status=1/FAILURE)</span>
+</code></pre></div>
+
+<p><code>failed</code>까진 알겠는데, 그래서 <strong>왜</strong>? 쿠버네티스의 CrashLoopBackOff와 똑같은 상황이 맨 리눅스에서 벌어진 겁니다. 접근법도 똑같아요 — 유언부터.</p>
+<h2 id="1-status">1단계 — status는 요약본이다</h2>
+<p><code>systemctl status</code>는 사망진단서 요약입니다. 여기서 세 가지만 챙기세요.</p>
+<ul>
+<li><strong>Result:</strong> <code>exit-code</code>(스스로 에러 종료) / <code>signal</code>(죽임 당함) / <code>timeout</code>(기동 시간 초과)</li>
+<li><strong>status=1/FAILURE</strong> 같은 종료 코드</li>
+<li>하단에 딸려 나오는 <strong>최근 로그 몇 줄</strong> — 운 좋으면 여기서 끝</li>
+</ul>
+<h2 id="2-journalctl">2단계 — journalctl로 유언 전문 보기</h2>
+<p>systemd는 서비스의 stdout/stderr를 전부 저널에 담아둡니다. 죽기 직전 로그 전문은 여기에 있어요.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>journalctl<span class="w"> </span>-u<span class="w"> </span>myapp<span class="w"> </span>-e<span class="w">              </span><span class="c1"># 해당 서비스 로그, 끝부분으로 바로 이동</span>
+journalctl<span class="w"> </span>-u<span class="w"> </span>myapp<span class="w"> </span>--since<span class="w"> </span><span class="s2">&quot;10 min ago&quot;</span><span class="w">   </span><span class="c1"># 최근 10분만</span>
+journalctl<span class="w"> </span>-u<span class="w"> </span>myapp<span class="w"> </span>-f<span class="w">              </span><span class="c1"># 실시간 추적 (재시작해보며 관찰할 때)</span>
+journalctl<span class="w"> </span>-u<span class="w"> </span>myapp<span class="w"> </span>-p<span class="w"> </span>err<span class="w">          </span><span class="c1"># 에러 레벨 이상만 필터</span>
+</code></pre></div>
+
+<p>부팅 단위로 끊어 보는 것도 유용합니다. "재부팅하고부터 안 돼요"라면:</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>journalctl<span class="w"> </span>-u<span class="w"> </span>myapp<span class="w"> </span>-b<span class="w">              </span><span class="c1"># 이번 부팅 이후만</span>
+journalctl<span class="w"> </span>-u<span class="w"> </span>myapp<span class="w"> </span>-b<span class="w"> </span>-1<span class="w">           </span><span class="c1"># 직전 부팅에서의 로그</span>
+</code></pre></div>
+
+<h2 id="3-4">3단계 — 원인 톱4 대조</h2>
+<p><strong>① 앱 자체 에러 (exit-code)</strong> — 로그에 스택트레이스, "config not found", "port already in use". 앱 문제이므로 앱 쪽에서 해결. 포트 점유는 <code>ss -tlnp | grep :포트</code> 로 선점자를 확인합니다.</p>
+<p><strong>② OOM으로 죽음 (signal=KILL)</strong> — 로그가 뚝 끊기고 <code>signal=KILL</code>이면 커널의 OOM Killer를 의심하세요.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>journalctl<span class="w"> </span>-k<span class="w"> </span>--since<span class="w"> </span><span class="s2">&quot;1 hour ago&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;out of memory&quot;</span>
+<span class="c1"># &quot;Killed process 1234 (myapp)&quot; 이 보이면 확진</span>
+</code></pre></div>
+
+<p>서비스 유닛에 <code>MemoryMax=</code> 가 걸려 있는지도 확인 (<code>systemctl cat myapp</code>). cgroup 한도에 걸려 죽는 경우도 흔합니다.</p>
+<p><strong>③ 의존성·권한 문제</strong> — 부팅 직후에만 죽는다면, 네트워크나 DB가 준비되기 전에 시작해서일 가능성. 유닛 파일의 <code>After=network-online.target</code> 같은 순서 지정을 점검하세요. <code>status=203/EXEC</code> 은 실행 파일 경로·권한 오류, <code>status=217/USER</code> 는 유닛에 지정한 계정이 없는 것 — 종료 코드가 곧 힌트입니다.</p>
+<p><strong>④ 재시작 한도 초과</strong> — <code>Restart=always</code>인데도 안 살아난다면:</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>systemctl<span class="w"> </span>status<span class="w"> </span>myapp<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;start-limit&quot;</span>
+<span class="c1"># &quot;Start request repeated too quickly&quot; → 짧은 시간에 너무 많이 죽어서 systemd가 포기한 것</span>
+</code></pre></div>
+
+<p>이건 별개의 원인이 아니라 <strong>①~③이 반복된 결과</strong>입니다. 원인 고친 뒤 <code>systemctl reset-failed myapp &amp;&amp; systemctl start myapp</code> 으로 리셋하고 살리세요.</p>
+<h2 id="_2">재현하며 잡기</h2>
+<p>원인이 손에 안 잡히면, 터미널 두 개를 씁니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># 터미널 1: 실시간 관찰</span>
+journalctl<span class="w"> </span>-u<span class="w"> </span>myapp<span class="w"> </span>-f
+
+<span class="c1"># 터미널 2: 재시작 시도</span>
+systemctl<span class="w"> </span>restart<span class="w"> </span>myapp
+</code></pre></div>
+
+<p>죽는 순간이 눈앞에서 재생되니, 마지막 줄이 곧 답입니다. 그래도 로그가 아예 안 남는다면 서비스로서가 아니라 <strong>손으로 직접 실행</strong>(<code>sudo -u 서비스계정 /usr/bin/myapp</code>)해보세요 — 환경변수·권한 차이가 그 자리에서 드러납니다.</p>
+<h2 id="_3">한 줄 정리</h2>
+<p><strong>status(요약) → <code>journalctl -u</code>(전문) → 톱4 대조(앱 에러 / OOM / 의존성·권한 / start-limit)</strong>. 그리고 안 잡히면 <code>-f</code>로 죽는 장면을 직접 목격하세요. 서비스는 말없이 죽지 않습니다 — 저널에 다 적어놓고 죽어요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --linux</div><a href="../p/load-average.html"><span class="g">&#10095;</span>load average 4.0은 위험한가 — top 숫자를 읽을 줄 안다는 것</a><a href="../p/grep-awk-sed.html"><span class="g">&#10095;</span>grep·awk·sed 삼총사 — 로그에서 원하는 값만 뽑아내는 법</a><a href="../p/cron-utc.html"><span class="g">&#10095;</span>cron이 새벽에 도는데 시간이 밀린다? — UTC 함정과 표현식 읽는 법</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/quantization.html"><span class="lbl">newer</span>16GB 그래픽카드에 14B 모델이 들어가는 마법 — 4-bit 양자화</a><a href="../p/envelope-encryption.html" style="text-align:right"><span class="lbl">older</span>KMS의 봉투암호화 — 금고 열쇠로 데이터를 직접 잠그지 않는 이유</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

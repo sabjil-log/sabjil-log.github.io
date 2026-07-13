@@ -32,10 +32,22 @@
   <nav class="nav"><a href="index.html" class="on">home</a><a href="c/troubleshooting.html">--troubleshooting</a><a href="c/linux.html">--linux</a><a href="c/cloud.html">--cloud</a><a href="c/network.html">--network</a><a href="c/security.html">--security</a><a href="c/ai.html">--ai</a><a href="archive.html">--all</a></nav>
 </div></header>
 <div class="wrap"><section class="facade" aria-label="삽질노트"><div class="fac-bar"><span class="fac-dots"></span><span class="fac-title">sabjil-log — bash</span></div><div class="fac-body"><div class="fac-line"><span class="fac-p">$</span> whoami</div><div class="fac-name">삽질노트</div><div class="fac-line"><span class="fac-p">$</span> cat tagline.txt</div><div class="fac-out">삽질해서 배운 걸, 남은 안 삽질하게.<br>리눅스 · 클라우드 · AI — 매일 쌓는 실무 노트</div><div class="fac-line"><span class="fac-p">$</span><span class="cur"></span></div></div></section></div><main class="wrap">
-<section class="list"><div class="search"><span class="sig">grep -i</span><input id="q" type="search" placeholder="&quot;검색어&quot; — 제목·요약·태그" autocomplete="off" spellcheck="false"></div><div class="list-head">최근 글 · 22개</div><article class="entry" data-search="temperature와 top-p — llm의 &#x27;창의성 다이얼&#x27;은 실제로 뭘 돌리는 걸까 llm은 다음 단어를 &#x27;확률 뽑기&#x27;로 고릅니다. temperature는 뽑기통을 흔드는 세기, top-p는 뽑기통에 넣을 후보의 범위예요. ai/llm ai temperature top-p 샘플링 llm 파라미터">
+<section class="list"><div class="search"><span class="sig">grep -i</span><input id="q" type="search" placeholder="&quot;검색어&quot; — 제목·요약·태그" autocomplete="off" spellcheck="false"></div><div class="list-head">최근 글 · 25개</div><article class="entry" data-search="temperature와 top-p — llm의 &#x27;창의성 다이얼&#x27;은 실제로 뭘 돌리는 걸까 llm은 다음 단어를 &#x27;확률 뽑기&#x27;로 고릅니다. temperature는 뽑기통을 흔드는 세기, top-p는 뽑기통에 넣을 후보의 범위예요. ai/llm ai temperature top-p 샘플링 llm 파라미터">
   <div class="meta"><span>2026-07-13</span><a class="chip" href="c/ai.html">--ai</a><span>3 min</span></div>
   <h2><a href="p/temperature-top-p.html"><span class="g">&#10095;</span>temperature와 top-p — LLM의 &#x27;창의성 다이얼&#x27;은 실제로 뭘 돌리는 걸까</a></h2>
   <p class="sum">LLM은 다음 단어를 &#x27;확률 뽑기&#x27;로 고릅니다. temperature는 뽑기통을 흔드는 세기, top-p는 뽑기통에 넣을 후보의 범위예요.</p>
+</article><article class="entry" data-search="16gb 그래픽카드에 14b 모델이 들어가는 마법 — 4-bit 양자화 14b 모델은 원래 28gb가 필요합니다. 그런데 16gb 카드에서 돌아가죠. 파라미터를 &#x27;반올림&#x27;해서 저장하는 양자화의 원리와 트레이드오프를 정리했어요. ai/llm ai 양자화 4bit vram awq gguf 로컬llm">
+  <div class="meta"><span>2026-07-13</span><a class="chip" href="c/ai.html">--ai</a><span>2 min</span></div>
+  <h2><a href="p/quantization.html"><span class="g">&#10095;</span>16GB 그래픽카드에 14B 모델이 들어가는 마법 — 4-bit 양자화</a></h2>
+  <p class="sum">14B 모델은 원래 28GB가 필요합니다. 그런데 16GB 카드에서 돌아가죠. 파라미터를 &#x27;반올림&#x27;해서 저장하는 양자화의 원리와 트레이드오프를 정리했어요.</p>
+</article><article class="entry" data-search="systemd 서비스가 자꾸 죽을 때 — journalctl로 원인 찾는 순서 서비스가 죽었다는 사실은 알겠는데 왜 죽었는지 모르겠다면, 볼 곳은 정해져 있습니다. status → journalctl -u → 원인별 대처 순서를 정리했어요. 리눅스 linux systemd journalctl systemctl 서비스 디버깅">
+  <div class="meta"><span>2026-07-13</span><a class="chip" href="c/linux.html">--linux</a><span>3 min</span></div>
+  <h2><a href="p/journalctl-debug.html"><span class="g">&#10095;</span>systemd 서비스가 자꾸 죽을 때 — journalctl로 원인 찾는 순서</a></h2>
+  <p class="sum">서비스가 죽었다는 사실은 알겠는데 왜 죽었는지 모르겠다면, 볼 곳은 정해져 있습니다. status → journalctl -u → 원인별 대처 순서를 정리했어요.</p>
+</article><article class="entry" data-search="kms의 봉투암호화 — 금고 열쇠로 데이터를 직접 잠그지 않는 이유 1gb 파일을 암호화하는데 kms로는 데이터를 보내지 않습니다. 데이터는 일회용 열쇠로 잠그고, 그 열쇠만 kms가 잠급니다 — 이 2단 구조가 봉투암호화예요. 보안 security kms 봉투암호화 envelope encryption dek ncp aws">
+  <div class="meta"><span>2026-07-13</span><a class="chip" href="c/security.html">--security</a><span>3 min</span></div>
+  <h2><a href="p/envelope-encryption.html"><span class="g">&#10095;</span>KMS의 봉투암호화 — 금고 열쇠로 데이터를 직접 잠그지 않는 이유</a></h2>
+  <p class="sum">1GB 파일을 암호화하는데 KMS로는 데이터를 보내지 않습니다. 데이터는 일회용 열쇠로 잠그고, 그 열쇠만 KMS가 잠급니다 — 이 2단 구조가 봉투암호화예요.</p>
 </article><article class="entry" data-search="crashloopbackoff — 쿠버네티스가 &#x27;재시도 중&#x27;이라고 말하는 방식 crashloopbackoff는 병명이 아니라 증상입니다. &#x27;컨테이너가 죽어서 점점 천천히 재시도 중&#x27;이라는 뜻 — 진짜 원인 찾는 순서를 정리했어요. 트러블슈팅 troubleshooting kubernetes crashloopbackoff kubectl pod 디버깅">
   <div class="meta"><span>2026-07-13</span><a class="chip" href="c/troubleshooting.html">--troubleshooting</a><span>3 min</span></div>
   <h2><a href="p/crashloopbackoff.html"><span class="g">&#10095;</span>CrashLoopBackOff — 쿠버네티스가 &#x27;재시도 중&#x27;이라고 말하는 방식</a></h2>

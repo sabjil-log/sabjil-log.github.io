@@ -12,6 +12,27 @@
       <description>LLM은 다음 단어를 &#x27;확률 뽑기&#x27;로 고릅니다. temperature는 뽑기통을 흔드는 세기, top-p는 뽑기통에 넣을 후보의 범위예요.</description>
     </item>
     <item>
+      <title>16GB 그래픽카드에 14B 모델이 들어가는 마법 — 4-bit 양자화</title>
+      <link>https://sabjil-log.github.io/p/quantization.html</link>
+      <guid>https://sabjil-log.github.io/p/quantization.html</guid>
+      <pubDate>Mon, 13 Jul 2026 00:00:00 -0000</pubDate>
+      <description>14B 모델은 원래 28GB가 필요합니다. 그런데 16GB 카드에서 돌아가죠. 파라미터를 &#x27;반올림&#x27;해서 저장하는 양자화의 원리와 트레이드오프를 정리했어요.</description>
+    </item>
+    <item>
+      <title>systemd 서비스가 자꾸 죽을 때 — journalctl로 원인 찾는 순서</title>
+      <link>https://sabjil-log.github.io/p/journalctl-debug.html</link>
+      <guid>https://sabjil-log.github.io/p/journalctl-debug.html</guid>
+      <pubDate>Mon, 13 Jul 2026 00:00:00 -0000</pubDate>
+      <description>서비스가 죽었다는 사실은 알겠는데 왜 죽었는지 모르겠다면, 볼 곳은 정해져 있습니다. status → journalctl -u → 원인별 대처 순서를 정리했어요.</description>
+    </item>
+    <item>
+      <title>KMS의 봉투암호화 — 금고 열쇠로 데이터를 직접 잠그지 않는 이유</title>
+      <link>https://sabjil-log.github.io/p/envelope-encryption.html</link>
+      <guid>https://sabjil-log.github.io/p/envelope-encryption.html</guid>
+      <pubDate>Mon, 13 Jul 2026 00:00:00 -0000</pubDate>
+      <description>1GB 파일을 암호화하는데 KMS로는 데이터를 보내지 않습니다. 데이터는 일회용 열쇠로 잠그고, 그 열쇠만 KMS가 잠급니다 — 이 2단 구조가 봉투암호화예요.</description>
+    </item>
+    <item>
       <title>CrashLoopBackOff — 쿠버네티스가 &#x27;재시도 중&#x27;이라고 말하는 방식</title>
       <link>https://sabjil-log.github.io/p/crashloopbackoff.html</link>
       <guid>https://sabjil-log.github.io/p/crashloopbackoff.html</guid>
@@ -122,26 +143,5 @@
       <guid>https://sabjil-log.github.io/p/cron-utc.html</guid>
       <pubDate>Fri, 10 Jul 2026 00:00:00 -0000</pubDate>
       <description>cron 5칸(분·시·일·월·요일)만 읽을 줄 알면 됩니다. 시간이 어긋나면 십중팔구 서버가 UTC로 돌기 때문이에요.</description>
-    </item>
-    <item>
-      <title>임베딩은 왜 &#x27;거리&#x27;가 아니라 &#x27;각도&#x27;로 비슷함을 재나 — 코사인 유사도</title>
-      <link>https://sabjil-log.github.io/p/cosine-similarity.html</link>
-      <guid>https://sabjil-log.github.io/p/cosine-similarity.html</guid>
-      <pubDate>Fri, 10 Jul 2026 00:00:00 -0000</pubDate>
-      <description>벡터가 얼마나 비슷한지 잴 때 길이는 무시하고 방향만 봅니다. 왜 각도가 &#x27;의미의 닮음&#x27;을 더 잘 잡는지 쉽게 풀어봐요.</description>
-    </item>
-    <item>
-      <title>RAG가 뭐길래 — LLM한테 &#x27;오픈북 시험&#x27;을 보게 하는 법</title>
-      <link>https://sabjil-log.github.io/p/what-is-rag.html</link>
-      <guid>https://sabjil-log.github.io/p/what-is-rag.html</guid>
-      <pubDate>Thu, 09 Jul 2026 00:00:00 -0000</pubDate>
-      <description>LLM은 외운 것만 답합니다. RAG는 답하기 직전에 관련 문서를 찾아 손에 쥐여주는 것 — 클로즈드북을 오픈북으로 바꾸는 기법이에요.</description>
-    </item>
-    <item>
-      <title>맥·윈도우 섞인 팀에서 OneDrive가 파일을 자꾸 두 개로 만드는 이유</title>
-      <link>https://sabjil-log.github.io/p/onedrive-unicode.html</link>
-      <guid>https://sabjil-log.github.io/p/onedrive-unicode.html</guid>
-      <pubDate>Thu, 09 Jul 2026 00:00:00 -0000</pubDate>
-      <description>이름이 똑같아 보여도 맥과 윈도우가 한글 이름을 다르게 저장해서 생기는 문제. 눈이 아니라 바이트로 봐야 답이 나옵니다.</description>
     </item>
 </channel></rss>
