@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>서버 없이 웹사이트 띄우기 2탄 — 오브젝트 스토리지 정적 호스팅 · 삽질노트</title>
+<meta name="description" content="S3나 NCP Object Storage는 파일 창고이면서 웹서버도 됩니다. 버킷 하나로 사이트를 띄우는 원리와, 반드시 걸리는 함정 세 가지를 정리했어요.">
+<meta property="og:title" content="서버 없이 웹사이트 띄우기 2탄 — 오브젝트 스토리지 정적 호스팅 · 삽질노트">
+<meta property="og:description" content="S3나 NCP Object Storage는 파일 창고이면서 웹서버도 됩니다. 버킷 하나로 사이트를 띄우는 원리와, 반드시 걸리는 함정 세 가지를 정리했어요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/object-storage-hosting.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/object-storage-hosting.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/object-storage-hosting.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/object-storage-hosting.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-15</span><a class="chip" href="../c/cloud.html">--cloud</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>서버 없이 웹사이트 띄우기 2탄 — 오브젝트 스토리지 정적 호스팅</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 오브젝트 스토리지는 파일 창고지만, <strong>"이 버킷의 파일을 웹으로 서빙해줘"</strong> 스위치를 켜면 웹서버가 됩니다. 서버 관리 0, 용량 걱정 0 — 대신 <strong>공개 범위, index 문서, HTTPS</strong> 세 가지 함정만 알고 시작하면 돼요.</p>
+</blockquote>
+<h2 id="_1">언제 쓰나</h2>
+<p>GitHub Pages로 블로그를 띄우는 것과 같은 원리인데, 무대가 회사 클라우드입니다. 사내 대시보드, 제품 랜딩페이지, SPA(React 빌드 결과물), 문서 사이트 — HTML/JS/CSS만으로 되는 것들은 전부 후보예요. 특히 <strong>회사 인프라 안에서, 도메인·권한을 우리가 통제해야 할 때</strong> GitHub Pages 대신 이걸 씁니다.</p>
+<h2 id="_2">원리: 창고에 진열대 스위치가 있다</h2>
+<p>오브젝트 스토리지는 원래 창고입니다. 물건(파일)을 넣고 키(경로)로 꺼내는 곳이죠. 그런데 벤더들이 스위치를 하나 달아놨어요 — <strong>정적 웹 호스팅</strong> 옵션. 켜면 창고가 진열대가 됩니다.</p>
+<ul>
+<li><code>index.html</code> 을 대문으로 지정</li>
+<li>버킷 전용 웹 주소 발급 (예: <code>버킷명.s3-website-리전.amazonaws.com</code>, NCP도 유사한 웹사이트 엔드포인트 제공)</li>
+<li>이후 파일을 올리면 그대로 웹에 뜸</li>
+</ul>
+<p>배포는 곧 <strong>파일 동기화</strong>입니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># AWS S3</span>
+aws<span class="w"> </span>s3<span class="w"> </span>sync<span class="w"> </span>./dist<span class="w"> </span>s3://my-site<span class="w"> </span>--delete
+
+<span class="c1"># NCP Object Storage (S3 호환 — endpoint만 지정)</span>
+aws<span class="w"> </span>--endpoint-url<span class="w"> </span>https://kr.object.ncloudstorage.com<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>s3<span class="w"> </span>sync<span class="w"> </span>./dist<span class="w"> </span>s3://my-site<span class="w"> </span>--delete
+</code></pre></div>
+
+<p><code>--delete</code> 는 로컬에서 지운 파일을 버킷에서도 지워 <strong>빌드 결과물과 진열대를 일치</strong>시킵니다. (NCP는 boto3/CLI 버전에 따른 체크섬 호환 이슈가 있으니, 막히면 예전에 다룬 checksum 설정 글을 참고하세요.)</p>
+<h2 id="1">함정 ① — 공개 범위: 전시장이지 금고가 아니다</h2>
+<p>웹 호스팅을 켜면 버킷(의 해당 파일들)을 <strong>공개 읽기</strong>로 열게 됩니다. 여기서 사고가 나요 — 사이트 파일 옆에 백업이나 내부 문서를 <strong>같은 버킷에</strong> 두는 것.</p>
+<p>원칙은 하나입니다. <strong>웹 호스팅 버킷 = 100% 공개돼도 되는 파일만.</strong> 데이터용 버킷과 물리적으로 분리하세요. "버킷 안에서 폴더로 나누면 되겠지"는 정책 실수 한 번이면 무너집니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># 지금 뭐가 공개돼 있는지 점검 (전체 목록을 눈으로)</span>
+aws<span class="w"> </span>s3<span class="w"> </span>ls<span class="w"> </span>s3://my-site<span class="w"> </span>--recursive<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-50
+</code></pre></div>
+
+<h2 id="2-spa-404">함정 ② — SPA의 404</h2>
+<p>React/Vue 라우터를 쓰는 SPA를 올리면, <code>/about</code> 새로고침에서 404가 납니다. 스토리지 입장에선 <code>about</code>이라는 <strong>파일이 없으니까요.</strong> 웹 호스팅 설정의 <strong>에러 문서를 <code>index.html</code>로</strong> 지정하면, 없는 경로도 index로 떨어져 라우터가 이어받습니다. SPA 호스팅의 국룰 설정입니다.</p>
+<h2 id="3-https-cdn">함정 ③ — HTTPS는 CDN이 담당</h2>
+<p>버킷의 웹사이트 엔드포인트는 보통 <strong>HTTP만</strong> 됩니다(커스텀 도메인 + HTTPS 불가). 요즘 브라우저 기준으론 사실상 미완성이죠. 그래서 실전 구성은 항상 이 3단입니다.</p>
+<div class="highlight"><pre><span></span><code>사용자 → CDN (HTTPS 인증서, 커스텀 도메인, 캐시) → 버킷 (원본)
+</code></pre></div>
+
+<p>AWS면 CloudFront + ACM 인증서, NCP면 CDN+ 에 인증서 붙이는 구성. CDN이 앞에 서는 순간 지난 글에서 다룬 <strong>캐시 갱신 문제(TTL·무효화·해시 파일명)</strong>가 그대로 따라온다는 것도 기억하세요 — 배포했는데 옛 화면이 나오면 그 글의 체크리스트대로 가면 됩니다.</p>
+<h2 id="_3">비용 감각</h2>
+<p>정적 호스팅의 청구서는 <strong>저장량 + 전송량</strong>입니다. 저장은 몇 GB 수준이라 껌값이고, 변수는 전송량 — 그런데 CDN을 앞에 세우면 대부분의 트래픽이 엣지 캐시에서 소화돼 원본 전송량이 뚝 떨어집니다. 성능 때문만이 아니라 <strong>비용 때문에도</strong> CDN이 정답인 구조예요.</p>
+<h2 id="_4">한 줄 정리</h2>
+<p>버킷의 웹 호스팅 스위치 + <code>s3 sync</code> 배포, 여기에 <strong>전용 버킷 분리(공개 범위) / 에러 문서 = index.html (SPA) / CDN으로 HTTPS</strong> 세 가지만 챙기면, 서버 한 대 없이 운영되는 사이트가 완성됩니다. 창고를 진열대로 — 스위치는 이미 달려 있어요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --cloud</div><a href="../p/cdn-cache.html"><span class="g">&#10095;</span>배포했는데 예전 화면이 나와요 — CDN 캐시가 안 갱신되는 3가지 이유</a><a href="../p/autoscaling-scalein.html"><span class="g">&#10095;</span>오토스케일링이 늘어나기만 하고 줄지 않는 이유 — 쿨다운과 지표의 함정</a><a href="../p/lb-healthcheck.html"><span class="g">&#10095;</span>로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/vector-db-ann.html"><span class="lbl">newer</span>벡터 DB는 뭐가 다른가 — &#x27;대충 가까운 것&#x27;을 빛의 속도로 찾는 기술 (ANN)</a><a href="../p/cron-env.html" style="text-align:right"><span class="lbl">older</span>손으로 돌리면 되는데 크론으로는 안 되는 스크립트 — 환경변수의 배신</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

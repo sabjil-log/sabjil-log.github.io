@@ -5,6 +5,27 @@
   <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
   <language>ko</language>
     <item>
+      <title>벡터 DB는 뭐가 다른가 — &#x27;대충 가까운 것&#x27;을 빛의 속도로 찾는 기술 (ANN)</title>
+      <link>https://sabjil-log.github.io/p/vector-db-ann.html</link>
+      <guid>https://sabjil-log.github.io/p/vector-db-ann.html</guid>
+      <pubDate>Wed, 15 Jul 2026 00:00:00 -0000</pubDate>
+      <description>일반 DB는 &#x27;정확히 일치&#x27;를 찾고, 벡터 DB는 &#x27;가장 비슷한 것&#x27;을 찾습니다. 정확도를 아주 조금 포기하고 속도를 수백 배 버는 ANN의 원리를 풀어봤어요.</description>
+    </item>
+    <item>
+      <title>서버 없이 웹사이트 띄우기 2탄 — 오브젝트 스토리지 정적 호스팅</title>
+      <link>https://sabjil-log.github.io/p/object-storage-hosting.html</link>
+      <guid>https://sabjil-log.github.io/p/object-storage-hosting.html</guid>
+      <pubDate>Wed, 15 Jul 2026 00:00:00 -0000</pubDate>
+      <description>S3나 NCP Object Storage는 파일 창고이면서 웹서버도 됩니다. 버킷 하나로 사이트를 띄우는 원리와, 반드시 걸리는 함정 세 가지를 정리했어요.</description>
+    </item>
+    <item>
+      <title>손으로 돌리면 되는데 크론으로는 안 되는 스크립트 — 환경변수의 배신</title>
+      <link>https://sabjil-log.github.io/p/cron-env.html</link>
+      <guid>https://sabjil-log.github.io/p/cron-env.html</guid>
+      <pubDate>Wed, 15 Jul 2026 00:00:00 -0000</pubDate>
+      <description>터미널에서는 잘 도는 스크립트가 크론에서만 죽는다면, 코드가 아니라 &#x27;실행 환경&#x27;이 다른 겁니다. PATH, 작업 디렉토리, 셸 — 3대 용의자를 정리했어요.</description>
+    </item>
+    <item>
       <title>컨테이너에서 localhost가 안 통하는 이유 — 도커 네트워크의 착각</title>
       <link>https://sabjil-log.github.io/p/docker-localhost.html</link>
       <guid>https://sabjil-log.github.io/p/docker-localhost.html</guid>
@@ -122,26 +143,5 @@
       <guid>https://sabjil-log.github.io/p/grep-awk-sed.html</guid>
       <pubDate>Sat, 11 Jul 2026 00:00:00 -0000</pubDate>
       <description>grep은 줄을 고르고, awk는 칸을 자르고, sed는 글자를 바꿉니다. 역할 분담만 알면 어떤 로그든 파이프 한 줄로 정리돼요.</description>
-    </item>
-    <item>
-      <title>RAG 품질은 자르기에서 갈린다 — 청크 크기와 오버랩의 감각</title>
-      <link>https://sabjil-log.github.io/p/chunking.html</link>
-      <guid>https://sabjil-log.github.io/p/chunking.html</guid>
-      <pubDate>Sat, 11 Jul 2026 00:00:00 -0000</pubDate>
-      <description>문서를 너무 크게 자르면 잡음이 섞이고, 너무 잘게 자르면 문맥이 끊깁니다. 책 인덱스카드 비유로 청킹의 감을 잡아봐요.</description>
-    </item>
-    <item>
-      <title>NCP Object Storage에 boto3 물릴 때 터지는 함정 — 체크섬과 서명</title>
-      <link>https://sabjil-log.github.io/p/ncp-boto3-checksum.html</link>
-      <guid>https://sabjil-log.github.io/p/ncp-boto3-checksum.html</guid>
-      <pubDate>Fri, 10 Jul 2026 00:00:00 -0000</pubDate>
-      <description>S3 호환이라 boto3가 그냥 될 줄 알았는데 업로드가 실패한다면, 최신 SDK의 기본 체크섬 헤더와 서명 방식이 원인일 때가 많습니다.</description>
-    </item>
-    <item>
-      <title>토큰은 딱 필요한 만큼만 — fine-grained PAT로 최소권한 실천하기</title>
-      <link>https://sabjil-log.github.io/p/least-privilege-tokens.html</link>
-      <guid>https://sabjil-log.github.io/p/least-privilege-tokens.html</guid>
-      <pubDate>Fri, 10 Jul 2026 00:00:00 -0000</pubDate>
-      <description>자동화에 쓰는 접근 토큰은 &#x27;모든 권한&#x27;이 아니라 &#x27;이 저장소, 이 동작&#x27;만 열어야 합니다. 사고가 나도 피해가 작아져요.</description>
     </item>
 </channel></rss>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>벡터 DB는 뭐가 다른가 — '대충 가까운 것'을 빛의 속도로 찾는 기술 (ANN) · 삽질노트</title>
+<meta name="description" content="일반 DB는 &#x27;정확히 일치&#x27;를 찾고, 벡터 DB는 &#x27;가장 비슷한 것&#x27;을 찾습니다. 정확도를 아주 조금 포기하고 속도를 수백 배 버는 ANN의 원리를 풀어봤어요.">
+<meta property="og:title" content="벡터 DB는 뭐가 다른가 — '대충 가까운 것'을 빛의 속도로 찾는 기술 (ANN) · 삽질노트">
+<meta property="og:description" content="일반 DB는 &#x27;정확히 일치&#x27;를 찾고, 벡터 DB는 &#x27;가장 비슷한 것&#x27;을 찾습니다. 정확도를 아주 조금 포기하고 속도를 수백 배 버는 ANN의 원리를 풀어봤어요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/vector-db-ann.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/vector-db-ann.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/vector-db-ann.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/vector-db-ann.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-15</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>벡터 DB는 뭐가 다른가 — &#x27;대충 가까운 것&#x27;을 빛의 속도로 찾는 기술 (ANN)</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 일반 DB는 <strong>정확히 일치하는 것</strong>(WHERE id=42)을 찾는 데 최적화됐고, 벡터 DB는 <strong>가장 비슷한 것</strong>(이 벡터와 가까운 top-5)을 찾는 데 최적화됐습니다. 핵심 기술은 ANN — <strong>"거의 확실히 가장 가까운 것"을 전수조사 없이</strong> 찾는 근사 검색이에요.</p>
+</blockquote>
+<h2 id="db">왜 일반 DB로는 안 되나</h2>
+<p>RAG의 1차 검색은 "질문 벡터와 가장 가까운 문서 벡터 top-50"을 찾는 일입니다. 이걸 일반 DB로 하면?</p>
+<p>인덱스(B-tree)는 <code>=</code>, <code>&lt;</code>, <code>BETWEEN</code> 같은 <strong>정렬 가능한 비교</strong>에 최적화돼 있습니다. 그런데 "1536차원 공간에서의 거리"는 정렬로 미리 준비할 수가 없어요. 결국 <strong>모든 행과 거리를 일일이 계산</strong>(전수조사)해야 하는데, 문서 1천만 개면 질문 하나에 1천만 번의 벡터 연산 — 실시간 서비스로는 불가능한 속도입니다.</p>
+<h2 id="100">발상의 전환: 100% 정확을 포기한다</h2>
+<p>여기서 트레이드오프가 등장합니다. "<strong>진짜 1등</strong>을 보장하는 대신, <strong>거의 확실히 1등인 후보</strong>를 즉시 주면 안 될까?"</p>
+<p>이게 <strong>ANN(Approximate Nearest Neighbor, 근사 최근접 검색)</strong>입니다. 검색 결과가 진짜 top-5와 한두 개 다를 수 있지만(재현율 95~99%), 속도는 수백~수천 배. RAG 입장에선 어차피 뒤에 리랭커가 다시 줄 세우니, 후보군이 살짝 달라지는 건 문제가 안 됩니다. <strong>완벽한 서류전형 대신 아주 빠른 서류전형</strong> — 남는 장사죠.</p>
+<h2 id="_1">어떻게 전수조사를 피하나 — 비유 두 개</h2>
+<p><strong>① 구역 나누기 (IVF 계열):</strong> 전국에서 나와 취향이 비슷한 사람을 찾는데, 전 국민을 면담하는 대신 <strong>먼저 성향이 비슷한 동네 몇 곳을 고르고, 그 동네 주민만</strong> 면담하는 겁니다. 벡터 공간을 미리 수천 개 구역으로 나눠두고, 질문 벡터와 가까운 구역 몇 개만 뒤지는 방식. 옆 동네에 진짜 1등이 살고 있을 가능성(정확도 손실)을 감수하는 대신, 조사 대상이 1/100로 줄어요.</p>
+<p><strong>② 고속도로망 (HNSW):</strong> 요즘 벡터 DB의 주력입니다. 벡터들을 <strong>여러 층의 지인 네트워크</strong>로 미리 엮어둡니다. 맨 위층은 전국구 마당발 몇 명(장거리 링크), 아래로 갈수록 동네 친구(단거리 링크). 검색은 위층에서 시작해 "너보다 질문과 가까운 지인 있어?"를 물으며 <strong>점프 → 점프 → 세밀 탐색</strong>으로 내려갑니다. 서울에서 부산 가는데 골목길이 아니라 고속도로부터 타는 것과 같아요. 수백만 개 중에서도 수십 번의 비교로 목적지 근처에 도착합니다.</p>
+<h2 id="db_1">벡터 DB가 인덱스 말고 해주는 것들</h2>
+<p>ANN 인덱스 자체는 라이브러리(FAISS 등)로도 씁니다. "DB"라고 불리는 제품들(Milvus, Qdrant, pgvector 확장 등)은 그 위에 운영 기능을 얹은 것이에요.</p>
+<ul>
+<li><strong>메타데이터 필터 + 벡터 검색 동시에:</strong> "2025년 이후 문서 중에서 가장 비슷한 것" — 필터와 ANN을 함께 처리</li>
+<li><strong>실시간 추가/삭제:</strong> 인덱스를 통째로 다시 만들지 않고 문서를 넣고 뺌</li>
+<li><strong>영속성·복제·스케일아웃:</strong> 그냥 데이터베이스가 해야 하는 일들</li>
+</ul>
+<p>참고로 pgvector처럼 <strong>기존 PostgreSQL에 벡터 검색을 얹는</strong> 선택지도 있습니다. 데이터가 수십만~수백만 규모라면 전용 DB 없이 이걸로 충분한 경우가 많아요 — 운영할 시스템이 하나 줄어드는 건 큰 장점입니다.</p>
+<h2 id="_2">튜닝 감각 하나</h2>
+<p>ANN에는 공통적으로 <strong>"얼마나 넓게 뒤질까"</strong> 다이얼이 있습니다(IVF의 탐색 구역 수, HNSW의 ef 값 등). 넓히면 정확도↑ 속도↓, 좁히면 그 반대. 기본값으로 시작해서, <strong>"분명 있는 문서가 검색에 안 나올 때"</strong> 이 다이얼부터 올려보세요. 리랭커를 붙이기 전에 1차 후보군의 재현율부터 확보하는 게 순서입니다.</p>
+<h2 id="_3">한 줄 정리</h2>
+<p>벡터 DB의 본질은 <strong>"정확도 1~2%를 내주고 속도 수백 배를 사는"</strong> ANN입니다. 구역을 나누거나(IVF) 고속도로망을 깔아서(HNSW) 전수조사를 피하는 것 — 그리고 규모가 크지 않다면 pgvector 같은 얹기형 선택지부터 검토하는 게 실속입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/context-window.html"><span class="g">&#10095;</span>컨텍스트 윈도우가 꽉 차면 무슨 일이 벌어지나 — LLM의 책상 크기</a><a href="../p/temperature-top-p.html"><span class="g">&#10095;</span>temperature와 top-p — LLM의 &#x27;창의성 다이얼&#x27;은 실제로 뭘 돌리는 걸까</a><a href="../p/quantization.html"><span class="g">&#10095;</span>16GB 그래픽카드에 14B 모델이 들어가는 마법 — 4-bit 양자화</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><span></span><a href="../p/object-storage-hosting.html" style="text-align:right"><span class="lbl">older</span>서버 없이 웹사이트 띄우기 2탄 — 오브젝트 스토리지 정적 호스팅</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>손으로 돌리면 되는데 크론으로는 안 되는 스크립트 — 환경변수의 배신 · 삽질노트</title>
+<meta name="description" content="터미널에서는 잘 도는 스크립트가 크론에서만 죽는다면, 코드가 아니라 &#x27;실행 환경&#x27;이 다른 겁니다. PATH, 작업 디렉토리, 셸 — 3대 용의자를 정리했어요.">
+<meta property="og:title" content="손으로 돌리면 되는데 크론으로는 안 되는 스크립트 — 환경변수의 배신 · 삽질노트">
+<meta property="og:description" content="터미널에서는 잘 도는 스크립트가 크론에서만 죽는다면, 코드가 아니라 &#x27;실행 환경&#x27;이 다른 겁니다. PATH, 작업 디렉토리, 셸 — 3대 용의자를 정리했어요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/cron-env.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/cron-env.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/cron-env.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/cron-env.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html" class="on">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-15</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>손으로 돌리면 되는데 크론으로는 안 되는 스크립트 — 환경변수의 배신</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 크론은 스크립트를 <strong>당신의 터미널이 아니라, 텅 빈 환경에서</strong> 실행합니다. <code>PATH</code>는 최소한이고, <code>.bashrc</code>도 안 읽고, 작업 디렉토리도 다릅니다. "손으로는 되는데 크론으로는 안 되는" 미스터리의 답은 거의 항상 여기에 있어요.</p>
+</blockquote>
+<h2 id="_1">증상</h2>
+<p>백업 스크립트를 만들어 터미널에서 실행 — 완벽하게 됩니다. crontab에 등록하고 퇴근. 다음 날 보니 백업이 없습니다. 크론 자체는 돌았는데(로그에 흔적 있음) 스크립트만 실패했어요. 코드를 아무리 봐도 문제가 없습니다. 당연하죠 — <strong>코드 문제가 아니니까.</strong></p>
+<h2 id="vs">비유: 내 주방 vs 빈 주방</h2>
+<p>터미널에서 실행하는 건 <strong>내 주방에서 요리하는 것</strong>입니다. 조미료(환경변수), 도구 위치(PATH), 익숙한 배치(작업 디렉토리)가 다 세팅돼 있죠. 크론은 같은 레시피를 <strong>아무것도 없는 빈 주방</strong>에서 실행합니다. "소금 어디 있지?"에서 요리가 멈추는 겁니다.</p>
+<h2 id="1-path">용의자 ① — 빈약한 PATH</h2>
+<p>터미널의 PATH에는 <code>/usr/local/bin</code> 등 온갖 경로가 들어 있지만, 크론의 PATH는 보통 <code>/usr/bin:/bin</code> 이 전부입니다. 그래서 <code>aws</code>, <code>kubectl</code>, <code>node</code>, <code>pyenv</code>로 깐 python 같은 것들이 <strong>"command not found"</strong> 로 죽어요.</p>
+<p>빈 주방을 직접 재현해보면 바로 이해됩니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># 크론과 비슷한 &#39;빈 환경&#39;에서 내 스크립트를 실행해보기</span>
+env<span class="w"> </span>-i<span class="w"> </span>/bin/sh<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;/home/me/backup.sh&#39;</span>
+<span class="c1"># 터미널에선 되는데 여기서 죽으면 → 환경 의존성 확진</span>
+</code></pre></div>
+
+<p>해법은 둘 중 하나 — crontab 상단에 PATH를 명시하거나, 스크립트 안에서 <strong>절대경로</strong>를 씁니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># crontab -e</span>
+<span class="nv">PATH</span><span class="o">=</span>/usr/local/bin:/usr/bin:/bin
+<span class="m">0</span><span class="w"> </span><span class="m">3</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>/home/me/backup.sh<span class="w"> </span>&gt;&gt;<span class="w"> </span>/var/log/backup.log<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span>
+</code></pre></div>
+
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># 또는 스크립트에서 절대경로로</span>
+/usr/local/bin/aws<span class="w"> </span>s3<span class="w"> </span>sync<span class="w"> </span>/data<span class="w"> </span>s3://my-backup/
+</code></pre></div>
+
+<h2 id="2-bashrc">용의자 ② — .bashrc는 안 읽힌다</h2>
+<p><code>export API_KEY=...</code> 를 <code>.bashrc</code>에 넣어뒀다면, 크론에선 <strong>없는 값</strong>입니다. 크론은 로그인 셸이 아니라서 그런 파일들을 읽지 않아요. 스크립트가 조용히 빈 값으로 돌다가 이상하게 실패하는 패턴이죠.</p>
+<p>해법: 필요한 변수를 crontab에 직접 적거나, 스크립트 첫머리에서 env 파일을 명시적으로 로드합니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="ch">#!/bin/bash</span>
+<span class="nb">set</span><span class="w"> </span>-a<span class="p">;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>/home/me/.env<span class="p">;</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>+a<span class="w">   </span><span class="c1"># .env의 변수를 export하며 로드</span>
+</code></pre></div>
+
+<p>(비밀값이라면 파일 권한 600, 더 나아가면 Secret Manager에서 실행 시점에 받아오는 게 상책입니다.)</p>
+<h2 id="3">용의자 ③ — 작업 디렉토리와 상대경로</h2>
+<p>터미널에선 스크립트 폴더에서 실행했겠지만, 크론의 작업 디렉토리는 <strong>홈 디렉토리</strong>입니다. <code>./config.json</code>, <code>../data/</code> 같은 상대경로가 전부 엉뚱한 곳을 가리켜요.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="ch">#!/bin/bash</span>
+<span class="nb">cd</span><span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>dirname<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$0</span><span class="s2">&quot;</span><span class="k">)</span><span class="s2">&quot;</span><span class="w">     </span><span class="c1"># 스크립트가 있는 곳으로 이동하고 시작 — 만능 한 줄</span>
+</code></pre></div>
+
+<h2 id="_2">그 외 잔펀치들</h2>
+<ul>
+<li><strong>셸이 다름:</strong> 크론 기본 셸은 <code>sh</code>(시스템에 따라 dash)입니다. 스크립트가 bash 문법(배열, <code>[[ ]]</code>)을 쓰면 깨져요. 셔뱅을 <code>#!/bin/bash</code>로 박고 실행 권한을 확인하세요.</li>
+<li><strong><code>%</code> 문자:</strong> crontab 명령줄에서 <code>%</code>는 개행으로 해석됩니다. <code>date +\%Y\%m\%d</code> 처럼 이스케이프 필수 — 백업 파일명에 날짜 넣다가 자주 당합니다.</li>
+<li><strong>출력을 버리지 마세요:</strong> 실패 원인은 stderr에 있습니다. 위 예시처럼 <code>&gt;&gt; 로그파일 2&gt;&amp;1</code> 를 붙여야 다음 날 아침에 볼 유언이 남아요.</li>
+</ul>
+<h2 id="_3">진단 루틴</h2>
+<ol>
+<li><code>grep CRON /var/log/syslog</code> (또는 <code>journalctl -u cron</code>) — 크론이 <strong>실행 시도</strong>는 했는지</li>
+<li>명령 끝에 <code>&gt;&gt; /tmp/x.log 2&gt;&amp;1</code> 붙이고 다음 주기 대기 — <strong>유언 확보</strong></li>
+<li><code>env -i /bin/sh -c '스크립트'</code> — 빈 주방 재현으로 <strong>환경 의존성 색출</strong></li>
+</ol>
+<h2 id="_4">한 줄 정리</h2>
+<p>크론은 코드를 바꾸지 않습니다 — <strong>주방을 바꿉니다.</strong> PATH 명시(또는 절대경로), env 명시적 로드, <code>cd "$(dirname "$0")"</code>, 로그 리다이렉트. 이 네 줄을 습관으로 만들면 "크론에서만 죽는" 스크립트는 사라져요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --troubleshooting</div><a href="../p/docker-localhost.html"><span class="g">&#10095;</span>컨테이너에서 localhost가 안 통하는 이유 — 도커 네트워크의 착각</a><a href="../p/crashloopbackoff.html"><span class="g">&#10095;</span>CrashLoopBackOff — 쿠버네티스가 &#x27;재시도 중&#x27;이라고 말하는 방식</a><a href="../p/inode-exhaustion.html"><span class="g">&#10095;</span>디스크 여유는 있는데 &#x27;No space left on device&#x27;? — inode 고갈 이야기</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/object-storage-hosting.html"><span class="lbl">newer</span>서버 없이 웹사이트 띄우기 2탄 — 오브젝트 스토리지 정적 호스팅</a><a href="../p/docker-localhost.html" style="text-align:right"><span class="lbl">older</span>컨테이너에서 localhost가 안 통하는 이유 — 도커 네트워크의 착각</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
