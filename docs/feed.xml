@@ -5,6 +5,27 @@
   <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
   <language>ko</language>
     <item>
+      <title>프로세스가 흔적도 없이 사라졌다 — OOM Killer의 소행 확인하기</title>
+      <link>https://sabjil-log.github.io/p/oom-killer.html</link>
+      <guid>https://sabjil-log.github.io/p/oom-killer.html</guid>
+      <pubDate>Thu, 16 Jul 2026 00:00:00 -0000</pubDate>
+      <description>에러 로그도 없이 프로세스가 증발했다면 커널의 OOM Killer를 의심하세요. 범행 확인법(dmesg), 피해자 선정 기준, 그리고 예방책까지.</description>
+    </item>
+    <item>
+      <title>&#x27;근거에 없으면 모른다고 해&#x27; 한 줄이 환각을 줄이는 이유</title>
+      <link>https://sabjil-log.github.io/p/grounding-hallucination.html</link>
+      <guid>https://sabjil-log.github.io/p/grounding-hallucination.html</guid>
+      <pubDate>Thu, 16 Jul 2026 00:00:00 -0000</pubDate>
+      <description>LLM은 거짓말을 하는 게 아니라, &#x27;그럴듯한 다음 말&#x27;을 멈추지 못하는 겁니다. 근거 지시 한 줄이 왜 동작하는지, 그리고 어디까지 믿어도 되는지.</description>
+    </item>
+    <item>
+      <title>클라우드 비용이 새는 곳 톱5 — 고지서가 놀라기 전에 잡는 법</title>
+      <link>https://sabjil-log.github.io/p/cloud-cost-leaks.html</link>
+      <guid>https://sabjil-log.github.io/p/cloud-cost-leaks.html</guid>
+      <pubDate>Thu, 16 Jul 2026 00:00:00 -0000</pubDate>
+      <description>클라우드 요금 폭탄의 범인은 대부분 화려한 서비스가 아니라 &#x27;잊혀진 것들&#x27;입니다. 새는 곳 다섯 군데와 각각의 점검 명령을 정리했어요.</description>
+    </item>
+    <item>
       <title>벡터 DB는 뭐가 다른가 — &#x27;대충 가까운 것&#x27;을 빛의 속도로 찾는 기술 (ANN)</title>
       <link>https://sabjil-log.github.io/p/vector-db-ann.html</link>
       <guid>https://sabjil-log.github.io/p/vector-db-ann.html</guid>
@@ -122,26 +143,5 @@
       <guid>https://sabjil-log.github.io/p/public-private-subnet.html</guid>
       <pubDate>Sat, 11 Jul 2026 00:00:00 -0000</pubDate>
       <description>서브넷에 &#x27;public&#x27;이라는 속성이 따로 있는 게 아닙니다. 라우팅 테이블에 인터넷으로 가는 길이 있느냐 없느냐, 그 한 줄 차이예요.</description>
-    </item>
-    <item>
-      <title>로드밸런서 헬스체크가 실패하는 3대장 — 포트, 경로, 방화벽</title>
-      <link>https://sabjil-log.github.io/p/lb-healthcheck.html</link>
-      <guid>https://sabjil-log.github.io/p/lb-healthcheck.html</guid>
-      <pubDate>Sat, 11 Jul 2026 00:00:00 -0000</pubDate>
-      <description>서버는 멀쩡한데 LB가 자꾸 UNHEALTHY라면, 범인은 거의 항상 셋 중 하나입니다. 순서대로 확인하는 법을 정리했어요.</description>
-    </item>
-    <item>
-      <title>디스크 여유는 있는데 &#x27;No space left on device&#x27;? — inode 고갈 이야기</title>
-      <link>https://sabjil-log.github.io/p/inode-exhaustion.html</link>
-      <guid>https://sabjil-log.github.io/p/inode-exhaustion.html</guid>
-      <pubDate>Sat, 11 Jul 2026 00:00:00 -0000</pubDate>
-      <description>df -h는 30% 사용인데 파일이 안 만들어진다면, 용량이 아니라 inode가 바닥난 겁니다. 주차장 비유로 이해하고 5분 만에 범인 찾는 법.</description>
-    </item>
-    <item>
-      <title>grep·awk·sed 삼총사 — 로그에서 원하는 값만 뽑아내는 법</title>
-      <link>https://sabjil-log.github.io/p/grep-awk-sed.html</link>
-      <guid>https://sabjil-log.github.io/p/grep-awk-sed.html</guid>
-      <pubDate>Sat, 11 Jul 2026 00:00:00 -0000</pubDate>
-      <description>grep은 줄을 고르고, awk는 칸을 자르고, sed는 글자를 바꿉니다. 역할 분담만 알면 어떤 로그든 파이프 한 줄로 정리돼요.</description>
     </item>
 </channel></rss>

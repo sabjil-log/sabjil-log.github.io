@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>프로세스가 흔적도 없이 사라졌다 — OOM Killer의 소행 확인하기 · 삽질노트</title>
+<meta name="description" content="에러 로그도 없이 프로세스가 증발했다면 커널의 OOM Killer를 의심하세요. 범행 확인법(dmesg), 피해자 선정 기준, 그리고 예방책까지.">
+<meta property="og:title" content="프로세스가 흔적도 없이 사라졌다 — OOM Killer의 소행 확인하기 · 삽질노트">
+<meta property="og:description" content="에러 로그도 없이 프로세스가 증발했다면 커널의 OOM Killer를 의심하세요. 범행 확인법(dmesg), 피해자 선정 기준, 그리고 예방책까지.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/oom-killer.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/oom-killer.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/oom-killer.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/oom-killer.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html" class="on">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-16</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>프로세스가 흔적도 없이 사라졌다 — OOM Killer의 소행 확인하기</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 메모리가 바닥나면 커널은 시스템 전체가 죽는 걸 막으려고 <strong>프로세스 하나를 골라 즉살</strong>합니다. 이게 OOM Killer — 죽은 앱의 로그에는 아무것도 안 남고, <strong>범행 기록은 커널 로그(dmesg)에만</strong> 남아요.</p>
+</blockquote>
+<h2 id="_1">증상</h2>
+<p>새벽에 앱이 사라졌습니다. 앱 로그는 평범한 마지막 줄에서 뚝 끊겼고, 에러도 스택트레이스도 없어요. <code>systemctl status</code>엔 <code>signal=KILL(9)</code>. SIGKILL은 앱이 인지할 수도, 유언을 남길 수도 없는 신호라 <strong>로그가 없는 게 오히려 단서</strong>입니다. 그리고 SIGKILL을 날리는 대표 용의자가 커널의 OOM Killer예요.</p>
+<h2 id="_2">왜 커널이 살인을 하나</h2>
+<p>리눅스는 메모리를 낙관적으로 빌려줍니다(overcommit) — 은행이 예치금보다 많은 대출을 해주듯이요. 평소엔 다들 빌린 만큼 안 쓰니 굴러가는데, 어느 날 모두가 진짜로 쓰기 시작하면 <strong>지급 불능</strong> 사태가 옵니다. 이때 커널의 선택지는 둘뿐입니다: 시스템 전체가 얼어붙거나, <strong>누군가 하나를 희생시켜 나머지를 살리거나.</strong> OOM Killer는 후자를 집행하는 커널의 비상 장치입니다. 버그가 아니라 설계예요.</p>
+<h2 id="dmesg">범행 확인 — dmesg가 사건 기록부</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>dmesg<span class="w"> </span>-T<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>-B2<span class="w"> </span>-A8<span class="w"> </span><span class="s2">&quot;out of memory&quot;</span>
+<span class="c1"># 또는</span>
+journalctl<span class="w"> </span>-k<span class="w"> </span>--since<span class="w"> </span>yesterday<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>-A8<span class="w"> </span><span class="s2">&quot;out of memory&quot;</span>
+</code></pre></div>
+
+<p>이런 기록이 나오면 확진입니다.</p>
+<div class="highlight"><pre><span></span><code>Out of memory: Killed process 21437 (java)
+  total-vm:18653220kB, anon-rss:14892340kB ...
+</code></pre></div>
+
+<p><code>anon-rss</code>가 사망 당시 그 프로세스가 실제로 점유하던 메모리 — <strong>누가 얼마나 먹다 죽었는지</strong>가 여기 다 적혀 있습니다. 기록 주변의 메모리 상태 덤프를 보면 당시 다른 프로세스들의 점유량도 나와서, 진짜 메모리 돼지가 피해자였는지 아니면 딴 놈이 저질러놓고 애먼 놈이 죽었는지도 가려집니다.</p>
+<h2 id="oom_score">피해자는 어떻게 고르나 — oom_score</h2>
+<p>커널은 죽일 프로세스를 무작위로 고르지 않습니다. 프로세스마다 <strong>oom_score</strong>(대략 "메모리를 많이 쓸수록 높음")를 매기고 최고점을 처형해요. 문제는 보통 <strong>가장 많이 쓰는 놈 = 우리 서비스의 메인 프로세스</strong>라는 것. DB나 JVM이 단골 피해자인 이유입니다.</p>
+<p>중요한 프로세스는 면책 특권을 줄 수 있습니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>cat<span class="w"> </span>/proc/<span class="k">$(</span>pgrep<span class="w"> </span>-f<span class="w"> </span>myapp<span class="k">)</span>/oom_score<span class="w">          </span><span class="c1"># 현재 점수 확인</span>
+
+<span class="c1"># systemd 서비스라면 유닛에 한 줄 (권장 방식)</span>
+<span class="c1"># [Service]</span>
+<span class="c1"># OOMScoreAdjust=-500        # 낮을수록 안 죽음 (-1000 = 완전 면제)</span>
+</code></pre></div>
+
+<p>단, 면제는 <strong>폭탄 돌리기</strong>이기도 합니다. 메인을 면제하면 커널은 다음 점수의 프로세스(모니터링 에이전트, ssh 등)를 죽여요. 근본 해결이 아니라 우선순위 조정일 뿐입니다.</p>
+<h2 id="_3">진짜 예방 — 세 방향</h2>
+<p><strong>① 원인 규명:</strong> 그 시각에 누가 메모리를 늘렸는지. 메모리 누수인지(우상향 그래프), 특정 작업의 스파이크인지(새벽 배치, 대량 쿼리). <code>dmesg</code> 기록의 타임스탬프와 배치 스케줄을 대조하는 것만으로 잡히는 경우가 많습니다.</p>
+<p><strong>② 한도를 명시해 국지화:</strong> 컨테이너/서비스에 메모리 limit을 걸면, 터져도 <strong>그 컨테이너만</strong> 죽고(cgroup OOM) 호스트 전체의 룰렛이 안 돌아갑니다. 쿠버네티스의 OOMKilled(137)가 바로 이것 — 전에 다룬 CrashLoopBackOff의 범인 ②와 같은 사건의 컨테이너 버전입니다.</p>
+<p><strong>③ 스왑과 조기 경보:</strong> 스왑은 OOM을 막아주는 대신 그 전에 시스템을 끈적하게 만듭니다(성능 저하로 버티기). 서비스 특성에 따라 선택이고, 어느 쪽이든 <strong>메모리 사용률 알람(80~90%)</strong>을 걸어 룰렛이 돌기 전에 사람이 개입할 시간을 버는 게 정석입니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>free<span class="w"> </span>-h<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>ps<span class="w"> </span>aux<span class="w"> </span>--sort<span class="o">=</span>-%mem<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-6<span class="w">   </span><span class="c1"># 지금 누가 먹고 있나 — 평소에 봐두기</span>
+</code></pre></div>
+
+<h2 id="_4">한 줄 정리</h2>
+<p>로그 없이 증발 + signal 9 = <strong>dmesg부터.</strong> OOM Killer는 버그가 아니라 커널의 비상 조치이고, 기록은 전부 커널 로그에 있습니다. 중요 프로세스는 <code>OOMScoreAdjust</code>로 보호하되, 진짜 답은 <strong>누가 왜 메모리를 다 먹었는지</strong>를 찾는 것 — 살인범이 아니라 지급 불능을 만든 놈이 진범입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --troubleshooting</div><a href="../p/cron-env.html"><span class="g">&#10095;</span>손으로 돌리면 되는데 크론으로는 안 되는 스크립트 — 환경변수의 배신</a><a href="../p/docker-localhost.html"><span class="g">&#10095;</span>컨테이너에서 localhost가 안 통하는 이유 — 도커 네트워크의 착각</a><a href="../p/crashloopbackoff.html"><span class="g">&#10095;</span>CrashLoopBackOff — 쿠버네티스가 &#x27;재시도 중&#x27;이라고 말하는 방식</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><span></span><a href="../p/grounding-hallucination.html" style="text-align:right"><span class="lbl">older</span>&#x27;근거에 없으면 모른다고 해&#x27; 한 줄이 환각을 줄이는 이유</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
