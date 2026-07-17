@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>컨테이너를 지웠더니 DB가 날아갔다 — 볼륨과 바인드 마운트 제대로 알기 · 삽질노트</title>
+<meta name="description" content="컨테이너 안의 데이터는 컨테이너와 운명을 같이합니다. 볼륨/바인드 마운트의 차이, 각각 언제 쓰는지, 그리고 이미 벌어진 사고의 수습법까지.">
+<meta property="og:title" content="컨테이너를 지웠더니 DB가 날아갔다 — 볼륨과 바인드 마운트 제대로 알기 · 삽질노트">
+<meta property="og:description" content="컨테이너 안의 데이터는 컨테이너와 운명을 같이합니다. 볼륨/바인드 마운트의 차이, 각각 언제 쓰는지, 그리고 이미 벌어진 사고의 수습법까지.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/docker-volumes.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/docker-volumes.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/docker-volumes.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/docker-volumes.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html" class="on">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-17</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>컨테이너를 지웠더니 DB가 날아갔다 — 볼륨과 바인드 마운트 제대로 알기</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 컨테이너의 파일시스템은 <strong>컨테이너가 지워지면 함께 사라집니다.</strong> 살아남아야 할 데이터(DB, 업로드 파일)는 반드시 <strong>볼륨</strong>이나 <strong>바인드 마운트</strong>로 밖에 두세요. 운영 데이터는 볼륨, 개발 중 소스코드는 바인드 마운트 — 이 구분이 기본기입니다.</p>
+</blockquote>
+<h2 id="_1">사고 현장</h2>
+<p>디스크 정리한다고 <code>docker rm</code> 몇 번, 혹은 <code>docker compose down</code> 후 다시 <code>up</code>. 그런데 DB가 텅 비어 있습니다. 백업은... 없죠. 원인은 단순합니다 — <strong>데이터가 컨테이너 안에</strong> 있었던 거예요.</p>
+<h2 id="_2">비유: 호텔 방과 개인 창고</h2>
+<p>컨테이너는 <strong>호텔 방</strong>입니다. 체크아웃(rm)하면 방은 초기화돼요. 방 안 서랍에 넣어둔 물건(컨테이너 내부에 쓴 파일)은 함께 사라집니다.</p>
+<p>살아남으려면 물건을 <strong>방 밖</strong>에 둬야 합니다. 방법이 둘이에요.</p>
+<ul>
+<li><strong>볼륨(volume):</strong> 호텔이 운영하는 <strong>개인 창고</strong>. 도커가 관리하는 전용 공간(<code>/var/lib/docker/volumes/...</code>)에 데이터를 두고, 방에는 그 창고로 통하는 문만 냅니다. 방을 몇 번 바꿔도 창고는 그대로.</li>
+<li><strong>바인드 마운트(bind mount):</strong> <strong>내 집 방 하나를 호텔 방에 직결</strong>하는 것. 호스트의 특정 경로(<code>/home/me/app</code>)를 컨테이너 안에 그대로 보여줍니다.</li>
+</ul>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># 볼륨: 도커가 관리하는 이름 있는 창고</span>
+docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>-v<span class="w"> </span>pgdata:/var/lib/postgresql/data<span class="w"> </span>postgres
+
+<span class="c1"># 바인드 마운트: 호스트 경로를 직접 연결 (경로가 / 로 시작하면 바인드)</span>
+docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>-v<span class="w"> </span>/home/me/site:/usr/share/nginx/html<span class="w"> </span>nginx
+</code></pre></div>
+
+<p>구분법은 간단합니다 — <strong><code>-v</code> 첫 부분이 이름이면 볼륨, 경로면 바인드.</strong></p>
+<h2 id="_3">언제 뭘 쓰나</h2>
+<p><strong>볼륨 = 운영 데이터.</strong> DB 데이터, 업로드 파일처럼 "컨테이너보다 오래 살아야 하는 것". 도커가 권한·위치를 관리해줘서 이식성이 좋고, 백업 대상도 명확해집니다.</p>
+<p><strong>바인드 마운트 = 개발 편의.</strong> 소스코드를 물려두면 에디터로 고치는 즉시 컨테이너에 반영 — 개발 루프의 핵심이죠. 설정 파일 하나만 꽂을 때도 씁니다. 단점은 호스트 경로에 종속되고(다른 서버에선 그 경로가 없을 수 있음), 호스트 파일을 컨테이너가 직접 만지므로 권한(UID 불일치) 문제가 따라온다는 것.</p>
+<p>compose로 쓰면 이렇게 나뉩니다.</p>
+<div class="highlight"><pre data-lang="yaml"><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">db</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pgdata:/var/lib/postgresql/data</span><span class="w">     </span><span class="c1"># 볼륨 (운영 데이터)</span>
+<span class="w">  </span><span class="nt">app</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">build</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./src:/app/src</span><span class="w">                       </span><span class="c1"># 바인드 (개발 소스)</span>
+
+<span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">pgdata</span><span class="p">:</span><span class="w">                                    </span><span class="c1"># 이름 있는 볼륨 선언</span>
+</code></pre></div>
+
+<h2 id="_4">함정 셋</h2>
+<p><strong>① <code>docker compose down -v</code></strong> — 이 <code>-v</code> 는 <strong>볼륨까지 삭제</strong>합니다. "정리 좀 하자"고 습관처럼 붙였다가 DB가 증발하는 단골 사고. down은 그냥 down, 볼륨 삭제는 의식적으로.</p>
+<p><strong>② 이미지에 데이터가 있다는 착각</strong> — <code>docker commit</code>이나 이미지 재빌드로 데이터가 보존될 거라 기대하면 안 됩니다. 데이터는 이미지 레이어가 아니라 (사라지는) 컨테이너 레이어에 쓰입니다.</p>
+<p><strong>③ 어디에 뭘 마운트해야 하는지 모름</strong> — 이미지마다 데이터 경로가 다릅니다(postgres는 <code>/var/lib/postgresql/data</code>, mysql은 <code>/var/lib/mysql</code>). Docker Hub 문서의 "Where to Store Data" 섹션이 항상 답을 갖고 있어요.</p>
+<h2 id="_5">점검과 수습</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>docker<span class="w"> </span>volume<span class="w"> </span>ls<span class="w">                                   </span><span class="c1"># 창고 목록</span>
+docker<span class="w"> </span>inspect<span class="w"> </span>컨테이너<span class="w"> </span>--format<span class="w"> </span><span class="s1">&#39;{{json .Mounts}}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-m<span class="w"> </span>json.tool
+<span class="c1"># 지금 이 컨테이너의 데이터가 어디 붙어 있는지 — 비어 있으면 위험 신호</span>
+
+<span class="c1"># 볼륨 백업 (창고 통째로 tar)</span>
+docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-v<span class="w"> </span>pgdata:/data<span class="w"> </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>:/backup<span class="w"> </span>alpine<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>tar<span class="w"> </span>czf<span class="w"> </span>/backup/pgdata-<span class="k">$(</span>date<span class="w"> </span>+%Y%m%d<span class="k">)</span>.tar.gz<span class="w"> </span>-C<span class="w"> </span>/data<span class="w"> </span>.
+</code></pre></div>
+
+<p>이미 컨테이너를 지웠다면 — 컨테이너만 지웠고(<code>docker rm</code>) 볼륨을 쓰고 있었다면 <code>docker volume ls</code>에 창고가 남아 있을 수 있습니다. 볼륨 없이 컨테이너 내부에 있었다면, 안타깝지만 복구 수단이 사실상 없습니다. 그래서 이 글이 사고 <strong>전에</strong> 읽혀야 하는 글이에요.</p>
+<h2 id="_6">한 줄 정리</h2>
+<p><strong>컨테이너는 언제든 버려질 수 있다는 전제</strong>로 설계하세요. 살아남을 데이터는 볼륨에, 개발 소스는 바인드로, <code>down -v</code>는 손가락 조심 — 그리고 <code>inspect .Mounts</code>로 지금 어디에 데이터가 있는지 오늘 확인해두세요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --troubleshooting</div><a href="../p/oom-killer.html"><span class="g">&#10095;</span>프로세스가 흔적도 없이 사라졌다 — OOM Killer의 소행 확인하기</a><a href="../p/cron-env.html"><span class="g">&#10095;</span>손으로 돌리면 되는데 크론으로는 안 되는 스크립트 — 환경변수의 배신</a><a href="../p/docker-localhost.html"><span class="g">&#10095;</span>컨테이너에서 localhost가 안 통하는 이유 — 도커 네트워크의 착각</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/finetuning-vs-rag.html"><span class="lbl">newer</span>파인튜닝 vs RAG — 지식을 가르칠까, 찾아 쓰게 할까</a><a href="../p/oom-killer.html" style="text-align:right"><span class="lbl">older</span>프로세스가 흔적도 없이 사라졌다 — OOM Killer의 소행 확인하기</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

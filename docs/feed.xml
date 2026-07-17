@@ -5,6 +5,48 @@
   <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
   <language>ko</language>
     <item>
+      <title>TIME_WAIT가 수만 개 쌓였는데 괜찮은 걸까 — 소켓 상태 읽는 법</title>
+      <link>https://sabjil-log.github.io/p/time-wait.html</link>
+      <guid>https://sabjil-log.github.io/p/time-wait.html</guid>
+      <pubDate>Fri, 17 Jul 2026 00:00:00 -0000</pubDate>
+      <description>ss로 보면 TIME_WAIT가 수만 개. 장애일까요? 대부분은 정상이고, 문제가 되는 건 딱 한 상황입니다. 식당 테이블 비유로 정리했어요.</description>
+    </item>
+    <item>
+      <title>관리형 DB로 옮기면 끝인 줄 알았다 — 이관할 때 놓치는 것들</title>
+      <link>https://sabjil-log.github.io/p/managed-db-migration.html</link>
+      <guid>https://sabjil-log.github.io/p/managed-db-migration.html</guid>
+      <pubDate>Fri, 17 Jul 2026 00:00:00 -0000</pubDate>
+      <description>설치·패치·백업을 벤더가 해주는 건 맞습니다. 하지만 파라미터, 백업 검증, 장애조치, 권한은 여전히 우리 몫 — &#x27;관리형&#x27;의 경계선을 정리했어요.</description>
+    </item>
+    <item>
+      <title>LLM은 왜 최신 뉴스를 모를까 — 지식 컷오프와 그 대처법</title>
+      <link>https://sabjil-log.github.io/p/knowledge-cutoff.html</link>
+      <guid>https://sabjil-log.github.io/p/knowledge-cutoff.html</guid>
+      <pubDate>Fri, 17 Jul 2026 00:00:00 -0000</pubDate>
+      <description>모델은 &#x27;학습이 끝난 날&#x27;까지의 세상만 압니다. 문제는 모른다고 안 하고 아는 척한다는 것 — 컷오프의 정체와 세 가지 대처를 정리했어요.</description>
+    </item>
+    <item>
+      <title>일단 관리자 권한 주세요 — 클라우드 IAM 최소권한, 현실적으로 시작하기</title>
+      <link>https://sabjil-log.github.io/p/iam-least-privilege.html</link>
+      <guid>https://sabjil-log.github.io/p/iam-least-privilege.html</guid>
+      <pubDate>Fri, 17 Jul 2026 00:00:00 -0000</pubDate>
+      <description>&#x27;바쁘니까 일단 admin&#x27;이 계정 하나 유출을 전사 사고로 키웁니다. 이상론 말고, 내일부터 적용 가능한 최소권한 루틴을 정리했어요.</description>
+    </item>
+    <item>
+      <title>파인튜닝 vs RAG — 지식을 가르칠까, 찾아 쓰게 할까</title>
+      <link>https://sabjil-log.github.io/p/finetuning-vs-rag.html</link>
+      <guid>https://sabjil-log.github.io/p/finetuning-vs-rag.html</guid>
+      <pubDate>Fri, 17 Jul 2026 00:00:00 -0000</pubDate>
+      <description>사내 지식을 AI에 넣는 두 갈래 길. &#x27;외우게 하기&#x27;와 &#x27;찾아보게 하기&#x27;의 차이를 알면, 대부분의 경우 답이 RAG부터인 이유가 보입니다.</description>
+    </item>
+    <item>
+      <title>컨테이너를 지웠더니 DB가 날아갔다 — 볼륨과 바인드 마운트 제대로 알기</title>
+      <link>https://sabjil-log.github.io/p/docker-volumes.html</link>
+      <guid>https://sabjil-log.github.io/p/docker-volumes.html</guid>
+      <pubDate>Fri, 17 Jul 2026 00:00:00 -0000</pubDate>
+      <description>컨테이너 안의 데이터는 컨테이너와 운명을 같이합니다. 볼륨/바인드 마운트의 차이, 각각 언제 쓰는지, 그리고 이미 벌어진 사고의 수습법까지.</description>
+    </item>
+    <item>
       <title>프로세스가 흔적도 없이 사라졌다 — OOM Killer의 소행 확인하기</title>
       <link>https://sabjil-log.github.io/p/oom-killer.html</link>
       <guid>https://sabjil-log.github.io/p/oom-killer.html</guid>
@@ -101,47 +143,5 @@
       <guid>https://sabjil-log.github.io/p/crashloopbackoff.html</guid>
       <pubDate>Mon, 13 Jul 2026 00:00:00 -0000</pubDate>
       <description>CrashLoopBackOff는 병명이 아니라 증상입니다. &#x27;컨테이너가 죽어서 점점 천천히 재시도 중&#x27;이라는 뜻 — 진짜 원인 찾는 순서를 정리했어요.</description>
-    </item>
-    <item>
-      <title>오토스케일링이 늘어나기만 하고 줄지 않는 이유 — 쿨다운과 지표의 함정</title>
-      <link>https://sabjil-log.github.io/p/autoscaling-scalein.html</link>
-      <guid>https://sabjil-log.github.io/p/autoscaling-scalein.html</guid>
-      <pubDate>Mon, 13 Jul 2026 00:00:00 -0000</pubDate>
-      <description>스케일아웃은 잘 되는데 새벽에도 서버가 안 줄어 요금만 나간다면, 범인은 대개 지표 선택과 쿨다운·정책 설정입니다.</description>
-    </item>
-    <item>
-      <title>코드에 DB 비밀번호를 박으면 생기는 일 — Secret Manager를 쓰는 이유</title>
-      <link>https://sabjil-log.github.io/p/secret-manager.html</link>
-      <guid>https://sabjil-log.github.io/p/secret-manager.html</guid>
-      <pubDate>Sun, 12 Jul 2026 00:00:00 -0000</pubDate>
-      <description>비밀번호를 코드나 설정 파일에 넣는 순간, 그 비밀은 git 히스토리를 타고 영원히 삽니다. 시크릿 저장소가 해결하는 진짜 문제를 정리했어요.</description>
-    </item>
-    <item>
-      <title>1차 검색은 왜 부족한가 — 리랭커가 RAG에서 하는 일</title>
-      <link>https://sabjil-log.github.io/p/reranker.html</link>
-      <guid>https://sabjil-log.github.io/p/reranker.html</guid>
-      <pubDate>Sun, 12 Jul 2026 00:00:00 -0000</pubDate>
-      <description>벡터 검색은 빠르지만 거칠고, 리랭커는 느리지만 정확합니다. 서류전형과 면접, 두 단계를 나눠 쓰는 이유를 정리했어요.</description>
-    </item>
-    <item>
-      <title>load average 4.0은 위험한가 — top 숫자를 읽을 줄 안다는 것</title>
-      <link>https://sabjil-log.github.io/p/load-average.html</link>
-      <guid>https://sabjil-log.github.io/p/load-average.html</guid>
-      <pubDate>Sun, 12 Jul 2026 00:00:00 -0000</pubDate>
-      <description>load average는 %가 아니라 &#x27;줄 서 있는 일감 개수&#x27;입니다. CPU 코어 수와 비교해야 비로소 의미가 생기는 숫자예요.</description>
-    </item>
-    <item>
-      <title>토큰이 뭔데 요금을 토큰으로 매기나 — 글자도 단어도 아닌 그 중간</title>
-      <link>https://sabjil-log.github.io/p/what-is-token.html</link>
-      <guid>https://sabjil-log.github.io/p/what-is-token.html</guid>
-      <pubDate>Sat, 11 Jul 2026 00:00:00 -0000</pubDate>
-      <description>LLM은 글자도 단어도 아닌 &#x27;토큰&#x27; 단위로 읽고 씁니다. 레고 블록 비유로 이해하고, 한국어가 영어보다 토큰을 더 먹는 이유까지.</description>
-    </item>
-    <item>
-      <title>public 서브넷과 private 서브넷, 뭐가 다른 걸까 — 라우팅 테이블이 전부다</title>
-      <link>https://sabjil-log.github.io/p/public-private-subnet.html</link>
-      <guid>https://sabjil-log.github.io/p/public-private-subnet.html</guid>
-      <pubDate>Sat, 11 Jul 2026 00:00:00 -0000</pubDate>
-      <description>서브넷에 &#x27;public&#x27;이라는 속성이 따로 있는 게 아닙니다. 라우팅 테이블에 인터넷으로 가는 길이 있느냐 없느냐, 그 한 줄 차이예요.</description>
     </item>
 </channel></rss>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>파인튜닝 vs RAG — 지식을 가르칠까, 찾아 쓰게 할까 · 삽질노트</title>
+<meta name="description" content="사내 지식을 AI에 넣는 두 갈래 길. &#x27;외우게 하기&#x27;와 &#x27;찾아보게 하기&#x27;의 차이를 알면, 대부분의 경우 답이 RAG부터인 이유가 보입니다.">
+<meta property="og:title" content="파인튜닝 vs RAG — 지식을 가르칠까, 찾아 쓰게 할까 · 삽질노트">
+<meta property="og:description" content="사내 지식을 AI에 넣는 두 갈래 길. &#x27;외우게 하기&#x27;와 &#x27;찾아보게 하기&#x27;의 차이를 알면, 대부분의 경우 답이 RAG부터인 이유가 보입니다.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/finetuning-vs-rag.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/finetuning-vs-rag.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/finetuning-vs-rag.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/finetuning-vs-rag.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-17</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>파인튜닝 vs RAG — 지식을 가르칠까, 찾아 쓰게 할까</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 파인튜닝은 모델을 <strong>훈련시켜 몸에 배게</strong> 하는 것, RAG는 <strong>자료를 찾아 보여주며</strong> 일 시키는 것입니다. <strong>지식(사실·문서)은 RAG, 행동(말투·형식·도메인 습관)은 파인튜닝</strong> — 이 구분 하나면 선택의 8할이 끝나요.</p>
+</blockquote>
+<h2 id="_1">질문의 기원</h2>
+<p>"우리 회사 문서를 학습시키고 싶어요"라는 요청은 대부분 파인튜닝을 상상합니다. 직관적이니까요 — 사람도 배우면 아는 거니까. 그런데 신입사원 비유로 바꿔보면 그림이 달라집니다.</p>
+<ul>
+<li><strong>파인튜닝</strong> = 신입을 <strong>몇 달 교육시켜</strong> 회사 지식을 몸에 배게 하기</li>
+<li><strong>RAG</strong> = 신입에게 <strong>잘 정리된 사내 위키를 쥐여주고</strong> "찾아보며 일해"</li>
+</ul>
+<p>규정이 다음 주에 바뀌면? 교육받은 신입은 <strong>재교육</strong>해야 하지만, 위키를 쓰는 신입은 <strong>위키만 고치면</strong> 됩니다. 이 차이가 거의 모든 것을 결정해요.</p>
+<h2 id="rag">지식을 넣는 일이라면 — RAG가 기본값인 이유</h2>
+<p><strong>① 갱신 비용.</strong> 파인튜닝된 지식은 다음 튜닝까지 동결입니다(자체 지식 컷오프가 생기는 셈). RAG는 문서 교체 = 즉시 반영.</p>
+<p><strong>② 출처와 검증.</strong> RAG는 "이 답의 근거는 이 문서 3페이지"가 됩니다. 파인튜닝된 지식은 모델 파라미터에 녹아 있어 <strong>출처를 댈 수 없고</strong>, 틀려도 왜 틀렸는지 추적이 안 됩니다. 규정·컴플라이언스 답변처럼 근거가 필수인 용도에선 이것만으로 결론이 나요.</p>
+<p><strong>③ 환각 통제.</strong> 의외의 사실: 파인튜닝은 지식 주입 수단으로 신뢰성이 낮습니다. 모델이 새 사실을 "외우는" 정도가 고르지 않고, 어설프게 외운 지식은 오히려 그럴듯한 오답의 재료가 돼요. RAG는 근거 지시("문서에 없으면 모른다고")로 통제 가능한 구조고요.</p>
+<p><strong>④ 비용과 반복 속도.</strong> RAG는 파이프라인(청킹→임베딩→검색→리랭크) 구축이 일이지만, 문서가 바뀔 때마다 드는 비용은 거의 0. 파인튜닝은 데이터셋 구축 + 학습 + 평가를 <strong>매 갱신마다</strong> 반복합니다.</p>
+<h2 id="_2">그럼 파인튜닝은 언제 — '행동'을 바꿀 때</h2>
+<p>RAG로는 안 되는 게 있습니다. 프롬프트에 예시를 아무리 넣어도 <strong>일관되게 안 지켜지는 것들</strong> —</p>
+<ul>
+<li><strong>말투·페르소나:</strong> 우리 브랜드 톤을 매 응답에서 유지</li>
+<li><strong>출력 형식:</strong> 특수한 사내 포맷·스키마를 항상 정확히</li>
+<li><strong>도메인 방언:</strong> 의료·법률·특정 업계의 표현 습관과 판단 결</li>
+<li><strong>작업 특화:</strong> 분류·추출처럼 좁은 작업을 작은 모델로 빠르고 싸게 (큰 모델 + 긴 프롬프트를 작은 튜닝 모델로 대체해 단가를 낮추는 케이스)</li>
+</ul>
+<p>공통점이 보이죠 — 전부 <strong>"무엇을 아느냐"가 아니라 "어떻게 행동하느냐"</strong>입니다. 지식은 찾아 쓰면 되지만, 습관은 몸에 배야 합니다.</p>
+<h2 id="_3">판별 질문 세 개</h2>
+<div class="highlight"><pre><span></span><code>1. 그 내용이 자주 바뀌는가?           → 예: RAG
+2. 답변에 출처가 필요한가?            → 예: RAG
+3. 문제가 &#39;내용&#39;이 아니라 &#39;스타일/형식의 일관성&#39;인가? → 예: 파인튜닝 검토
+</code></pre></div>
+
+<p>그리고 순서의 원칙: <strong>프롬프트 엔지니어링 → RAG → 파인튜닝.</strong> 싸고 되돌리기 쉬운 것부터. 프롬프트로 되면 거기서 끝내고, 지식 문제면 RAG, 그래도 남는 행동 문제만 파인튜닝으로. 실무에서 "파인튜닝이 필요해요"의 상당수는 앞 두 단계에서 해결됩니다.</p>
+<h2 id="_4">물론 결합도 된다</h2>
+<p>둘은 배타적이지 않습니다. 성숙한 구성은 오히려 결합이에요 — <strong>도메인 말투·형식은 파인튜닝</strong>으로 몸에 입히고, <strong>사실과 최신 규정은 RAG</strong>로 공급. 교육 잘 받은 신입이 위키를 찾아보며 일하는, 가장 이상적인 그 그림입니다.</p>
+<h2 id="_5">한 줄 정리</h2>
+<p><strong>아는 것(지식)은 RAG, 하는 것(행동)은 파인튜닝.</strong> 순서는 프롬프트 → RAG → 파인튜닝으로, 싸고 되돌리기 쉬운 쪽부터. "우리 문서를 학습시켜줘"의 진짜 답은 대부분 "학습 말고 검색"입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/knowledge-cutoff.html"><span class="g">&#10095;</span>LLM은 왜 최신 뉴스를 모를까 — 지식 컷오프와 그 대처법</a><a href="../p/grounding-hallucination.html"><span class="g">&#10095;</span>&#x27;근거에 없으면 모른다고 해&#x27; 한 줄이 환각을 줄이는 이유</a><a href="../p/vector-db-ann.html"><span class="g">&#10095;</span>벡터 DB는 뭐가 다른가 — &#x27;대충 가까운 것&#x27;을 빛의 속도로 찾는 기술 (ANN)</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/iam-least-privilege.html"><span class="lbl">newer</span>일단 관리자 권한 주세요 — 클라우드 IAM 최소권한, 현실적으로 시작하기</a><a href="../p/docker-volumes.html" style="text-align:right"><span class="lbl">older</span>컨테이너를 지웠더니 DB가 날아갔다 — 볼륨과 바인드 마운트 제대로 알기</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

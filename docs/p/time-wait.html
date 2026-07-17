@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TIME_WAIT가 수만 개 쌓였는데 괜찮은 걸까 — 소켓 상태 읽는 법 · 삽질노트</title>
+<meta name="description" content="ss로 보면 TIME_WAIT가 수만 개. 장애일까요? 대부분은 정상이고, 문제가 되는 건 딱 한 상황입니다. 식당 테이블 비유로 정리했어요.">
+<meta property="og:title" content="TIME_WAIT가 수만 개 쌓였는데 괜찮은 걸까 — 소켓 상태 읽는 법 · 삽질노트">
+<meta property="og:description" content="ss로 보면 TIME_WAIT가 수만 개. 장애일까요? 대부분은 정상이고, 문제가 되는 건 딱 한 상황입니다. 식당 테이블 비유로 정리했어요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/time-wait.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/time-wait.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/time-wait.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/time-wait.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html" class="on">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-17</span><a class="chip" href="../c/network.html">--network</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>TIME_WAIT가 수만 개 쌓였는데 괜찮은 걸까 — 소켓 상태 읽는 법</h1><blockquote>
+<p><strong>한 줄 요약:</strong> TIME_WAIT는 고장이 아니라 <strong>TCP가 연결을 안전하게 닫는 정상 절차</strong>입니다(닫은 뒤 잠깐 자리를 비워두는 것). 수만 개여도 대부분 무해 — 진짜 문제는 <strong>한 목적지로 나가는 연결이 많아 로컬 포트가 고갈될 때</strong> 하나뿐이고, 근본 해법은 커널 튜닝이 아니라 <strong>커넥션 재사용</strong>입니다.</p>
+</blockquote>
+<h2 id="_1">상황</h2>
+<p>서버가 좀 느려진 것 같아 소켓을 봤더니:</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>ss<span class="w"> </span>-s
+<span class="c1"># TCP:   31245 (estab 210, closed 30890, timewait 30712, ...)</span>
+</code></pre></div>
+
+<p>TIME_WAIT 3만 개. 놀라서 검색하면 "커널 파라미터를 바꿔라"는 글이 쏟아집니다. 잠깐 — 이게 문제인지부터 판별해야 합니다.</p>
+<h2 id="time_wait">TIME_WAIT의 정체: 식당의 '치우는 중' 테이블</h2>
+<p>TCP 연결을 먼저 끊는 쪽은, 끊고 나서도 그 자리를 <strong>잠시(보통 60초) 비워둡니다.</strong> 식당에서 손님이 떠난 테이블을 바로 새 손님에게 주지 않고 잠깐 치우는 것과 같아요. 이유는 두 가지 —</p>
+<ol>
+<li>네트워크를 헤매다 <strong>뒤늦게 도착하는 옛 패킷</strong>이 같은 자리의 새 연결에 섞이는 사고 방지</li>
+<li>상대에게 보낸 마지막 인사(ACK)가 유실됐을 때 재전송할 수 있게</li>
+</ol>
+<p>즉 TIME_WAIT는 TCP의 <strong>설계된 예의</strong>입니다. 트래픽이 많고 짧은 연결이 잦은 서버라면 수만 개가 쌓이는 게 자연스러워요. 메모리도 소켓당 얼마 안 먹습니다.</p>
+<h2 id="_2">그럼 언제 문제가 되나 — 단 하나의 시나리오</h2>
+<p><strong>내 서버가 클라이언트로서, 같은 목적지에 짧은 연결을 초당 수백 개씩 만들 때.</strong></p>
+<p>나가는 연결은 로컬 포트를 하나씩 씁니다(임시 포트, 기본 약 2.8만 개). 연결을 만들고 바로 끊기를 반복하면, 끊은 포트들이 60초씩 TIME_WAIT로 잠겨 <strong>새 연결에 쓸 포트가 동납니다.</strong> 증상은 명확해요 — <code>connect: cannot assign requested address</code>.</p>
+<p>전형적인 범인: 요청마다 새 커넥션을 여는 코드로 <strong>뒷단 API·DB·Redis를 두들기는 애플리케이션.</strong> 웹서버가 손님을 받는 방향(인바운드)의 TIME_WAIT는 이 문제와 무관합니다 — 그건 손님 쪽 포트를 쓰니까요.</p>
+<h2 id="_3">판별 명령</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># TIME_WAIT가 &#39;어디로 향한&#39; 연결인지 집계 — 한 목적지에 몰려 있나?</span>
+ss<span class="w"> </span>-tan<span class="w"> </span>state<span class="w"> </span>time-wait<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;NR&gt;1{print $4}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/:[0-9]*$//&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn<span class="w"> </span><span class="p">|</span><span class="w"> </span>head
+<span class="c1">#   28714 10.0.3.15     ← 특정 백엔드로 폭주 중이면 위험 신호</span>
+
+<span class="c1"># 임시 포트 범위 확인 (분모 파악)</span>
+cat<span class="w"> </span>/proc/sys/net/ipv4/ip_local_port_range
+</code></pre></div>
+
+<p>특정 목적지 하나가 수만 개를 차지하고 있고, 그 수가 임시 포트 범위에 육박하면 — 그때가 진짜 문제입니다.</p>
+<h2 id="_4">해법 — 순서가 중요하다</h2>
+<p><strong>① 근본: 커넥션 재사용 (keep-alive / 풀링).</strong> 연결을 만들고 버리지 말고 <strong>재사용</strong>하세요. HTTP 클라이언트의 keep-alive 세션, DB 커넥션 풀, Redis 풀 — 이거 하나로 TIME_WAIT 생성 자체가 수백 분의 일로 줄어듭니다.</p>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="c1"># 나쁨: 요청마다 새 연결 → TIME_WAIT 양산</span>
+<span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>          <span class="c1"># 매 호출이 connect/close</span>
+
+<span class="c1"># 좋음: 세션 재사용 → 연결 몇 개로 수만 요청 처리</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+<span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>                 <span class="c1"># keep-alive로 같은 연결 재사용</span>
+</code></pre></div>
+
+<p><strong>② 보조: 커널의 재사용 허용.</strong></p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>sysctl<span class="w"> </span>-w<span class="w"> </span>net.ipv4.tcp_tw_reuse<span class="o">=</span><span class="m">1</span><span class="w">   </span><span class="c1"># 나가는 연결에 한해 TIME_WAIT 포트 재사용 허용 (안전)</span>
+</code></pre></div>
+
+<p><strong>③ 절대 금지: <code>tcp_tw_recycle</code>.</strong> 옛날 글들이 권하는 이 옵션은 NAT 뒤 클라이언트를 무작위로 끊어먹는 부작용 때문에 <strong>커널에서 아예 삭제</strong>됐습니다. 이걸 권하는 글은 그 글 전체를 의심하세요.</p>
+<h2 id="_5">한 줄 정리</h2>
+<p>TIME_WAIT 수만 개는 대개 <strong>바쁘다는 증거</strong>지 장애가 아닙니다. 문제는 오직 <strong>아웃바운드 포트 고갈</strong> — <code>ss</code>로 목적지 집계부터 하고, 답은 커널 만지작이 아니라 <strong>커넥션 풀/keep-alive</strong>입니다. 테이블을 빨리 치우려 하지 말고, 손님(연결)을 오래 앉혀두세요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --network</div><a href="../p/public-private-subnet.html"><span class="g">&#10095;</span>public 서브넷과 private 서브넷, 뭐가 다른 걸까 — 라우팅 테이블이 전부다</a><a href="../p/network-triage.html"><span class="g">&#10095;</span>&#x27;포트는 열렸다는데 접속이 안 돼요&#x27; — 계층별로 찔러보는 진단법</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><span></span><a href="../p/managed-db-migration.html" style="text-align:right"><span class="lbl">older</span>관리형 DB로 옮기면 끝인 줄 알았다 — 이관할 때 놓치는 것들</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
