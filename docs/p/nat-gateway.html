@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NAT Gateway는 정확히 무슨 일을 하나 — 그리고 왜 요금 폭탄의 단골인가 · 삽질노트</title>
+<meta name="description" content="private 서버가 밖에 나가는 문이라는 건 알겠는데, 안에서 무슨 일이 벌어지고 왜 청구서에 자주 등장하는지 — 발신자 주소 바꿔치기의 원리부터 비용 우회로까지.">
+<meta property="og:title" content="NAT Gateway는 정확히 무슨 일을 하나 — 그리고 왜 요금 폭탄의 단골인가 · 삽질노트">
+<meta property="og:description" content="private 서버가 밖에 나가는 문이라는 건 알겠는데, 안에서 무슨 일이 벌어지고 왜 청구서에 자주 등장하는지 — 발신자 주소 바꿔치기의 원리부터 비용 우회로까지.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/nat-gateway.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/nat-gateway.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/nat-gateway.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/nat-gateway.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html" class="on">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-18</span><a class="chip" href="../c/network.html">--network</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>NAT Gateway는 정확히 무슨 일을 하나 — 그리고 왜 요금 폭탄의 단골인가</h1><blockquote>
+<p><strong>한 줄 요약:</strong> NAT Gateway는 private 서버의 패킷에서 <strong>발신자 주소를 자기 공인 IP로 바꿔치기</strong>하고, 답장이 오면 <strong>장부를 보고 원래 주인에게 배달</strong>하는 번역 창구입니다. 시간당 요금에 <strong>처리한 데이터량 과금</strong>이 붙어서, 대용량 트래픽이 지나가면 조용한 요금 폭탄이 돼요.</p>
+</blockquote>
+<h2 id="_1">복습 한 줄, 그리고 진짜 질문</h2>
+<p>서브넷 글에서 봤듯 NAT은 private 서버의 "나가기 전용 문"입니다. 오늘의 질문은 그다음 — <strong>문 안에서 무슨 일이 벌어지길래</strong> 나가는 건 되고 들어오는 건 안 될까요?</p>
+<h2 id="_2">원리: 회사 대표번호의 교환원</h2>
+<p>private 서버(10.0.3.15)가 외부 API(203.0.113.9)를 호출하면, NAT은 패킷을 이렇게 고칩니다.</p>
+<div class="highlight"><pre><span></span><code>[나갈 때 — 발신자 바꿔치기 (SNAT)]
+원본:  from 10.0.3.15:44210  →  to 203.0.113.9:443
+변환:  from NAT공인IP:5501   →  to 203.0.113.9:443
+                └ 그리고 장부에 기록: &quot;5501번 = 10.0.3.15:44210의 통화&quot;
+
+[답장 올 때 — 장부 조회 후 배달]
+도착:  from 203.0.113.9:443  →  to NAT공인IP:5501
+변환:  from 203.0.113.9:443  →  to 10.0.3.15:44210   (장부 보고 복원)
+</code></pre></div>
+
+<p>회사 교환원과 같습니다. 직원이 밖에 전화하면 상대에겐 <strong>대표번호</strong>만 보이고, 교환원은 "5501번 회선 = 김대리" 장부를 들고 있다가 답신을 연결하죠. 여기서 "들어오는 건 안 되는" 이유도 자명해집니다 — <strong>장부는 나간 통화에 대해서만 생기니까.</strong> 외부에서 먼저 걸려온 전화는 장부에 없어서 연결할 곳이 없는 겁니다. NAT의 단방향성은 기능이 아니라 이 구조의 자연스러운 결과예요.</p>
+<p>부수 효과 둘: 외부 서비스 입장에선 우리 서버 수십 대가 <strong>전부 NAT의 IP 하나(또는 몇 개)로</strong> 보입니다. 외부 API에 "우리 IP를 허용목록에 넣어주세요" 할 때 대야 하는 게 서버 IP가 아니라 <strong>NAT의 공인 IP</strong>인 이유. 그리고 장부(포트 매핑)는 유한해서, 한 목적지로 초대량 동시 연결을 만들면 포트 고갈이 여기서도 일어납니다 — TIME_WAIT 글의 그 문제가 NAT 층에서 재현되는 거죠. 해법도 같습니다: 커넥션 재사용.</p>
+<h2 id="_3">비용 구조 — 왜 폭탄이 되나</h2>
+<p>NAT Gateway 요금은 대개 두 축입니다.</p>
+<div class="highlight"><pre><span></span><code>① 시간당 존재 요금   (떠 있기만 해도 매시간)
+② 데이터 처리 요금   (지나간 GB당 — 방향 불문)
+</code></pre></div>
+
+<p>②가 함정입니다. <strong>NAT을 지나는 모든 바이트에 처리 요금</strong>이 붙는데, 이게 전송 요금과 <strong>별도로</strong> 얹혀요. 전형적인 폭탄 시나리오 —</p>
+<ul>
+<li>private 서버들이 <strong>S3/Object Storage에서 대용량을 내려받는</strong> 파이프라인 (같은 클라우드 안인데도 NAT을 경유하면 처리 요금 발생)</li>
+<li>매일 수백 GB 로그를 외부 수집기로 전송</li>
+<li>컨테이너 노드들이 외부 레지스트리에서 이미지를 수시로 pull</li>
+</ul>
+<p>전부 "인터넷 나가는 문 = NAT 하나"로 설계한 결과, <strong>내부 창고 왕복까지 교환원 손을 거치며 건당 수수료</strong>를 무는 그림입니다.</p>
+<h2 id="_4">우회로 — 같은 클라우드 안이면 전용 통로로</h2>
+<p>핵심 처방은 <strong>클라우드 내부 서비스로 가는 트래픽을 NAT에서 빼는 것</strong>입니다.</p>
+<ul>
+<li><strong>게이트웨이형 엔드포인트:</strong> S3 등 주요 스토리지용. 라우팅 테이블에 "S3로 가는 건 이 전용 통로로"를 추가하면 NAT을 안 거칩니다. <strong>추가 요금도 없는 경우가 많아</strong> 사실상 공짜 점심 — S3 트래픽이 큰 VPC라면 무조건 1순위.</li>
+<li><strong>인터페이스형 엔드포인트(PrivateLink류):</strong> 그 외 API 서비스용. 시간당 요금이 있으니 트래픽이 클 때 NAT 처리비와 견줘 결정.</li>
+<li>NCP도 같은 그림 — Object Storage 등으로 향하는 트래픽의 내부 경로 제공 여부를 확인하고 라우팅을 분리하는 접근은 동일합니다.</li>
+</ul>
+<p>점검은 간단해요. NAT의 트래픽 모니터링을 열어 <strong>어디로 가는 트래픽이 큰지</strong> 보고, 상위가 같은 클라우드의 스토리지·서비스라면 엔드포인트 전환 후보입니다. 비용 누수 톱5 글의 "이 화살표는 유료인가?" 질문을 NAT에 정조준하는 셈이죠.</p>
+<h2 id="_5">설계 메모 두 개</h2>
+<ul>
+<li><strong>가용성:</strong> NAT Gateway는 특정 존에 삽니다. 그 존이 죽으면 다른 존 서버들의 외부 통신도 같이 죽어요. 존별 NAT + 존별 라우팅으로 분리하는 게 프로덕션 정석 (비용과의 트레이드오프).</li>
+<li><strong>NAT 인스턴스라는 선택지:</strong> 직접 서버를 세워 NAT 역할을 시키면 쌉니다 — 대신 패치·장애·대역폭이 전부 내 일이 되죠. 트래픽 작은 개발 환경용 절약 카드 정도로 보면 됩니다.</li>
+</ul>
+<h2 id="_6">한 줄 정리</h2>
+<p>NAT Gateway는 <strong>주소 바꿔치기 + 장부</strong>로 굴러가는 교환원이고, 장부 구조상 단방향입니다. 그리고 <strong>지나가는 GB마다 수수료</strong>를 받으니 — 내부 스토리지행 대용량 트래픽은 엔드포인트 전용 통로로 빼는 것, 이게 NAT 비용 최적화의 알파이자 오메가예요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --network</div><a href="../p/tcpdump-basics.html"><span class="g">&#10095;</span>말싸움 끝내는 법 — tcpdump로 &#x27;누가 응답을 안 하는지&#x27; 눈으로 보기</a><a href="../p/time-wait.html"><span class="g">&#10095;</span>TIME_WAIT가 수만 개 쌓였는데 괜찮은 걸까 — 소켓 상태 읽는 법</a><a href="../p/public-private-subnet.html"><span class="g">&#10095;</span>public 서브넷과 private 서브넷, 뭐가 다른 걸까 — 라우팅 테이블이 전부다</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/tcpdump-basics.html"><span class="lbl">newer</span>말싸움 끝내는 법 — tcpdump로 &#x27;누가 응답을 안 하는지&#x27; 눈으로 보기</a><a href="../p/agents-tool-use.html" style="text-align:right"><span class="lbl">older</span>AI 에이전트의 정체 — LLM에 손발을 달아주는 tool use</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

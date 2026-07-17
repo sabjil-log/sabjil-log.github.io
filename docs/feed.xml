@@ -5,6 +5,27 @@
   <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
   <language>ko</language>
     <item>
+      <title>말싸움 끝내는 법 — tcpdump로 &#x27;누가 응답을 안 하는지&#x27; 눈으로 보기</title>
+      <link>https://sabjil-log.github.io/p/tcpdump-basics.html</link>
+      <guid>https://sabjil-log.github.io/p/tcpdump-basics.html</guid>
+      <pubDate>Sat, 18 Jul 2026 00:00:00 -0000</pubDate>
+      <description>네트워크 문제는 결국 &#x27;패킷이 갔냐, 답이 왔냐&#x27;입니다. tcpdump 필터 몇 개와 SYN/RST 읽는 법만 알면, 추측 대신 증거로 말할 수 있어요.</description>
+    </item>
+    <item>
+      <title>NAT Gateway는 정확히 무슨 일을 하나 — 그리고 왜 요금 폭탄의 단골인가</title>
+      <link>https://sabjil-log.github.io/p/nat-gateway.html</link>
+      <guid>https://sabjil-log.github.io/p/nat-gateway.html</guid>
+      <pubDate>Sat, 18 Jul 2026 00:00:00 -0000</pubDate>
+      <description>private 서버가 밖에 나가는 문이라는 건 알겠는데, 안에서 무슨 일이 벌어지고 왜 청구서에 자주 등장하는지 — 발신자 주소 바꿔치기의 원리부터 비용 우회로까지.</description>
+    </item>
+    <item>
+      <title>AI 에이전트의 정체 — LLM에 손발을 달아주는 tool use</title>
+      <link>https://sabjil-log.github.io/p/agents-tool-use.html</link>
+      <guid>https://sabjil-log.github.io/p/agents-tool-use.html</guid>
+      <pubDate>Sat, 18 Jul 2026 00:00:00 -0000</pubDate>
+      <description>챗봇과 에이전트의 차이는 &#x27;말만 하느냐, 일을 하느냐&#x27;입니다. LLM이 도구를 쓰는 실제 메커니즘과, 손발을 달 때 반드시 따라오는 안전 문제까지.</description>
+    </item>
+    <item>
       <title>TIME_WAIT가 수만 개 쌓였는데 괜찮은 걸까 — 소켓 상태 읽는 법</title>
       <link>https://sabjil-log.github.io/p/time-wait.html</link>
       <guid>https://sabjil-log.github.io/p/time-wait.html</guid>
@@ -122,26 +143,5 @@
       <guid>https://sabjil-log.github.io/p/quantization.html</guid>
       <pubDate>Mon, 13 Jul 2026 00:00:00 -0000</pubDate>
       <description>14B 모델은 원래 28GB가 필요합니다. 그런데 16GB 카드에서 돌아가죠. 파라미터를 &#x27;반올림&#x27;해서 저장하는 양자화의 원리와 트레이드오프를 정리했어요.</description>
-    </item>
-    <item>
-      <title>systemd 서비스가 자꾸 죽을 때 — journalctl로 원인 찾는 순서</title>
-      <link>https://sabjil-log.github.io/p/journalctl-debug.html</link>
-      <guid>https://sabjil-log.github.io/p/journalctl-debug.html</guid>
-      <pubDate>Mon, 13 Jul 2026 00:00:00 -0000</pubDate>
-      <description>서비스가 죽었다는 사실은 알겠는데 왜 죽었는지 모르겠다면, 볼 곳은 정해져 있습니다. status → journalctl -u → 원인별 대처 순서를 정리했어요.</description>
-    </item>
-    <item>
-      <title>KMS의 봉투암호화 — 금고 열쇠로 데이터를 직접 잠그지 않는 이유</title>
-      <link>https://sabjil-log.github.io/p/envelope-encryption.html</link>
-      <guid>https://sabjil-log.github.io/p/envelope-encryption.html</guid>
-      <pubDate>Mon, 13 Jul 2026 00:00:00 -0000</pubDate>
-      <description>1GB 파일을 암호화하는데 KMS로는 데이터를 보내지 않습니다. 데이터는 일회용 열쇠로 잠그고, 그 열쇠만 KMS가 잠급니다 — 이 2단 구조가 봉투암호화예요.</description>
-    </item>
-    <item>
-      <title>CrashLoopBackOff — 쿠버네티스가 &#x27;재시도 중&#x27;이라고 말하는 방식</title>
-      <link>https://sabjil-log.github.io/p/crashloopbackoff.html</link>
-      <guid>https://sabjil-log.github.io/p/crashloopbackoff.html</guid>
-      <pubDate>Mon, 13 Jul 2026 00:00:00 -0000</pubDate>
-      <description>CrashLoopBackOff는 병명이 아니라 증상입니다. &#x27;컨테이너가 죽어서 점점 천천히 재시도 중&#x27;이라는 뜻 — 진짜 원인 찾는 순서를 정리했어요.</description>
     </item>
 </channel></rss>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>말싸움 끝내는 법 — tcpdump로 '누가 응답을 안 하는지' 눈으로 보기 · 삽질노트</title>
+<meta name="description" content="네트워크 문제는 결국 &#x27;패킷이 갔냐, 답이 왔냐&#x27;입니다. tcpdump 필터 몇 개와 SYN/RST 읽는 법만 알면, 추측 대신 증거로 말할 수 있어요.">
+<meta property="og:title" content="말싸움 끝내는 법 — tcpdump로 '누가 응답을 안 하는지' 눈으로 보기 · 삽질노트">
+<meta property="og:description" content="네트워크 문제는 결국 &#x27;패킷이 갔냐, 답이 왔냐&#x27;입니다. tcpdump 필터 몇 개와 SYN/RST 읽는 법만 알면, 추측 대신 증거로 말할 수 있어요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/tcpdump-basics.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/tcpdump-basics.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/tcpdump-basics.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/tcpdump-basics.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html" class="on">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-18</span><a class="chip" href="../c/network.html">--network</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>말싸움 끝내는 법 — tcpdump로 &#x27;누가 응답을 안 하는지&#x27; 눈으로 보기</h1><blockquote>
+<p><strong>한 줄 요약:</strong> "방화벽은 열려 있어요" vs "서버는 정상이에요"의 말싸움은 tcpdump 한 줄이 끝냅니다. <strong>패킷이 도착했는지, 답이 나갔는지</strong>를 눈으로 보면 책임 구간이 물리적으로 갈려요. 필요한 건 필터 문법 조금과 <strong>SYN 3종 시나리오</strong> 읽는 법뿐입니다.</p>
+</blockquote>
+<h2 id="_1">언제 꺼내는 칼인가</h2>
+<p>계층 진단(dig→ping→nc→ss)을 다 돌았는데도 애매할 때, 또는 두 팀이 서로 "우리 쪽은 정상"이라고 우길 때. tcpdump는 네트워크의 <strong>CCTV</strong>입니다 — 추측이 아니라 녹화 영상으로 말하게 해줘요.</p>
+<h2 id="_2">최소 문법 — 이것만 외우면 된다</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>sudo<span class="w"> </span>tcpdump<span class="w"> </span>-ni<span class="w"> </span>any<span class="w"> </span>port<span class="w"> </span><span class="m">8080</span>
+<span class="c1">#        │ │  │    └ 필터: 8080 포트만</span>
+<span class="c1">#        │ │  └ any: 모든 인터페이스에서</span>
+<span class="c1">#        │ └ n: 이름 해석 끄기 (느려지지 않게, 숫자 그대로)</span>
+<span class="c1">#        └ i: 인터페이스 지정</span>
+</code></pre></div>
+
+<p>필터는 영어처럼 조합합니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>sudo<span class="w"> </span>tcpdump<span class="w"> </span>-ni<span class="w"> </span>any<span class="w"> </span>host<span class="w"> </span><span class="m">10</span>.0.3.15<span class="w">                  </span><span class="c1"># 이 상대와의 대화만</span>
+sudo<span class="w"> </span>tcpdump<span class="w"> </span>-ni<span class="w"> </span>any<span class="w"> </span>host<span class="w"> </span><span class="m">10</span>.0.3.15<span class="w"> </span>and<span class="w"> </span>port<span class="w"> </span><span class="m">5432</span><span class="w">    </span><span class="c1"># 그 상대의 DB 통신만</span>
+sudo<span class="w"> </span>tcpdump<span class="w"> </span>-ni<span class="w"> </span>any<span class="w"> </span>src<span class="w"> </span><span class="m">10</span>.0.1.0/24<span class="w"> </span>and<span class="w"> </span>dst<span class="w"> </span>port<span class="w"> </span><span class="m">443</span><span class="w"> </span><span class="c1"># 이 대역에서 443으로 오는 것</span>
+sudo<span class="w"> </span>tcpdump<span class="w"> </span>-ni<span class="w"> </span>any<span class="w"> </span>port<span class="w"> </span><span class="m">8080</span><span class="w"> </span>-c<span class="w"> </span><span class="m">20</span><span class="w">                  </span><span class="c1"># 20개만 잡고 자동 종료</span>
+</code></pre></div>
+
+<p><code>-c</code> 를 습관처럼 붙이세요 — 바쁜 서버에서 필터 없이 돌리면 화면이 폭포가 됩니다.</p>
+<h2 id="syn-3">핵심: SYN 3종 시나리오</h2>
+<p>TCP 연결은 노크(SYN) → 응답(SYN-ACK) → 확인(ACK)으로 시작합니다. 접속 문제는 이 첫 악수에서 대부분 판가름 나요. 서버 쪽에서 캡처를 켜고 클라이언트가 접속을 시도하게 한 뒤, 세 가지 패턴 중 뭐가 보이는지만 읽으면 됩니다.</p>
+<p><strong>패턴 ① — 아무것도 안 보인다</strong></p>
+<div class="highlight"><pre><span></span><code>(정적)
+</code></pre></div>
+
+<p>노크 자체가 도착 안 함 → <strong>내 서버 앞 어딘가(방화벽, NACL, 라우팅, 보안그룹)가 범인.</strong> 서버와 앱은 무죄입니다. 네트워크 팀에 "SYN이 서버까지 안 옵니다"라고 증거로 말할 수 있어요.</p>
+<p><strong>패턴 ② — SYN은 오는데 서버가 RST로 답한다</strong></p>
+<div class="highlight"><pre><span></span><code>10.0.1.5.54321 &gt; 10.0.3.15.8080: Flags [S], ...     ← 노크 도착
+10.0.3.15.8080 &gt; 10.0.1.5.54321: Flags [R.], ...    ← 서버: &quot;그런 포트 없는데?&quot;
+</code></pre></div>
+
+<p>패킷은 도착했는데 <strong>그 포트에 듣는 프로세스가 없다</strong>는 뜻 → 앱이 안 떠 있거나 다른 포트/127.0.0.1 바인딩. <code>ss -tlnp</code> 로 확인하세요. 네트워크는 무죄.</p>
+<p><strong>패턴 ③ — SYN이 반복되는데 응답이 없다</strong></p>
+<div class="highlight"><pre><span></span><code>Flags [S] ... → (응답 없음) → Flags [S] 재전송 → Flags [S] 재전송...
+</code></pre></div>
+
+<p>노크는 오는데 답이 안 나감 → 로컬 방화벽(iptables)이 조용히 버리거나(DROP), <strong>응답이 나가는 길이 막힌 것</strong> — 스테이트리스 NACL의 아웃바운드 임시 포트, 비대칭 라우팅이 단골. 헬스체크 글의 그 함정이 화면에 잡히는 순간입니다.</p>
+<h2 id="_3">내용까지 봐야 할 때</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>sudo<span class="w"> </span>tcpdump<span class="w"> </span>-ni<span class="w"> </span>any<span class="w"> </span>port<span class="w"> </span><span class="m">80</span><span class="w"> </span>-A<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">&quot;GET|POST|Host&quot;</span><span class="w">   </span><span class="c1"># HTTP 평문 엿보기</span>
+sudo<span class="w"> </span>tcpdump<span class="w"> </span>-ni<span class="w"> </span>any<span class="w"> </span>port<span class="w"> </span><span class="m">5432</span><span class="w"> </span>-w<span class="w"> </span>db.pcap<span class="w">                   </span><span class="c1"># 파일로 저장</span>
+<span class="c1"># → db.pcap 을 내려받아 Wireshark로 여는 게 눈이 편합니다</span>
+</code></pre></div>
+
+<p>주의 둘 — HTTPS는 내용이 암호화라 -A로 봐도 의미가 없고(악수 과정까지만 보임), 캡처 파일에는 <strong>평문 통신의 비밀번호·토큰이 그대로</strong> 담깁니다. pcap 파일을 슬랙에 아무렇게나 던지지 마세요. 그 자체가 유출입니다.</p>
+<h2 id="_4">실전 루틴</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># 터미널 1 (서버): 녹화 시작</span>
+sudo<span class="w"> </span>tcpdump<span class="w"> </span>-ni<span class="w"> </span>any<span class="w"> </span>port<span class="w"> </span><span class="m">8080</span><span class="w"> </span>-c<span class="w"> </span><span class="m">30</span>
+
+<span class="c1"># 터미널 2 (클라이언트): 재현</span>
+curl<span class="w"> </span>-m<span class="w"> </span><span class="m">5</span><span class="w"> </span>http://server:8080/health
+</code></pre></div>
+
+<p>재현 트래픽을 <strong>내가 만들면서</strong> 캡처하는 것 — 이게 요령입니다. 흘러가는 패킷 바다에서 낚는 게 아니라, 내가 던진 돌의 파문만 보는 거죠.</p>
+<h2 id="_5">한 줄 정리</h2>
+<p>tcpdump는 <strong>필터 3개(host/port/src·dst) + SYN 3패턴</strong>이면 실무의 8할입니다. 정적이면 앞단 방화벽, RST면 앱 부재, SYN 반복이면 응답 경로 — 추측을 증거로 바꾸는 30초예요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --network</div><a href="../p/nat-gateway.html"><span class="g">&#10095;</span>NAT Gateway는 정확히 무슨 일을 하나 — 그리고 왜 요금 폭탄의 단골인가</a><a href="../p/time-wait.html"><span class="g">&#10095;</span>TIME_WAIT가 수만 개 쌓였는데 괜찮은 걸까 — 소켓 상태 읽는 법</a><a href="../p/public-private-subnet.html"><span class="g">&#10095;</span>public 서브넷과 private 서브넷, 뭐가 다른 걸까 — 라우팅 테이블이 전부다</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><span></span><a href="../p/nat-gateway.html" style="text-align:right"><span class="lbl">older</span>NAT Gateway는 정확히 무슨 일을 하나 — 그리고 왜 요금 폭탄의 단골인가</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

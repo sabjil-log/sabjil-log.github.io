@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 에이전트의 정체 — LLM에 손발을 달아주는 tool use · 삽질노트</title>
+<meta name="description" content="챗봇과 에이전트의 차이는 &#x27;말만 하느냐, 일을 하느냐&#x27;입니다. LLM이 도구를 쓰는 실제 메커니즘과, 손발을 달 때 반드시 따라오는 안전 문제까지.">
+<meta property="og:title" content="AI 에이전트의 정체 — LLM에 손발을 달아주는 tool use · 삽질노트">
+<meta property="og:description" content="챗봇과 에이전트의 차이는 &#x27;말만 하느냐, 일을 하느냐&#x27;입니다. LLM이 도구를 쓰는 실제 메커니즘과, 손발을 달 때 반드시 따라오는 안전 문제까지.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/agents-tool-use.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/agents-tool-use.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/agents-tool-use.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/agents-tool-use.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-18</span><a class="chip" href="../c/ai.html">--ai</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>AI 에이전트의 정체 — LLM에 손발을 달아주는 tool use</h1><blockquote>
+<p><strong>한 줄 요약:</strong> LLM 자체는 <strong>말만 할 수 있는 두뇌</strong>입니다. 에이전트는 그 두뇌에 <strong>도구(tool) 목록을 쥐여주고, "이 도구를 이 인자로 실행해줘"라는 요청을 실제로 실행해주는 반복 루프</strong>를 붙인 것 — 마법이 아니라 구조예요.</p>
+</blockquote>
+<h2 id="_1">챗봇과 에이전트의 경계선</h2>
+<p>"서버 상태 확인해줘"에 대한 두 가지 응답:</p>
+<ul>
+<li><strong>챗봇:</strong> "서버 상태는 <code>ss -tlnp</code> 명령으로 확인할 수 있습니다" — <strong>방법을 말해줌</strong></li>
+<li><strong>에이전트:</strong> (명령을 실제로 실행하고) "8080 포트 리스닝 정상, 커넥션 210개입니다" — <strong>일을 해서 결과를 줌</strong></li>
+</ul>
+<p>같은 모델이어도 <strong>도구와 루프</strong>가 붙었느냐가 이 차이를 만듭니다.</p>
+<h2 id="_2">메커니즘: 손 없는 천재와 조수</h2>
+<p>LLM은 텍스트만 뱉을 수 있습니다. 그럼 어떻게 "실행"을 할까요? <strong>못 합니다.</strong> 실행은 바깥의 코드(조수)가 해요. 흐름은 이렇습니다.</p>
+<div class="highlight"><pre><span></span><code>1. [우리 → 모델]  질문 + 도구 목록 명세
+   &quot;너는 이런 도구를 쓸 수 있어: get_server_status(host), search_docs(query)...&quot;
+
+2. [모델 → 우리]  &quot;get_server_status를 host=&#39;web-01&#39;로 실행해줘&quot;   ← 텍스트(구조화된 요청)일 뿐
+
+3. [우리 코드]    진짜로 함수 실행 → 결과 획득
+
+4. [우리 → 모델]  실행 결과를 대화에 붙여 다시 전달
+
+5. [모델]         결과를 보고 답변하거나, 다음 도구를 또 요청  → 2로 반복
+</code></pre></div>
+
+<p>핵심 두 가지. 첫째, <strong>모델은 실행 요청서를 쓸 뿐, 방아쇠는 항상 우리 코드가 당깁니다.</strong> 둘째, 에이전트의 정체는 2~5를 도는 <strong>while 루프</strong>입니다 — "도구 요청이 안 나올 때까지 반복". 뼈대는 이게 전부예요.</p>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="n">messages</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">task</span><span class="p">}]</span>
+<span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">llm</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">tools</span><span class="o">=</span><span class="n">TOOL_SPECS</span><span class="p">)</span>      <span class="c1"># 1~2: 모델이 도구 요청 or 최종 답</span>
+    <span class="k">if</span> <span class="n">resp</span><span class="o">.</span><span class="n">tool_calls</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">call</span> <span class="ow">in</span> <span class="n">resp</span><span class="o">.</span><span class="n">tool_calls</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">run_tool</span><span class="p">(</span><span class="n">call</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">call</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>   <span class="c1"># 3: 우리가 실행</span>
+            <span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tool_result</span><span class="p">(</span><span class="n">call</span><span class="p">,</span> <span class="n">result</span><span class="p">))</span> <span class="c1"># 4: 결과 회신</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">text</span>                         <span class="c1"># 5: 도구 요청이 없으면 = 최종 답변</span>
+</code></pre></div>
+
+<h2 id="_3">도구 명세가 절반이다</h2>
+<p>모델이 도구를 <strong>잘</strong> 쓰게 만드는 건 명세(이름, 설명, 인자 스키마)의 품질입니다. 신입에게 업무 매뉴얼 주는 것과 같아요 — "조회함수1" 같은 이름과 한 줄짜리 설명이면 엉뚱하게 씁니다. <strong>언제 쓰는 도구인지, 인자 형식은 뭔지, 언제 쓰면 안 되는지</strong>까지 적어주세요. 에이전트 품질 문제의 상당수는 프롬프트도 모델도 아닌 도구 설명 부실입니다.</p>
+<p>그리고 이 "도구 명세와 연결 방식"을 표준화하려는 흐름이 <strong>MCP(Model Context Protocol)</strong> 같은 프로토콜입니다 — 도구 제공자와 모델 사이의 규격 콘센트라고 보면 돼요. 도구를 서비스마다 제각각 붙이는 대신, 표준 플러그로 꽂는 것.</p>
+<h2 id="_4">손발을 달면 안전 문제가 따라온다</h2>
+<p>말만 하던 존재에 실행 능력을 주는 순간, 실수의 성격이 바뀝니다 — <strong>틀린 말</strong>에서 <strong>틀린 행동</strong>으로. 환각 글에서 본 그 관성(그럴듯하게 지어내기)이 이제 그럴듯한 <code>DELETE</code> 요청이 될 수 있어요. 그래서 에이전트 설계의 절반은 안전장치입니다.</p>
+<ul>
+<li><strong>최소권한:</strong> 도구가 쓰는 자격증명은 그 작업에 필요한 만큼만 (IAM 글의 원칙이 여기 직결). 읽기 도구와 쓰기 도구의 권한을 분리하세요.</li>
+<li><strong>위험 작업은 승인 게이트:</strong> 삭제·결제·외부 발송류는 실행 전 사람 확인을 끼워 넣기. "실행 요청서"와 "방아쇠" 사이에 사람이 설 자리가 구조적으로 이미 있습니다(3번 단계).</li>
+<li><strong>루프 상한:</strong> 도구 호출 횟수·비용 상한을 걸어, 모델이 헤매며 무한 반복하는 것을 차단.</li>
+<li><strong>입력 오염 주의:</strong> 도구가 가져온 외부 텍스트(웹페이지, 문서) 안에 "이전 지시를 무시하고..." 같은 문장이 섞여 들어올 수 있습니다(프롬프트 주입). 외부 데이터는 지시가 아니라 자료로 다루도록 프롬프트에 명시하고, 그래도 위험 작업 게이트는 유지하세요.</li>
+</ul>
+<h2 id="_5">한 줄 정리</h2>
+<p>에이전트 = <strong>LLM + 도구 명세 + 실행 루프.</strong> 모델은 요청서를 쓰고 실행은 항상 우리 코드가 하며, 그 사이가 안전장치의 자리입니다. 좋은 에이전트의 비결은 신비한 프롬프트가 아니라 — <strong>좋은 도구 설명, 좁은 권한, 그리고 위험한 버튼 앞의 사람</strong>이에요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/knowledge-cutoff.html"><span class="g">&#10095;</span>LLM은 왜 최신 뉴스를 모를까 — 지식 컷오프와 그 대처법</a><a href="../p/finetuning-vs-rag.html"><span class="g">&#10095;</span>파인튜닝 vs RAG — 지식을 가르칠까, 찾아 쓰게 할까</a><a href="../p/grounding-hallucination.html"><span class="g">&#10095;</span>&#x27;근거에 없으면 모른다고 해&#x27; 한 줄이 환각을 줄이는 이유</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/nat-gateway.html"><span class="lbl">newer</span>NAT Gateway는 정확히 무슨 일을 하나 — 그리고 왜 요금 폭탄의 단골인가</a><a href="../p/time-wait.html" style="text-align:right"><span class="lbl">older</span>TIME_WAIT가 수만 개 쌓였는데 괜찮은 걸까 — 소켓 상태 읽는 법</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

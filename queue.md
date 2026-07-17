@@ -11,11 +11,9 @@
 - 쿠버네티스 Service/Ingress가 뭔지 — 트래픽이 Pod까지 오는 길 :: 네트워크
 - `kubectl` 필수 디버깅 명령 5개 (logs/describe/exec/get -o/port-forward) :: 리눅스
 - 리눅스 파일 권한 `chmod 755`의 숫자가 진짜 뜻하는 것 :: 리눅스
-- `tcpdump` 기본기 — 캡처해서 "누가 응답을 안 하는지" 보기 :: 네트워크
 
 ## 기둥2 — NCP / AWS 서비스
 - NCP Object Storage에 boto3 물릴 때 checksum·서명 함정 :: 클라우드
-- NAT Gateway가 뭔지 — private 서버가 외부로 나가는 문 :: 네트워크
 
 ## 기둥3 — AI / LLM 학습
 - 임베딩 거리(코사인 유사도)가 뭔지 — 왜 각도로 재나 :: AI/LLM
