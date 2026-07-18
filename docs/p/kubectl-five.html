@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>kubectl 디버깅은 다섯 명령으로 끝난다 — logs, describe, exec, get -o, port-forward · 삽질노트</title>
+<meta name="description" content="쿠버 문제의 9할은 다섯 명령의 조합으로 잡힙니다. 각각이 &#x27;무엇을 보는 창&#x27;인지, 어떤 순서로 꺼내는지 정리했어요.">
+<meta property="og:title" content="kubectl 디버깅은 다섯 명령으로 끝난다 — logs, describe, exec, get -o, port-forward · 삽질노트">
+<meta property="og:description" content="쿠버 문제의 9할은 다섯 명령의 조합으로 잡힙니다. 각각이 &#x27;무엇을 보는 창&#x27;인지, 어떤 순서로 꺼내는지 정리했어요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/kubectl-five.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/kubectl-five.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/kubectl-five.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/kubectl-five.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html" class="on">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-19</span><a class="chip" href="../c/linux.html">--linux</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>kubectl 디버깅은 다섯 명령으로 끝난다 — logs, describe, exec, get -o, port-forward</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 쿠버네티스 디버깅의 기본 장비는 다섯 개입니다 — <strong>logs(앱의 말), describe(쿠버의 말), exec(현장 진입), get -o yaml(설계도 원본), port-forward(직통 전화).</strong> 순서는 대개 이 나열 그대로예요.</p>
+</blockquote>
+<h2 id="_1">왜 다섯 개인가</h2>
+<p>문제가 생기면 확인할 것은 결국 넷입니다. 앱이 뭐라고 하는가, 쿠버네티스가 뭐라고 하는가, 현장(컨테이너 안)은 어떤가, 설정은 내 의도대로인가. 다섯 명령이 정확히 이 창들이에요. 하나씩 —</p>
+<h2 id="1-logs">① logs — 앱의 말부터</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>kubectl<span class="w"> </span>logs<span class="w"> </span>myapp-xxx<span class="w">                    </span><span class="c1"># 현재 컨테이너의 stdout/stderr</span>
+kubectl<span class="w"> </span>logs<span class="w"> </span>myapp-xxx<span class="w"> </span>--previous<span class="w">         </span><span class="c1"># ★ 직전에 죽은 컨테이너의 유언</span>
+kubectl<span class="w"> </span>logs<span class="w"> </span>myapp-xxx<span class="w"> </span>-f<span class="w"> </span>--tail<span class="o">=</span><span class="m">100</span><span class="w">      </span><span class="c1"># 실시간 + 마지막 100줄부터</span>
+kubectl<span class="w"> </span>logs<span class="w"> </span>myapp-xxx<span class="w"> </span>-c<span class="w"> </span>sidecar<span class="w">         </span><span class="c1"># Pod에 컨테이너가 여럿이면 지정</span>
+kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>myapp<span class="w"> </span>--tail<span class="o">=</span><span class="m">20</span><span class="w">       </span><span class="c1"># 레이블로 여러 Pod 한꺼번에</span>
+</code></pre></div>
+
+<p>CrashLoop 상황이면 무조건 <code>--previous</code>부터 — 지금 컨테이너는 방금 태어나서 아무것도 모릅니다.</p>
+<h2 id="2-describe">② describe — 쿠버네티스의 말</h2>
+<p>앱 로그가 비었거나 Pod가 아예 안 뜨면(Pending, ImagePullBackOff), 앱이 아니라 <strong>쿠버네티스 쪽 사정</strong>입니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>kubectl<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>myapp-xxx
+</code></pre></div>
+
+<p>볼 곳은 두 군데: <strong>Last State/Exit Code</strong>(137이면 OOM — 그 글의 그것), 그리고 맨 아래 <strong>Events</strong>. 이미지 못 받음, 볼륨 마운트 실패, 스케줄 불가(리소스 부족), 프로브 실패가 전부 Events에 시간순으로 적혀 있어요. describe는 Pod만이 아니라 무엇에든 됩니다 — <code>describe node</code>로 노드의 리소스 압박, <code>describe svc</code>로 서비스 상태도 봅니다.</p>
+<h2 id="3-exec">③ exec — 현장 진입</h2>
+<p>로그와 이벤트로 부족하면 안에 들어가서 봅니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>myapp-xxx<span class="w"> </span>--<span class="w"> </span>sh<span class="w">              </span><span class="c1"># 쉘 진입 (bash 없으면 sh)</span>
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>myapp-xxx<span class="w"> </span>--<span class="w"> </span>env<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w">          </span><span class="c1"># 주입된 환경변수 확인</span>
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>myapp-xxx<span class="w"> </span>--<span class="w"> </span>cat<span class="w"> </span>/app/config.yml<span class="w"> </span><span class="c1"># 설정이 진짜 반영됐나</span>
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>myapp-xxx<span class="w"> </span>--<span class="w"> </span>nc<span class="w"> </span>-vz<span class="w"> </span>db-svc<span class="w"> </span><span class="m">5432</span><span class="w">  </span><span class="c1"># Pod 입장에서 DB가 보이나</span>
+</code></pre></div>
+
+<p>특히 마지막 것 — <strong>"그 Pod의 눈으로" 네트워크를 확인</strong>하는 게 핵심입니다. 내 노트북에서 되는 것과 Pod에서 되는 것은 완전히 다른 얘기예요(DNS, 네트워크폴리시). 요즘 경량 이미지는 쉘/nc조차 없는데, 그럴 땐 <code>kubectl debug</code>로 도구 든 임시 컨테이너를 붙이는 방법이 있습니다.</p>
+<h2 id="4-get-o-yaml">④ get -o yaml — 설계도 원본 대조</h2>
+<p>"분명 설정했는데 왜 반영이 안 되지?"의 답은 <strong>지금 클러스터에 실제로 적용된 원본</strong>에 있습니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>myapp-xxx<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w">             </span><span class="c1"># 내 매니페스트가 아니라 &#39;실제 상태&#39;</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>deploy<span class="w"> </span>myapp<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A3<span class="w"> </span>image:<span class="w">   </span><span class="c1"># 진짜 배포된 이미지 태그는?</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>myapp-xxx<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.containers[0].resources}&#39;</span><span class="w">  </span><span class="c1"># 리밋만 콕</span>
+</code></pre></div>
+
+<p>내 로컬 YAML 파일과 클러스터의 <code>-o yaml</code>이 다른 경우가 생각보다 많습니다 — 적용을 깜빡했거나, 다른 파이프라인이 덮어썼거나. <strong>의도(내 파일)와 현실(-o yaml)의 diff</strong>가 곧 원인인 사건이 수두룩해요.</p>
+<h2 id="5-port-forward">⑤ port-forward — 중간 단계 다 빼고 직통</h2>
+<p>Ingress → Service → Pod 어디가 문제인지 모를 때, <strong>Pod에 직접 전화</strong>를 걸어봅니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>kubectl<span class="w"> </span>port-forward<span class="w"> </span>pod/myapp-xxx<span class="w"> </span><span class="m">8080</span>:8080
+<span class="c1"># 내 노트북에서: curl localhost:8080/health</span>
+
+kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/myapp<span class="w"> </span><span class="m">8080</span>:80<span class="w">        </span><span class="c1"># Service 단계까지 포함해 테스트</span>
+</code></pre></div>
+
+<p>Pod 직통은 되는데 Service 경유는 안 된다? → Service의 selector/포트 문제. Service는 되는데 Ingress는 안 된다? → Ingress 설정. <strong>직통 전화로 구간을 반씩 잘라내는</strong> 이분탐색이죠 — 계층 진단 글의 그 사고방식이 쿠버 안에서 반복되는 겁니다.</p>
+<h2 id="_2">조합 루틴 — 증상별 첫 수</h2>
+<div class="highlight"><pre><span></span><code>Pod가 안 뜸 (Pending/ImagePull...)  → ② describe (Events)
+떴다가 죽음 (CrashLoop)             → ① logs --previous → ② Exit Code
+떠 있는데 이상 동작                  → ① logs -f → ③ exec (설정·env·연결)
+설정이 반영 안 된 느낌               → ④ get -o yaml 로 의도 vs 현실 diff
+연결이 안 됨 (어디선가)              → ⑤ port-forward 이분탐색 + ③ nc
+</code></pre></div>
+
+<h2 id="_3">한 줄 정리</h2>
+<p><strong>logs(앱) → describe(쿠버) → exec(현장) → get -o yaml(설계도) → port-forward(직통).</strong> 다섯 창을 순서대로 열면 쿠버 문제의 9할은 어느 창엔가 얼굴을 비춥니다. 화려한 도구 전에 이 다섯을 손에 익히세요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --linux</div><a href="../p/journalctl-debug.html"><span class="g">&#10095;</span>systemd 서비스가 자꾸 죽을 때 — journalctl로 원인 찾는 순서</a><a href="../p/load-average.html"><span class="g">&#10095;</span>load average 4.0은 위험한가 — top 숫자를 읽을 줄 안다는 것</a><a href="../p/grep-awk-sed.html"><span class="g">&#10095;</span>grep·awk·sed 삼총사 — 로그에서 원하는 값만 뽑아내는 법</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/what-is-mcp.html"><span class="lbl">newer</span>MCP가 뭔데 다들 만드나 — AI 도구 연결의 USB 규격</a><a href="../p/alb-vs-nlb.html" style="text-align:right"><span class="lbl">older</span>ALB냐 NLB냐 — L7과 L4, 로드밸런서 고르는 기준</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

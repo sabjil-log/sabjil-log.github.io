@@ -9,7 +9,6 @@
 - `curl -v` 출력 한 줄씩 읽기 — DNS/TCP/TLS/HTTP 어디서 막혔는지 :: 네트워크
 - MTU와 패킷 조각화 — VPN 붙이면 특정 사이트만 안 열리는 이유 :: 네트워크
 - 쿠버네티스 Service/Ingress가 뭔지 — 트래픽이 Pod까지 오는 길 :: 네트워크
-- `kubectl` 필수 디버깅 명령 5개 (logs/describe/exec/get -o/port-forward) :: 리눅스
 - 리눅스 파일 권한 `chmod 755`의 숫자가 진짜 뜻하는 것 :: 리눅스
 
 ## 기둥2 — NCP / AWS 서비스

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP가 뭔데 다들 만드나 — AI 도구 연결의 USB 규격 · 삽질노트</title>
+<meta name="description" content="에이전트에 도구를 붙이는 방식이 서비스마다 제각각이던 시대를 끝내려는 표준이 MCP입니다. 구조, 진짜 가치, 그리고 만들 때의 보안 주의점까지.">
+<meta property="og:title" content="MCP가 뭔데 다들 만드나 — AI 도구 연결의 USB 규격 · 삽질노트">
+<meta property="og:description" content="에이전트에 도구를 붙이는 방식이 서비스마다 제각각이던 시대를 끝내려는 표준이 MCP입니다. 구조, 진짜 가치, 그리고 만들 때의 보안 주의점까지.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/what-is-mcp.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/what-is-mcp.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/what-is-mcp.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/what-is-mcp.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-19</span><a class="chip" href="../c/ai.html">--ai</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>MCP가 뭔데 다들 만드나 — AI 도구 연결의 USB 규격</h1><blockquote>
+<p><strong>한 줄 요약:</strong> MCP(Model Context Protocol)는 <strong>AI와 도구 사이의 표준 콘센트</strong>입니다. 도구를 MCP 서버로 한 번 만들어두면, 그 규격을 지원하는 <strong>어떤 AI 클라이언트에든</strong> 꽂아 쓸 수 있어요 — 도구 통합의 M×N 문제를 M+N으로 바꾸는 게 핵심 가치입니다.</p>
+</blockquote>
+<h2 id="_1">문제: 어댑터 지옥</h2>
+<p>에이전트 글에서 봤듯, LLM에 손발을 다는 건 "도구 명세 + 실행 루프"입니다. 그런데 현실의 고통은 그다음이에요 — 사내 DB 조회 도구를 만들었다 칩시다. 이걸 챗 서비스 A에도, IDE 어시스턴트 B에도, 자체 에이전트 C에도 붙이려면? <strong>셋 다 연동 방식이 달라서 어댑터를 세 번</strong> 짭니다. 도구가 10개, 클라이언트가 4개면 통합 작업이 40번 — 이게 M×N 문제입니다.</p>
+<p>전자기기 세계가 이미 푼 문제죠. 기기마다 제각각이던 충전 단자가 <strong>USB라는 규격 하나</strong>로 수렴하니, 기기 제조사는 USB만 달면 되고 충전기 제조사도 USB만 만들면 됩니다. MCP가 노리는 게 정확히 이것 — <strong>도구는 MCP 서버로 한 번만, 클라이언트는 MCP 지원 한 번만.</strong> M×N이 M+N이 됩니다.</p>
+<h2 id="_2">구조: 서버, 클라이언트, 그리고 세 가지 제공물</h2>
+<div class="highlight"><pre><span></span><code>[AI 앱(호스트)] ─ MCP 클라이언트 ─── 표준 프로토콜 ───→ [MCP 서버: DB 도구]
+                 MCP 클라이언트 ─── 표준 프로토콜 ───→ [MCP 서버: 사내 위키]
+                 MCP 클라이언트 ─── 표준 프로토콜 ───→ [MCP 서버: 모니터링]
+</code></pre></div>
+
+<ul>
+<li><strong>MCP 서버</strong> = 도구를 규격에 맞춰 내놓는 쪽. "나는 이런 기능이 있어"를 표준 형식으로 광고합니다.</li>
+<li><strong>MCP 클라이언트</strong> = AI 앱 쪽 플러그. 서버 목록을 받아 모델에게 도구 명세로 전달하고, 모델의 실행 요청을 서버로 중계.</li>
+</ul>
+<p>서버가 내놓을 수 있는 건 크게 셋입니다.</p>
+<ul>
+<li><strong>Tools(도구):</strong> 모델이 호출하는 실행 가능한 함수 — "서버 상태 조회", "티켓 생성". 에이전트 글의 그 tool use가 이 규격 위에서 돌아가는 것.</li>
+<li><strong>Resources(자원):</strong> 모델이 읽을 수 있는 데이터 — 파일, 문서, 조회 결과. RAG의 근거 공급구를 표준화한 셈.</li>
+<li><strong>Prompts(프롬프트):</strong> 서버가 제공하는 정형화된 작업 템플릿 — "이 도구는 이렇게 쓰면 좋아요"를 세트 메뉴로.</li>
+</ul>
+<p>연결 방식은 두 갈래 — 같은 머신에서 프로세스로 띄워 표준입출력(stdio)으로 붙는 로컬형, HTTP로 원격에 두는 서버형. 개인 도구는 전자, 팀 공용 도구는 후자가 일반적입니다.</p>
+<h2 id="_3">만들어보면 별거 아니다 (개념 스케치)</h2>
+<p>MCP 서버의 본질은 "함수에 설명표를 붙여 규격대로 내놓기"입니다.</p>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="c1"># 개념 코드 — SDK를 쓰면 실제로도 이 정도로 단순합니다</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mcp.server</span><span class="w"> </span><span class="kn">import</span> <span class="n">Server</span>
+
+<span class="n">server</span> <span class="o">=</span> <span class="n">Server</span><span class="p">(</span><span class="s2">&quot;infra-tools&quot;</span><span class="p">)</span>
+
+<span class="nd">@server</span><span class="o">.</span><span class="n">tool</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_server_status</span><span class="p">(</span><span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;지정한 호스트의 리스닝 포트와 부하 상태를 조회한다.</span>
+<span class="sd">    host: 내부 호스트명 (예: web-01)&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">check_status</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>          <span class="c1"># 실제 로직</span>
+</code></pre></div>
+
+<p>docstring이 곧 <strong>모델이 읽는 도구 설명</strong>이 됩니다 — 에이전트 글에서 강조한 "도구 명세가 절반"이 여기서도 그대로예요. 언제 쓰는지, 인자 형식, 쓰면 안 되는 경우까지 설명에 담으세요.</p>
+<h2 id="_4">만들 때의 보안 체크리스트</h2>
+<p>콘센트를 표준화하면 <strong>꽂기 쉬워진다는 게 곧 위험</strong>이기도 합니다. 에이전트 안전 원칙이 MCP에선 이렇게 구체화돼요.</p>
+<ul>
+<li><strong>서버의 권한 = 노출 범위.</strong> MCP 서버가 admin 자격증명으로 돌면, 그 서버에 붙는 모든 AI가 admin입니다. 서버 자체를 최소권한 계정으로 — IAM 글의 원칙이 다시 등장.</li>
+<li><strong>파괴적 도구는 분리·게이트.</strong> 조회 서버와 변경 서버를 나누고, 변경류는 클라이언트 쪽 승인(사람 확인)을 전제로 설계.</li>
+<li><strong>신뢰할 서버만 꽂기.</strong> 반대 방향의 위험 — 출처 불명의 MCP 서버를 꽂는 건 출처 불명 브라우저 확장을 까는 것과 같습니다. 도구 설명 자체에 악성 지시를 심는 공격(프롬프트 주입의 변종)도 보고돼 있어요.</li>
+<li><strong>감사 로그.</strong> 어떤 클라이언트가 어떤 도구를 언제 호출했는지 서버 쪽에서 기록 — 표준 콘센트일수록 계량기가 필요합니다.</li>
+</ul>
+<h2 id="_5">한 줄 정리</h2>
+<p>MCP는 AI 도구 연결의 <strong>USB 규격</strong>입니다 — 도구는 한 번만 만들고 어디에나 꽂는다. 서버의 본질은 "설명 잘 붙인 함수 묶음"이고, 성패는 에이전트 때와 같습니다: <strong>좋은 도구 설명, 좁은 권한, 위험한 버튼 앞의 사람.</strong></p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/agents-tool-use.html"><span class="g">&#10095;</span>AI 에이전트의 정체 — LLM에 손발을 달아주는 tool use</a><a href="../p/knowledge-cutoff.html"><span class="g">&#10095;</span>LLM은 왜 최신 뉴스를 모를까 — 지식 컷오프와 그 대처법</a><a href="../p/finetuning-vs-rag.html"><span class="g">&#10095;</span>파인튜닝 vs RAG — 지식을 가르칠까, 찾아 쓰게 할까</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><span></span><a href="../p/kubectl-five.html" style="text-align:right"><span class="lbl">older</span>kubectl 디버깅은 다섯 명령으로 끝난다 — logs, describe, exec, get -o, port-forward</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

@@ -5,6 +5,27 @@
   <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
   <language>ko</language>
     <item>
+      <title>MCP가 뭔데 다들 만드나 — AI 도구 연결의 USB 규격</title>
+      <link>https://sabjil-log.github.io/p/what-is-mcp.html</link>
+      <guid>https://sabjil-log.github.io/p/what-is-mcp.html</guid>
+      <pubDate>Sun, 19 Jul 2026 00:00:00 -0000</pubDate>
+      <description>에이전트에 도구를 붙이는 방식이 서비스마다 제각각이던 시대를 끝내려는 표준이 MCP입니다. 구조, 진짜 가치, 그리고 만들 때의 보안 주의점까지.</description>
+    </item>
+    <item>
+      <title>kubectl 디버깅은 다섯 명령으로 끝난다 — logs, describe, exec, get -o, port-forward</title>
+      <link>https://sabjil-log.github.io/p/kubectl-five.html</link>
+      <guid>https://sabjil-log.github.io/p/kubectl-five.html</guid>
+      <pubDate>Sun, 19 Jul 2026 00:00:00 -0000</pubDate>
+      <description>쿠버 문제의 9할은 다섯 명령의 조합으로 잡힙니다. 각각이 &#x27;무엇을 보는 창&#x27;인지, 어떤 순서로 꺼내는지 정리했어요.</description>
+    </item>
+    <item>
+      <title>ALB냐 NLB냐 — L7과 L4, 로드밸런서 고르는 기준</title>
+      <link>https://sabjil-log.github.io/p/alb-vs-nlb.html</link>
+      <guid>https://sabjil-log.github.io/p/alb-vs-nlb.html</guid>
+      <pubDate>Sun, 19 Jul 2026 00:00:00 -0000</pubDate>
+      <description>둘 다 트래픽을 나눠주는데 뭐가 다를까요. &#x27;내용을 읽고 나누느냐, 주소만 보고 나누느냐&#x27; — 이 차이에서 기능·성능·클라이언트IP 문제까지 전부 갈립니다.</description>
+    </item>
+    <item>
       <title>말싸움 끝내는 법 — tcpdump로 &#x27;누가 응답을 안 하는지&#x27; 눈으로 보기</title>
       <link>https://sabjil-log.github.io/p/tcpdump-basics.html</link>
       <guid>https://sabjil-log.github.io/p/tcpdump-basics.html</guid>
@@ -122,26 +143,5 @@
       <guid>https://sabjil-log.github.io/p/context-window.html</guid>
       <pubDate>Tue, 14 Jul 2026 00:00:00 -0000</pubDate>
       <description>컨텍스트 윈도우는 모델의 기억력이 아니라 &#x27;한 번에 펼칠 수 있는 책상 크기&#x27;입니다. 꽉 차면 생기는 일과, 긴 대화·긴 문서를 다루는 실전 요령을 정리했어요.</description>
-    </item>
-    <item>
-      <title>배포했는데 예전 화면이 나와요 — CDN 캐시가 안 갱신되는 3가지 이유</title>
-      <link>https://sabjil-log.github.io/p/cdn-cache.html</link>
-      <guid>https://sabjil-log.github.io/p/cdn-cache.html</guid>
-      <pubDate>Tue, 14 Jul 2026 00:00:00 -0000</pubDate>
-      <description>CDN은 &#x27;기한이 남은 복사본&#x27;을 성실하게 나눠줄 뿐입니다. TTL, 무효화, 캐시 키 — 세 개념만 잡으면 &#x27;옛날 화면&#x27; 미스터리가 풀려요.</description>
-    </item>
-    <item>
-      <title>temperature와 top-p — LLM의 &#x27;창의성 다이얼&#x27;은 실제로 뭘 돌리는 걸까</title>
-      <link>https://sabjil-log.github.io/p/temperature-top-p.html</link>
-      <guid>https://sabjil-log.github.io/p/temperature-top-p.html</guid>
-      <pubDate>Mon, 13 Jul 2026 00:00:00 -0000</pubDate>
-      <description>LLM은 다음 단어를 &#x27;확률 뽑기&#x27;로 고릅니다. temperature는 뽑기통을 흔드는 세기, top-p는 뽑기통에 넣을 후보의 범위예요.</description>
-    </item>
-    <item>
-      <title>16GB 그래픽카드에 14B 모델이 들어가는 마법 — 4-bit 양자화</title>
-      <link>https://sabjil-log.github.io/p/quantization.html</link>
-      <guid>https://sabjil-log.github.io/p/quantization.html</guid>
-      <pubDate>Mon, 13 Jul 2026 00:00:00 -0000</pubDate>
-      <description>14B 모델은 원래 28GB가 필요합니다. 그런데 16GB 카드에서 돌아가죠. 파라미터를 &#x27;반올림&#x27;해서 저장하는 양자화의 원리와 트레이드오프를 정리했어요.</description>
     </item>
 </channel></rss>
