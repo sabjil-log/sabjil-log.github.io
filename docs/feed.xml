@@ -5,6 +5,27 @@
   <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
   <language>ko</language>
     <item>
+      <title>프롬프트 주입 — AI가 읽은 문서가 AI에게 명령할 때</title>
+      <link>https://sabjil-log.github.io/p/prompt-injection.html</link>
+      <guid>https://sabjil-log.github.io/p/prompt-injection.html</guid>
+      <pubDate>Mon, 20 Jul 2026 00:00:00 -0000</pubDate>
+      <description>SQL 인젝션의 AI 버전이지만 더 까다롭습니다. 데이터와 명령이 같은 언어로 쓰여 있으니까요. 공격의 구조와, 완치 아닌 &#x27;감염 관리&#x27; 전략을 정리했어요.</description>
+    </item>
+    <item>
+      <title>curl -v 출력, 한 줄씩 읽는 법 — 어디서 막혔는지 혼자 말해준다</title>
+      <link>https://sabjil-log.github.io/p/curl-verbose.html</link>
+      <guid>https://sabjil-log.github.io/p/curl-verbose.html</guid>
+      <pubDate>Mon, 20 Jul 2026 00:00:00 -0000</pubDate>
+      <description>curl -v는 DNS→TCP→TLS→HTTP 네 단계를 순서대로 중계해주는 실황 방송입니다. 어느 줄에서 멈췄는지가 곧 진단 결과예요.</description>
+    </item>
+    <item>
+      <title>ACG(보안그룹) vs NACL 총정리 — 스테이트풀과 스테이트리스, 한 번에 끝내기</title>
+      <link>https://sabjil-log.github.io/p/acg-vs-nacl.html</link>
+      <guid>https://sabjil-log.github.io/p/acg-vs-nacl.html</guid>
+      <pubDate>Mon, 20 Jul 2026 00:00:00 -0000</pubDate>
+      <description>여러 글에서 조연으로 등장한 그 함정을 오늘 주연으로. 두 방화벽의 차이를 &#x27;기억하는 경비&#x27;와 &#x27;규칙만 보는 경비&#x27;로 정리하고, 실전 설계 공식까지.</description>
+    </item>
+    <item>
       <title>MCP가 뭔데 다들 만드나 — AI 도구 연결의 USB 규격</title>
       <link>https://sabjil-log.github.io/p/what-is-mcp.html</link>
       <guid>https://sabjil-log.github.io/p/what-is-mcp.html</guid>
@@ -122,26 +143,5 @@
       <guid>https://sabjil-log.github.io/p/object-storage-hosting.html</guid>
       <pubDate>Wed, 15 Jul 2026 00:00:00 -0000</pubDate>
       <description>S3나 NCP Object Storage는 파일 창고이면서 웹서버도 됩니다. 버킷 하나로 사이트를 띄우는 원리와, 반드시 걸리는 함정 세 가지를 정리했어요.</description>
-    </item>
-    <item>
-      <title>손으로 돌리면 되는데 크론으로는 안 되는 스크립트 — 환경변수의 배신</title>
-      <link>https://sabjil-log.github.io/p/cron-env.html</link>
-      <guid>https://sabjil-log.github.io/p/cron-env.html</guid>
-      <pubDate>Wed, 15 Jul 2026 00:00:00 -0000</pubDate>
-      <description>터미널에서는 잘 도는 스크립트가 크론에서만 죽는다면, 코드가 아니라 &#x27;실행 환경&#x27;이 다른 겁니다. PATH, 작업 디렉토리, 셸 — 3대 용의자를 정리했어요.</description>
-    </item>
-    <item>
-      <title>컨테이너에서 localhost가 안 통하는 이유 — 도커 네트워크의 착각</title>
-      <link>https://sabjil-log.github.io/p/docker-localhost.html</link>
-      <guid>https://sabjil-log.github.io/p/docker-localhost.html</guid>
-      <pubDate>Tue, 14 Jul 2026 00:00:00 -0000</pubDate>
-      <description>컨테이너 안의 localhost는 호스트가 아니라 컨테이너 자신입니다. &#x27;각자 다른 집&#x27;이라는 그림 하나만 잡히면 연결 문제의 대부분이 풀려요.</description>
-    </item>
-    <item>
-      <title>컨텍스트 윈도우가 꽉 차면 무슨 일이 벌어지나 — LLM의 책상 크기</title>
-      <link>https://sabjil-log.github.io/p/context-window.html</link>
-      <guid>https://sabjil-log.github.io/p/context-window.html</guid>
-      <pubDate>Tue, 14 Jul 2026 00:00:00 -0000</pubDate>
-      <description>컨텍스트 윈도우는 모델의 기억력이 아니라 &#x27;한 번에 펼칠 수 있는 책상 크기&#x27;입니다. 꽉 차면 생기는 일과, 긴 대화·긴 문서를 다루는 실전 요령을 정리했어요.</description>
     </item>
 </channel></rss>

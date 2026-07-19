@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACG(보안그룹) vs NACL 총정리 — 스테이트풀과 스테이트리스, 한 번에 끝내기 · 삽질노트</title>
+<meta name="description" content="여러 글에서 조연으로 등장한 그 함정을 오늘 주연으로. 두 방화벽의 차이를 &#x27;기억하는 경비&#x27;와 &#x27;규칙만 보는 경비&#x27;로 정리하고, 실전 설계 공식까지.">
+<meta property="og:title" content="ACG(보안그룹) vs NACL 총정리 — 스테이트풀과 스테이트리스, 한 번에 끝내기 · 삽질노트">
+<meta property="og:description" content="여러 글에서 조연으로 등장한 그 함정을 오늘 주연으로. 두 방화벽의 차이를 &#x27;기억하는 경비&#x27;와 &#x27;규칙만 보는 경비&#x27;로 정리하고, 실전 설계 공식까지.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/acg-vs-nacl.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/acg-vs-nacl.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/acg-vs-nacl.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/acg-vs-nacl.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html" class="on">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-20</span><a class="chip" href="../c/network.html">--network</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>ACG(보안그룹) vs NACL 총정리 — 스테이트풀과 스테이트리스, 한 번에 끝내기</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 인스턴스 방화벽(ACG/보안그룹)은 <strong>대화를 기억하는 경비(스테이트풀)</strong> — 나간 요청의 응답은 자동 통과. 서브넷 방화벽(NACL)은 <strong>기억이 없는 경비(스테이트리스)</strong> — 응답도 규칙이 있어야 나갑니다. 실전 공식은 하나: <strong>주 방어는 ACG로, NACL은 넓게 열어두고 서브넷 차원의 큰 차단에만.</strong></p>
+</blockquote>
+<h2 id="_1">두 경비의 위치부터</h2>
+<p>건물 비유로 —</p>
+<div class="highlight"><pre><span></span><code>인터넷 → [NACL: 층 입구 경비] → 서브넷(층) → [ACG: 각 방문 앞 경비] → 서버(방)
+</code></pre></div>
+
+<ul>
+<li><strong>NACL</strong> = 층 전체 입구의 경비. 그 층의 <strong>모든 방</strong>에 일괄 적용.</li>
+<li><strong>ACG/보안그룹</strong> = 방문마다 붙은 경비. <strong>그 방(인스턴스)</strong>에만 적용.</li>
+</ul>
+<p>패킷은 둘 다 통과해야 합니다. 그래서 "방화벽 열었는데요?"라는 말은 항상 <strong>"둘 중 어느 걸요?"</strong>를 되물어야 해요.</p>
+<h2 id="_2">결정적 차이: 기억력</h2>
+<p><strong>ACG는 스테이트풀</strong> — 대화를 기억합니다. 방 안에서 "피자 주문 나갑니다" 하고 나간 걸 봤으면, 배달원이 돌아올 때 규칙을 안 따져도 들여보내줍니다. 그래서 ACG는 <strong>인바운드 규칙만</strong> 고민하면 되고, 아웃바운드는 대개 전체 허용으로 둡니다.</p>
+<p><strong>NACL은 스테이트리스</strong> — 기억이 없습니다. 나가는 배달 주문을 봤어도 잊어버려요. 돌아오는 배달원도 <strong>명시적 허용 규칙</strong>이 있어야 통과합니다. 여기서 그 유명한 함정이 나옵니다 —</p>
+<h2 id="_3">그 함정, 정면으로: 임시 포트</h2>
+<p>클라이언트가 서버 443에 접속하면, <strong>응답은 클라이언트의 임시 포트</strong>(1024~65535 사이 무작위)로 돌아갑니다.</p>
+<div class="highlight"><pre><span></span><code>요청:  클라이언트:53211 → 서버:443     (인바운드 443 허용 — 다들 함)
+응답:  서버:443 → 클라이언트:53211    (아웃바운드 &#39;임시 포트&#39; 허용 — 다들 까먹음)
+</code></pre></div>
+
+<p>NACL에서 인바운드 443만 열고 아웃바운드를 안 열면(또는 443만 열면), <strong>요청은 들어오는데 응답이 층 밖으로 못 나갑니다.</strong> 증상은 "연결이 되다 마는" 기묘한 행 — 헬스체크가 간헐 실패하고(그 3대장 글), tcpdump엔 SYN만 반복되고(그 패턴③), NAT 뒤에서는 더 꼬입니다. 그래서 NACL을 만질 땐 반드시 세트로:</p>
+<div class="highlight"><pre><span></span><code>인바운드:  서비스 포트 (443 등) 허용
+아웃바운드: 임시 포트 1024-65535 허용   ← 응답이 나가는 길
+</code></pre></div>
+
+<h2 id="_4">차이 요약표</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>ACG / 보안그룹</th>
+<th>NACL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>적용 대상</td>
+<td>인스턴스(방)</td>
+<td>서브넷(층) 전체</td>
+</tr>
+<tr>
+<td>상태</td>
+<td><strong>스테이트풀</strong> (응답 자동)</td>
+<td><strong>스테이트리스</strong> (응답도 규칙 필요)</td>
+</tr>
+<tr>
+<td>규칙 종류</td>
+<td>허용만</td>
+<td>허용 + <strong>거부</strong> 가능</td>
+</tr>
+<tr>
+<td>평가 방식</td>
+<td>전체 규칙 종합</td>
+<td><strong>번호 순서대로</strong>, 첫 매치에서 종료</td>
+</tr>
+<tr>
+<td>기본 성향</td>
+<td>전부 거부에서 시작</td>
+<td>기본 NACL은 전부 허용</td>
+</tr>
+</tbody>
+</table>
+<p>두 가지가 ACG엔 없고 NACL에만 있습니다 — <strong>명시적 거부</strong>와 <strong>규칙 순서</strong>. "이 IP 대역은 무조건 차단"은 ACG로는 못 하고(허용만 가능) NACL의 거부 규칙이 필요해요. 대신 순서가 생기니 사고도 생깁니다: 낮은 번호의 넓은 허용이 높은 번호의 거부보다 먼저 매치되면 거부가 무력화되는 식. NACL 규칙이 많아질수록 순서 퍼즐이 되는 이유입니다.</p>
+<h2 id="_5">실전 설계 공식</h2>
+<p>복잡해 보이지만 업계 정석은 단순합니다.</p>
+<ol>
+<li><strong>주 방어선은 ACG.</strong> 스테이트풀이라 실수 여지가 적고, 인스턴스 단위라 정밀합니다. "웹 ACG는 LB에서 오는 8080만, DB ACG는 웹 ACG로부터 5432만" — ACG가 ACG를 참조하는 체이닝이 백미예요(IP가 아니라 역할로 여는 것).</li>
+<li><strong>NACL은 기본(전부 허용)에 가깝게 유지.</strong> 굳이 조이지 않습니다 — 조일수록 임시 포트·순서 함정의 표면적만 늘어요.</li>
+<li><strong>NACL을 쓰는 순간은 딱 두 가지.</strong> 특정 대역의 <strong>명시적 차단</strong>(공격 IP, 정책상 금지 대역)과, 서브넷 계층 자체의 <strong>거친 분리</strong>(예: DB 층에는 웹 층 대역 외 접근 금지라는 굵은 선). 정밀함은 ACG에게.</li>
+</ol>
+<p>이러면 "이중 방화벽"이 퍼즐이 아니라 <strong>역할 분담</strong>이 됩니다 — 층 경비는 굵은 선만, 방 경비가 정밀 심사.</p>
+<h2 id="_6">디버깅 순서</h2>
+<p>연결이 안 되면: ① ACG 인바운드에 출발지·포트가 있나 → ② 그 서브넷의 NACL 인바운드에 있나 → ③ <strong>NACL 아웃바운드에 임시 포트가 있나</strong> → ④ 그래도면 tcpdump로 패킷의 행방을(그 글의 3패턴). 경험상 ③이 범인인 비율이 부끄러울 만큼 높습니다.</p>
+<h2 id="_7">한 줄 정리</h2>
+<p><strong>ACG는 기억하는 경비, NACL은 규칙만 보는 경비.</strong> 주 방어는 ACG(+ACG 체이닝), NACL은 넓게 두고 명시적 차단·층 분리에만 — 그리고 NACL을 조였다면 아웃바운드 임시 포트부터 확인하세요. 이 글 하나로 그 함정은 졸업입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --network</div><a href="../p/curl-verbose.html"><span class="g">&#10095;</span>curl -v 출력, 한 줄씩 읽는 법 — 어디서 막혔는지 혼자 말해준다</a><a href="../p/tcpdump-basics.html"><span class="g">&#10095;</span>말싸움 끝내는 법 — tcpdump로 &#x27;누가 응답을 안 하는지&#x27; 눈으로 보기</a><a href="../p/nat-gateway.html"><span class="g">&#10095;</span>NAT Gateway는 정확히 무슨 일을 하나 — 그리고 왜 요금 폭탄의 단골인가</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/curl-verbose.html"><span class="lbl">newer</span>curl -v 출력, 한 줄씩 읽는 법 — 어디서 막혔는지 혼자 말해준다</a><a href="../p/what-is-mcp.html" style="text-align:right"><span class="lbl">older</span>MCP가 뭔데 다들 만드나 — AI 도구 연결의 USB 규격</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

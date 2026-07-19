@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://sabjil-log.github.io/</loc><lastmod>2026-07-18</lastmod></url>
-  <url><loc>https://sabjil-log.github.io/archive.html</loc><lastmod>2026-07-18</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/</loc><lastmod>2026-07-19</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/archive.html</loc><lastmod>2026-07-19</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/p/prompt-injection.html</loc><lastmod>2026-07-20</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/p/curl-verbose.html</loc><lastmod>2026-07-20</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/p/acg-vs-nacl.html</loc><lastmod>2026-07-20</lastmod></url>
   <url><loc>https://sabjil-log.github.io/p/what-is-mcp.html</loc><lastmod>2026-07-19</lastmod></url>
   <url><loc>https://sabjil-log.github.io/p/kubectl-five.html</loc><lastmod>2026-07-19</lastmod></url>
   <url><loc>https://sabjil-log.github.io/p/alb-vs-nlb.html</loc><lastmod>2026-07-19</lastmod></url>
@@ -48,10 +51,10 @@
   <url><loc>https://sabjil-log.github.io/p/onedrive-unicode.html</loc><lastmod>2026-07-09</lastmod></url>
   <url><loc>https://sabjil-log.github.io/p/network-triage.html</loc><lastmod>2026-07-09</lastmod></url>
   <url><loc>https://sabjil-log.github.io/p/ncp-aws-map.html</loc><lastmod>2026-07-09</lastmod></url>
-  <url><loc>https://sabjil-log.github.io/c/troubleshooting.html</loc><lastmod>2026-07-18</lastmod></url>
-  <url><loc>https://sabjil-log.github.io/c/linux.html</loc><lastmod>2026-07-18</lastmod></url>
-  <url><loc>https://sabjil-log.github.io/c/cloud.html</loc><lastmod>2026-07-18</lastmod></url>
-  <url><loc>https://sabjil-log.github.io/c/network.html</loc><lastmod>2026-07-18</lastmod></url>
-  <url><loc>https://sabjil-log.github.io/c/security.html</loc><lastmod>2026-07-18</lastmod></url>
-  <url><loc>https://sabjil-log.github.io/c/ai.html</loc><lastmod>2026-07-18</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/c/troubleshooting.html</loc><lastmod>2026-07-19</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/c/linux.html</loc><lastmod>2026-07-19</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/c/cloud.html</loc><lastmod>2026-07-19</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/c/network.html</loc><lastmod>2026-07-19</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/c/security.html</loc><lastmod>2026-07-19</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/c/ai.html</loc><lastmod>2026-07-19</lastmod></url>
 </urlset>

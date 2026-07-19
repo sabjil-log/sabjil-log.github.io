@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>curl -v 출력, 한 줄씩 읽는 법 — 어디서 막혔는지 혼자 말해준다 · 삽질노트</title>
+<meta name="description" content="curl -v는 DNS→TCP→TLS→HTTP 네 단계를 순서대로 중계해주는 실황 방송입니다. 어느 줄에서 멈췄는지가 곧 진단 결과예요.">
+<meta property="og:title" content="curl -v 출력, 한 줄씩 읽는 법 — 어디서 막혔는지 혼자 말해준다 · 삽질노트">
+<meta property="og:description" content="curl -v는 DNS→TCP→TLS→HTTP 네 단계를 순서대로 중계해주는 실황 방송입니다. 어느 줄에서 멈췄는지가 곧 진단 결과예요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/curl-verbose.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/curl-verbose.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/curl-verbose.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/curl-verbose.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html" class="on">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-20</span><a class="chip" href="../c/network.html">--network</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>curl -v 출력, 한 줄씩 읽는 법 — 어디서 막혔는지 혼자 말해준다</h1><blockquote>
+<p><strong>한 줄 요약:</strong> <code>curl -v</code>의 출력은 접속의 네 단계 — <strong>DNS 해석 → TCP 연결 → TLS 악수 → HTTP 대화</strong> — 를 순서대로 보여주는 실황 중계입니다. <strong>출력이 어느 줄에서 멈추거나 에러를 내는지</strong>가 곧 "몇 층에서 막혔는지"의 답이에요.</p>
+</blockquote>
+<h2 id="_1">왜 이걸 읽을 줄 알아야 하나</h2>
+<p>계층 진단 글에서 dig, nc, tcpdump를 각각 썼는데, 사실 HTTPS 접속 문제라면 <strong>curl -v 한 방</strong>이 네 단계를 전부 순서대로 시연해줍니다. 읽는 법만 알면 별도 도구 없이 진단의 절반이 끝나요.</p>
+<h2 id="_2">출력 해부 — 정상 케이스</h2>
+<div class="highlight"><pre><span></span><code>$ curl -v https://example.com/health
+* Host example.com:443 was resolved.            ← [1] DNS: 이름→IP 성공
+* Connected to example.com (93.184.216.34) port 443   ← [2] TCP: 연결 성공
+* TLS handshake, ...                             ← [3] TLS: 악수 진행
+* SSL certificate verify ok.                     ←     인증서 검증 통과
+&gt; GET /health HTTP/1.1                           ← [4] HTTP: &gt; 는 내가 보낸 것
+&gt; Host: example.com
+&lt; HTTP/1.1 200 OK                                ←     &lt; 는 서버가 보낸 것
+&lt; content-type: application/json
+</code></pre></div>
+
+<p>기호 세 개만 기억하세요 — <strong><code>*</code> 는 연결 과정 중계, <code>&gt;</code> 는 내 요청, <code>&lt;</code> 는 서버 응답.</strong> <code>&gt;</code> 가 보였다는 건 3층까지 전부 통과했다는 뜻입니다.</p>
+<h2 id="_3">어디서 멈췄나 = 누가 범인인가</h2>
+<p><strong>[1]에서 멈춤 — <code>Could not resolve host</code></strong>
+DNS 문제. 오타, 사설 DNS 미설정, /etc/resolv.conf. → <code>dig 도메인</code> 으로 이어서 확인.</p>
+<p><strong>[2]에서 멈춤 — 두 가지 얼굴</strong></p>
+<div class="highlight"><pre><span></span><code>* connect to 93.184.216.34 port 443 failed: Connection refused   ← 즉시 거절
+* connect to ... failed: Connection timed out                    ← 하염없이 침묵
+</code></pre></div>
+
+<p>이 구분이 중요합니다. <strong>refused = 도착은 했는데 그 포트에 아무도 없음</strong>(RST — tcpdump 글의 패턴②, 앱 다운/포트 오류). <strong>timeout = 패킷이 어딘가에서 증발</strong>(패턴①/③, 방화벽·NACL·라우팅). refused면 서버 쪽 <code>ss -tlnp</code>, timeout이면 방화벽부터.</p>
+<p><strong>[3]에서 멈춤 — TLS 계열 에러</strong></p>
+<div class="highlight"><pre><span></span><code>* SSL certificate problem: certificate has expired         ← 인증서 만료
+* SSL: no alternative certificate subject name matches ... ← 도메인 불일치 (다른 도메인 인증서)
+* error:0A00010B ... wrong version number                  ← HTTPS로 접속했는데 상대는 평문 HTTP
+</code></pre></div>
+
+<p>셋 다 메시지가 답을 그대로 말해줍니다. 마지막 것은 특히 자주 봅니다 — 포트는 열려 있는데 그 포트가 TLS를 안 하는 경우(예: 8080에 https://로 접속). 인증서 자체를 자세히 보려면:</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>curl<span class="w"> </span>-vI<span class="w"> </span>https://example.com<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A5<span class="w"> </span><span class="s2">&quot;Server certificate&quot;</span>
+<span class="c1"># 만료일(expire date), 발급 대상(subject)이 바로 나옴</span>
+</code></pre></div>
+
+<p><strong>[4]에서 문제 — 연결은 됐고, 이제 앱의 영역</strong></p>
+<div class="highlight"><pre><span></span><code>&lt; HTTP/1.1 301 Moved Permanently        ← 리다이렉트: -L 붙여 따라가 보기
+&lt; HTTP/1.1 401 / 403                    ← 인증·권한
+&lt; HTTP/1.1 502 Bad Gateway              ← LB/프록시 뒤의 백엔드가 죽음 — 헬스체크 글로
+&lt; HTTP/1.1 504 Gateway Timeout          ← 백엔드가 너무 느림
+</code></pre></div>
+
+<p>여기부터는 네트워크 무죄, 앱·백엔드 수사로 전환합니다.</p>
+<h2 id="_4">자주 쓰는 조합 옵션</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>curl<span class="w"> </span>-v<span class="w"> </span>-m<span class="w"> </span><span class="m">5</span><span class="w"> </span>https://...<span class="w">          </span><span class="c1"># 타임아웃 5초 — timeout 진단을 5초 만에</span>
+curl<span class="w"> </span>-vL<span class="w"> </span>https://...<span class="w">              </span><span class="c1"># 리다이렉트 추적 (301/302 체인 전체가 보임)</span>
+curl<span class="w"> </span>-v<span class="w"> </span>--resolve<span class="w"> </span>example.com:443:10.0.3.15<span class="w"> </span>https://example.com/
+<span class="c1">#   ↑ DNS 무시하고 특정 서버로 강제 — &quot;LB 뒤 3번 서버만 이상한가?&quot; 검증에 최고</span>
+curl<span class="w"> </span>-sw<span class="w"> </span><span class="s1">&#39;dns:%{time_namelookup} tcp:%{time_connect} tls:%{time_appconnect} total:%{time_total}\n&#39;</span><span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>https://...
+<span class="c1">#   ↑ 단계별 소요시간 — &quot;느린데 어디가 느린지&quot;를 숫자로</span>
+</code></pre></div>
+
+<p>특히 <code>--resolve</code>는 LB 환경의 보물입니다 — 도메인은 그대로 두고(인증서 검증 유지) 대상 서버만 바꿔 찍어볼 수 있어요.</p>
+<h2 id="_5">한 줄 정리</h2>
+<p>curl -v는 <strong>DNS→TCP→TLS→HTTP 4단 실황 중계</strong>입니다. 멈춘 줄이 곧 범인의 층이고, refused와 timeout의 구분, TLS 에러 문구, 상태코드까지 — 출력을 읽을 줄 알면 진단 도구 하나로 계층 절반을 커버합니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --network</div><a href="../p/acg-vs-nacl.html"><span class="g">&#10095;</span>ACG(보안그룹) vs NACL 총정리 — 스테이트풀과 스테이트리스, 한 번에 끝내기</a><a href="../p/tcpdump-basics.html"><span class="g">&#10095;</span>말싸움 끝내는 법 — tcpdump로 &#x27;누가 응답을 안 하는지&#x27; 눈으로 보기</a><a href="../p/nat-gateway.html"><span class="g">&#10095;</span>NAT Gateway는 정확히 무슨 일을 하나 — 그리고 왜 요금 폭탄의 단골인가</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/prompt-injection.html"><span class="lbl">newer</span>프롬프트 주입 — AI가 읽은 문서가 AI에게 명령할 때</a><a href="../p/acg-vs-nacl.html" style="text-align:right"><span class="lbl">older</span>ACG(보안그룹) vs NACL 총정리 — 스테이트풀과 스테이트리스, 한 번에 끝내기</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
