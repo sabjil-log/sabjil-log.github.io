@@ -32,80 +32,80 @@ DIAGRAMS = {}
 # ══════════════════════════════════════════════════════════════
 _ICONS = {
  "laptop": """
-<rect x="4" y="4" width="24" height="16" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="4" y="4" width="24" height="16" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
 <rect x="6.5" y="6.5" width="19" height="11" rx="1" fill="var(--dg-screen)"/>
-<path d="M1.5 22 h29 l-2.5 3.5 H4 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.3" stroke-linejoin="round"/>""",
+<path d="M1.5 22 h29 l-2.5 3.5 H4 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>""",
  "server": """
-<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
-<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1"/>
-<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1"/>
-<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1"/>
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
 <circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
 <circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
 <circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/>""",
  "cloud": """
 <path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
-      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.4" stroke-linejoin="round"/>""",
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/>""",
  "router": """
-<rect x="3" y="17" width="26" height="10" rx="3" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
-<path d="M10 17 L 7 6" stroke="var(--dg-metal-d)" stroke-width="1.6" stroke-linecap="round"/>
-<path d="M22 17 L 25 6" stroke="var(--dg-metal-d)" stroke-width="1.6" stroke-linecap="round"/>
+<rect x="3" y="17" width="26" height="10" rx="3" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M10 17 L 7 6" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<path d="M22 17 L 25 6" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
 <circle cx="9" cy="22" r="1.2" fill="var(--dg-green)"/>
 <circle cx="13.5" cy="22" r="1.2" fill="var(--dg-green)"/>
 <circle cx="18" cy="22" r="1.2" fill="var(--dg-amber)"/>""",
  "switch": """
-<rect x="2" y="11" width="28" height="11" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
-<rect x="5" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width=".8"/>
-<rect x="10" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width=".8"/>
-<rect x="15" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width=".8"/>
-<rect x="20" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width=".8"/>
+<rect x="2" y="11" width="28" height="11" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="5" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="10" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="15" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="20" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
 <circle cx="26.5" cy="16.5" r="1.2" fill="var(--dg-green)"/>""",
  "firewall": """
-<rect x="3" y="6" width="26" height="20" rx="2" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.3"/>
-<path d="M3 12.6 h26 M3 19.3 h26" stroke="var(--dg-red)" stroke-width="1"/>
+<rect x="3" y="6" width="26" height="20" rx="2" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.7"/>
+<path d="M3 12.6 h26 M3 19.3 h26" stroke="var(--dg-red)" stroke-width="1.3"/>
 <path d="M11 6 v6.6 M20 6 v6.6 M7 12.6 v6.7 M16 12.6 v6.7 M24.5 12.6 v6.7 M11 19.3 v6.7 M20 19.3 v6.7"
-      stroke="var(--dg-red)" stroke-width="1"/>
+      stroke="var(--dg-red)" stroke-width="1.3"/>
 <path d="M16 13 c2.6 2.4 3.4 4.2 3.4 6 a3.4 3.4 0 0 1 -6.8 0 c0 -1.8 0.8 -3.6 3.4 -6 z"
-      fill="var(--dg-amber)" stroke="var(--dg-red)" stroke-width="1"/>""",
+      fill="var(--dg-amber)" stroke="var(--dg-red)" stroke-width="1.3"/>""",
  "globe": """
-<circle cx="16" cy="16" r="13" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.4"/>
-<ellipse cx="16" cy="16" rx="5.5" ry="13" fill="none" stroke="var(--dg-blue)" stroke-width="1.1"/>
-<path d="M3 16 h26 M5.2 9.5 h21.6 M5.2 22.5 h21.6" stroke="var(--dg-blue)" stroke-width="1.1"/>""",
+<circle cx="16" cy="16" r="13" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<ellipse cx="16" cy="16" rx="5.5" ry="13" fill="none" stroke="var(--dg-blue)" stroke-width="1.4"/>
+<path d="M3 16 h26 M5.2 9.5 h21.6 M5.2 22.5 h21.6" stroke="var(--dg-blue)" stroke-width="1.4"/>""",
  "database": """
 <path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
-      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.3"/>
-<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.3"/>
-<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.1"/>""",
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/>""",
  "lock": """
 <path d="M10 14 v-3.5 a6 6 0 0 1 12 0 V14" fill="none" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
-<rect x="6.5" y="14" width="19" height="14" rx="2.5" fill="var(--dg-amber-s)" stroke="var(--dg-amber)" stroke-width="1.4"/>
+<rect x="6.5" y="14" width="19" height="14" rx="2.5" fill="var(--dg-amber-s)" stroke="var(--dg-amber)" stroke-width="1.8"/>
 <circle cx="16" cy="20" r="2" fill="var(--dg-amber)"/>
-<path d="M16 21.5 v3" stroke="var(--dg-amber)" stroke-width="1.6" stroke-linecap="round"/>""",
+<path d="M16 21.5 v3" stroke="var(--dg-amber)" stroke-width="2" stroke-linecap="round"/>""",
  "shield": """
 <path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
-      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.4" stroke-linejoin="round"/>
-<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.2"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
       stroke-linecap="round" stroke-linejoin="round"/>""",
  "user": """
-<circle cx="16" cy="10" r="6" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.4"/>
+<circle cx="16" cy="10" r="6" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
 <path d="M4.5 29 c0 -6.6 5.2 -11 11.5 -11 s11.5 4.4 11.5 11" fill="var(--dg-blue-s)"
-      stroke="var(--dg-blue)" stroke-width="1.4" stroke-linecap="round"/>""",
+      stroke="var(--dg-blue)" stroke-width="1.8" stroke-linecap="round"/>""",
  "gateway": """
-<path d="M5 29 V13 a11 11 0 0 1 22 0 v16 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.4"/>
-<path d="M11 29 V15 a5 5 0 0 1 10 0 v14 z" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.3"/>
+<path d="M5 29 V13 a11 11 0 0 1 22 0 v16 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.8"/>
+<path d="M11 29 V15 a5 5 0 0 1 10 0 v14 z" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.7"/>
 <circle cx="19" cy="22" r="1.2" fill="var(--dg-blue)"/>""",
  "box": """
 <path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
-<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.4" stroke-linejoin="round"/>
-<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.2"/>""",
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/>""",
  "doc": """
-<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3" stroke-linejoin="round"/>
-<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
-<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.3" stroke-linecap="round"/>""",
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/>""",
  "brain": """
 <path d="M16 5 a6 6 0 0 0 -6 6 a5 5 0 0 0 -2 9 a5.5 5.5 0 0 0 8 6 a5.5 5.5 0 0 0 8 -6 a5 5 0 0 0 -2 -9 a6 6 0 0 0 -6 -6 z"
-      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.4"/>
-<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.1" stroke-linecap="round"/>""",
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.8"/>
+<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.4" stroke-linecap="round"/>""",
 }
 
 
@@ -140,11 +140,11 @@ DIAGRAMS["stateful-vs-stateless"] = {
 </style>
 <text x="16" y="24" class="dg-key" font-size="14">ACG / 보안그룹 &#8212; 스테이트풀 (대화를 기억)</text>
 <rect x="16" y="34" width="608" height="112" rx="12" class="dg-box"/>
-""" + _icon("server", 66, 90, 1.15) + """
+""" + _icon("server", 62, 88, 1.9) + """
 <text x="44" y="132" class="dg-lab2">서버</text>
-""" + _icon("shield", 210, 90, 1.05) + """
+""" + _icon("shield", 210, 88, 1.8) + """
 <text x="188" y="132" class="dg-lab2">ACG</text>
-""" + _icon("globe", 566, 90, 1.15) + """
+""" + _icon("globe", 566, 88, 1.9) + """
 <text x="546" y="132" class="dg-lab2">외부</text>
 <text x="268" y="66" class="dg-lab">요청 나감</text>
 <g class="dg-anim d1-pkt"><circle cx="300" cy="78" r="7" fill="var(--dg-green)"/></g>
@@ -153,11 +153,11 @@ DIAGRAMS["stateful-vs-stateless"] = {
 
 <text x="16" y="196" class="dg-key" font-size="14">NACL &#8212; 스테이트리스 (기억 없음)</text>
 <rect x="16" y="206" width="608" height="112" rx="12" class="dg-box"/>
-""" + _icon("server", 66, 262, 1.15) + """
+""" + _icon("server", 62, 260, 1.9) + """
 <text x="44" y="304" class="dg-lab2">서버</text>
-""" + _icon("firewall", 210, 262, 1.05) + """
+""" + _icon("firewall", 210, 260, 1.8) + """
 <text x="186" y="304" class="dg-lab2">NACL</text>
-""" + _icon("globe", 566, 262, 1.15) + """
+""" + _icon("globe", 566, 260, 1.9) + """
 <text x="546" y="304" class="dg-lab2">외부</text>
 <text x="268" y="238" class="dg-lab">인바운드 443 허용 &#8594; 요청 OK</text>
 <g class="dg-anim d1-pkt"><circle cx="300" cy="250" r="7" fill="var(--dg-green)"/></g>
@@ -297,8 +297,8 @@ def _flow(uid, steps, note=""):
                  f'width="{bw:.0f}" height="58" rx="10"/>')
         tx = x + 11
         if ic:
-            o.append(_icon(ic, x + 26, 47, 0.82))
-            tx = x + 46
+            o.append(_icon(ic, x + 30, 47, 1.45))
+            tx = x + 54
         o.append(f'<text x="{tx:.0f}" y="42" class="dg-key">{t}</text>')
         o.append(f'<text x="{tx:.0f}" y="62" class="dg-lab2">{sub}</text>')
         if i < n - 1:

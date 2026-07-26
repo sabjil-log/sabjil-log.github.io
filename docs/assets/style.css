@@ -329,12 +329,12 @@ article pre[data-lang]:hover::after{opacity:0;}   /* hover 시 copy 버튼에 �
   --dg-amber:#D98324; --dg-violet:#6B4E9B; --dg-teal:#1F8A8A;
   --dg-red-s:#FBEAE7; --dg-blue-s:#E9F1FC; --dg-green-s:#E6F4EE;
   --dg-amber-s:#FDF3E4; --dg-violet-s:#F0EAF8;
-  --dg-metal:#DCE1E7; --dg-metal-d:#8A949F; --dg-screen:#BFD8F5;
+  --dg-metal:#C3CEDA; --dg-metal-d:#4A5766; --dg-screen:#93C0F0;
 }
 [data-theme="dark"]{
   --dg-red:#F0857C; --dg-blue:#8FB6EE; --dg-green:#6FD6A8;
   --dg-amber:#EDB161; --dg-violet:#B69BE0; --dg-teal:#67C9C9;
   --dg-red-s:#2B1A18; --dg-blue-s:#17202E; --dg-green-s:#152A22;
   --dg-amber-s:#2A2116; --dg-violet-s:#211B2E;
-  --dg-metal:#39424C; --dg-metal-d:#6E7883; --dg-screen:#2A3E5C;
+  --dg-metal:#48545F; --dg-metal-d:#A8B3BE; --dg-screen:#3A5A85;
 }
