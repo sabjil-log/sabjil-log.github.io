@@ -38,9 +38,9 @@
 </blockquote>
 <figure class="diagram"><div class="dg-cap">컨테이너의 주소 체계 3가지</div><svg viewBox="0 0 640 200" role="img"><style>
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -58,17 +58,26 @@
 @keyframes dl-p{0%,100%{opacity:.45}50%{opacity:1}}
 </style>
 <rect x="14" y="16" width="612" height="46" rx="10" class="dg-box"/>
-<text x="28" y="38" class="dg-t">① 컨테이너 → 호스트의 서비스</text>
+<g transform="translate(17.2,15.2) scale(1.050)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="60" y="38" class="dg-t">① 컨테이너 &#8594; 호스트</text>
 <g class="dg-anim dl-x"><text x="300" y="38" class="dg-ts" fill="#E5484D">✕ localhost</text></g>
 <text x="404" y="38" class="dg-ts" fill="var(--accent)">✓ host.docker.internal</text>
 <text x="28" y="55" class="dg-ts">Linux는 --add-host=host.docker.internal:host-gateway 필요 · 호스트는 0.0.0.0 바인딩</text>
 <rect x="14" y="72" width="612" height="46" rx="10" class="dg-box"/>
-<text x="28" y="94" class="dg-t">② 컨테이너 → 옆 컨테이너</text>
+<g transform="translate(17.2,71.2) scale(1.050)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="60" y="94" class="dg-t">② 컨테이너 &#8594; 옆 컨테이너</text>
 <g class="dg-anim dl-x"><text x="300" y="94" class="dg-ts" fill="#E5484D">✕ localhost</text></g>
 <text x="404" y="94" class="dg-ts" fill="var(--accent)">✓ 컨테이너 이름 (예: db)</text>
 <text x="28" y="111" class="dg-ts">같은 사용자 정의 네트워크에 있어야 이름 해석됨 (compose는 자동)</text>
 <rect x="14" y="128" width="612" height="46" rx="10" class="dg-box"/>
-<text x="28" y="150" class="dg-t">③ 호스트 → 컨테이너</text>
+<g transform="translate(17.2,127.2) scale(1.050)">
+<rect x="4" y="4" width="24" height="16" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="6.5" y="6.5" width="19" height="11" rx="1" fill="var(--dg-screen)"/>
+<path d="M1.5 22 h29 l-2.5 3.5 H4 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/></g><text x="60" y="150" class="dg-t">③ 호스트 &#8594; 컨테이너</text>
 <text x="404" y="150" class="dg-ts" fill="var(--accent)">✓ -p 8080:80 로 포트 공개</text>
 <text x="28" y="167" class="dg-ts">-p 없으면 호스트에서 접근 불가가 정상 (담장 안)</text>
 <text x="14" y="194" class="dg-ts">예외: --network host 는 컨테이너가 호스트 네트워크를 그대로 사용 (격리 상실, Linux 전용)</text>

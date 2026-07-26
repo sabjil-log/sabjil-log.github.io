@@ -38,9 +38,9 @@
 </blockquote>
 <figure class="diagram"><div class="dg-cap">오토스케일링의 사각지대</div><svg viewBox="0 0 640 190" role="img"><style>
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -61,7 +61,14 @@
 <rect x="216" y="52" width="208" height="34" fill="#FFF4E6"/>
 <line x1="216" y1="42" x2="216" y2="96" class="dg-wall"/>
 <line x1="424" y1="42" x2="424" y2="96" class="dg-wall"/>
-<text x="60" y="42" class="dg-ts">평균 CPU 0%</text>
+<g transform="translate(11.2,49.2) scale(1.050)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="68" y="42" class="dg-ts">평균 CPU 0%</text>
 <text x="540" y="42" class="dg-ts">100%</text>
 <text x="180" y="112" class="dg-ts" fill="var(--accent)">축소 30%</text>
 <text x="392" y="112" class="dg-ts" fill="var(--accent)">확장 70%</text>

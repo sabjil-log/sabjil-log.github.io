@@ -38,9 +38,9 @@
 </blockquote>
 <figure class="diagram"><div class="dg-cap">정적 호스팅 3단 구성</div><svg viewBox="0 0 640 116" role="img"><style>
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -57,7 +57,16 @@
 .sh-0{animation:sh-h 3.45s ease-in-out infinite;animation-delay:0.0s;}
 .sh-1{animation:sh-h 3.45s ease-in-out infinite;animation-delay:1.15s;}
 .sh-2{animation:sh-h 3.45s ease-in-out infinite;animation-delay:2.3s;}
-@keyframes sh-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,20.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim sh-0" x="12" y="18" width="197" height="58" rx="10"/><text x="23" y="42" class="dg-key">사용자</text><text x="23" y="62" class="dg-lab2">브라우저 요청</text><line x1="209" y1="47" x2="221" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim sh-1" x="221" y="18" width="197" height="58" rx="10"/><text x="232" y="42" class="dg-key">CDN</text><text x="232" y="62" class="dg-lab2">HTTPS·도메인·캐시</text><line x1="419" y1="47" x2="431" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim sh-2" x="431" y="18" width="197" height="58" rx="10"/><text x="442" y="42" class="dg-key">버킷</text><text x="442" y="62" class="dg-lab2">정적 파일 원본</text><text x="12" y="102" class="dg-ts">공개 버킷은 사이트 파일만 · SPA는 에러문서를 index.html 로 · 캐시는 해시 파일명으로</text></svg><figcaption>버킷은 원본 창고, CDN이 HTTPS·도메인·캐시를 담당합니다. 버킷 단독으로는 HTTPS가 안 돼요.</figcaption></figure>
+@keyframes sh-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,20.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim sh-0" x="12" y="18" width="197" height="58" rx="10"/><g transform="translate(18.8,23.8) scale(1.450)">
+<circle cx="16" cy="10" r="6" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<path d="M4.5 29 c0 -6.6 5.2 -11 11.5 -11 s11.5 4.4 11.5 11" fill="var(--dg-blue-s)"
+      stroke="var(--dg-blue)" stroke-width="1.8" stroke-linecap="round"/></g><text x="66" y="42" class="dg-key">사용자</text><text x="66" y="62" class="dg-lab2">브라우저 요청</text><line x1="209" y1="47" x2="221" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim sh-1" x="221" y="18" width="197" height="58" rx="10"/><g transform="translate(228.1,23.8) scale(1.450)">
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g><text x="275" y="42" class="dg-key">CDN</text><text x="275" y="62" class="dg-lab2">HTTPS·캐시</text><line x1="419" y1="47" x2="431" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim sh-2" x="431" y="18" width="197" height="58" rx="10"/><g transform="translate(437.5,23.8) scale(1.450)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="485" y="42" class="dg-key">버킷</text><text x="485" y="62" class="dg-lab2">정적 파일 원본</text><text x="12" y="102" class="dg-ts">공개 버킷은 사이트 파일만 · SPA는 에러문서를 index.html 로 · 캐시는 해시 파일명으로</text></svg><figcaption>버킷은 원본 창고, CDN이 HTTPS·도메인·캐시를 담당합니다. 버킷 단독으로는 HTTPS가 안 돼요.</figcaption></figure>
 <h2 id="_1">언제 쓰나</h2>
 <p>GitHub Pages로 블로그를 띄우는 것과 같은 원리인데, 무대가 회사 클라우드입니다. 사내 대시보드, 제품 랜딩페이지, SPA(React 빌드 결과물), 문서 사이트 — HTML/JS/CSS만으로 되는 것들은 전부 후보예요. 특히 <strong>회사 인프라 안에서, 도메인·권한을 우리가 통제해야 할 때</strong> GitHub Pages 대신 이걸 씁니다.</p>
 <h2 id="_2">원리: 창고에 진열대 스위치가 있다</h2>

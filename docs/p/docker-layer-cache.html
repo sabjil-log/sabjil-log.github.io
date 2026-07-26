@@ -38,9 +38,9 @@
 </blockquote>
 <figure class="diagram"><div class="dg-cap">Dockerfile 순서가 캐시를 살린다</div><svg viewBox="0 0 640 250" role="img"><style>
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -57,13 +57,19 @@
 .dc-x{animation:dc-p 3s ease-in-out infinite;}
 @keyframes dc-p{0%,100%{opacity:.4}50%{opacity:1}}
 </style>
-<text x="14" y="22" class="dg-tl">나쁜 순서 — 코드 한 줄 고치면 전부 재빌드</text>
+<g transform="translate(7.2,1.2) scale(1.050)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="50" y="22" class="dg-tl">나쁜 순서 — 코드 고치면 전부 재빌드</text>
 <rect x="14" y="32" width="300" height="150" rx="10" class="dg-box"/>
 <rect x="34" y="130" width="260" height="30" rx="5" fill="var(--line-2)" stroke="var(--line)"/><text x="46" y="150" class="dg-ts">FROM python:3.12  (캐시 유지)</text>
 <rect x="34" y="94" width="260" height="30" rx="5" fill="#FCE9EA" stroke="#E5484D"/><text x="46" y="114" class="dg-ts">COPY . .  ← 코드 변경으로 무효화</text>
 <rect x="34" y="58" width="260" height="30" rx="5" fill="#FCE9EA" stroke="#E5484D"/><text x="46" y="78" class="dg-ts">RUN pip install  ← 같이 무효화 (느림)</text>
 <g class="dg-anim dc-x"><text x="298" y="80" font-size="15" class="dg-no" font-weight="700">✕</text></g>
-<text x="326" y="22" class="dg-tl">좋은 순서 — 의존성 층이 캐시로 남음</text>
+<g transform="translate(319.2,1.2) scale(1.050)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="362" y="22" class="dg-tl">좋은 순서 — 의존성 층이 캐시</text>
 <rect x="326" y="32" width="300" height="150" rx="10" class="dg-box"/>
 <rect x="346" y="148" width="260" height="26" rx="5" fill="var(--line-2)" stroke="var(--line)"/><text x="358" y="165" class="dg-ts">FROM python:3.12</text>
 <rect x="346" y="116" width="260" height="26" rx="5" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="358" y="133" class="dg-ts">COPY requirements.txt .   CACHED</text>

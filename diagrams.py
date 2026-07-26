@@ -8,9 +8,9 @@
 
 _COMMON = """
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -172,7 +172,7 @@ DIAGRAMS["nat-snat"] = {
     "title": "NAT Gateway의 주소 바꿔치기",
     "caption": "발신 주소를 자기 공인 IP로 바꾸고 장부에 적어둡니다. 답장은 장부를 보고 원래 주인에게 배달되죠.",
     "post": "nat-gateway",
-    "svg": """<svg viewBox="0 0 640 250" role="img" aria-label="NAT의 SNAT 변환과 장부">
+    "svg": """<svg viewBox="0 0 640 262" role="img" aria-label="NAT의 SNAT 변환과 장부">
 <style>
 """ + _COMMON + """
 .d2-a{animation:d2-a 4s ease-in-out infinite;}
@@ -181,35 +181,35 @@ DIAGRAMS["nat-snat"] = {
 .d2-l2{opacity:0;animation:d2-l2 4s ease-in-out infinite;}
 .d2-row{opacity:0;animation:d2-row 4s ease-in-out infinite;}
 @keyframes d2-a{0%{transform:translateX(0);opacity:0}6%{opacity:1}
- 34%{transform:translateX(190px);opacity:1}40%{opacity:0}100%{opacity:0}}
+ 34%{transform:translateX(170px);opacity:1}40%{opacity:0}100%{opacity:0}}
 @keyframes d2-b{0%,52%{transform:translateX(0);opacity:0}58%{opacity:1}
- 90%{transform:translateX(-190px);opacity:1}100%{opacity:0}}
+ 90%{transform:translateX(-170px);opacity:1}100%{opacity:0}}
 @keyframes d2-l1{0%,8%{opacity:0}14%,32%{opacity:1}38%{opacity:0}100%{opacity:0}}
 @keyframes d2-l2{0%,40%{opacity:0}46%,88%{opacity:1}94%{opacity:0}100%{opacity:0}}
 @keyframes d2-row{0%,30%{opacity:0}36%,100%{opacity:1}}
 </style>
-<rect x="12" y="52" width="96" height="52" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
-<text x="26" y="74" class="dg-t">private 서버</text>
-<text x="26" y="92" class="dg-ts">10.0.3.15</text>
-<rect x="256" y="40" width="130" height="76" rx="10" class="dg-box"/>
-<text x="278" y="66" class="dg-tl">NAT GW</text>
-<text x="278" y="86" class="dg-ts">공인 IP</text>
-<text x="278" y="102" class="dg-ts">1.2.3.4</text>
-<rect x="536" y="52" width="92" height="52" rx="8" class="dg-box"/>
-<text x="556" y="82" class="dg-t">외부 API</text>
-<line x1="108" y1="78" x2="256" y2="78" class="dg-arrow"/>
-<line x1="386" y1="78" x2="536" y2="78" class="dg-arrow"/>
-<g class="dg-anim d2-a"><circle cx="150" cy="78" r="7" class="dg-ok"/></g>
-<g class="dg-anim d2-b"><circle cx="480" cy="78" r="7" class="dg-ok"/></g>
-<g class="dg-anim d2-l1"><text x="112" y="66" class="dg-ts">from 10.0.3.15:44210</text></g>
-<g class="dg-anim d2-l2"><text x="392" y="66" class="dg-ts">from 1.2.3.4:5501 ← 바뀜</text></g>
-<rect x="196" y="150" width="250" height="72" rx="10" class="dg-box"/>
-<text x="212" y="172" class="dg-tl">장부 (매핑 테이블)</text>
+""" + _icon("server", 54, 72, 1.9) + """
+<text x="14" y="118" class="dg-t">private 서버</text>
+<text x="14" y="134" class="dg-ts">10.0.3.15</text>
+""" + _icon("gateway", 318, 72, 2.1) + """
+<text x="286" y="118" class="dg-tl">NAT GW</text>
+<text x="286" y="134" class="dg-ts">공인 IP 1.2.3.4</text>
+""" + _icon("globe", 584, 72, 1.9) + """
+<text x="548" y="118" class="dg-t">외부 API</text>
+<line x1="92" y1="72" x2="288" y2="72" class="dg-arrow"/>
+<line x1="350" y1="72" x2="550" y2="72" class="dg-arrow"/>
+<g class="dg-anim d2-a"><circle cx="120" cy="72" r="7" fill="var(--dg-green)"/></g>
+<g class="dg-anim d2-b"><circle cx="530" cy="72" r="7" fill="var(--dg-green)"/></g>
+<g class="dg-anim d2-l1"><text x="100" y="60" class="dg-lab2">from 10.0.3.15:44210</text></g>
+<g class="dg-anim d2-l2"><text x="360" y="60" class="dg-lab2">from 1.2.3.4:5501 &#8592; 바뀜</text></g>
+<rect x="196" y="160" width="250" height="72" rx="10" class="dg-box"/>
+""" + _icon("doc", 222, 196, 0.95) + """
+<text x="250" y="182" class="dg-tl">장부 (매핑 테이블)</text>
 <g class="dg-anim d2-row">
-  <text x="212" y="196" class="dg-ts">5501 → 10.0.3.15:44210</text>
-  <text x="212" y="212" class="dg-ts">답장은 이 표를 보고 되돌려 배달</text>
+  <text x="250" y="204" class="dg-lab2">5501 &#8594; 10.0.3.15:44210</text>
+  <text x="250" y="220" class="dg-ts">답장은 이 표를 보고 되돌려 배달</text>
 </g>
-<text x="12" y="238" class="dg-ts">장부는 '나간 통화'에만 생김 → 외부에서 먼저 걸려온 연결은 배달 불가 (단방향)</text>
+<text x="14" y="252" class="dg-ts">장부는 '나간 통화'에만 생김 &#8594; 외부에서 먼저 걸려온 연결은 배달 불가 (단방향)</text>
 </svg>""",
 }
 
@@ -242,13 +242,13 @@ DIAGRAMS["rag-pipeline"] = {
 <rect class="dg-box dg-anim d3-3" x="310" y="34" width="126" height="62" rx="10"/>
 <rect class="dg-box dg-anim d3-4" x="458" y="34" width="126" height="62" rx="10"/>
 </g>
-<text x="34" y="60" class="dg-t">임베딩</text>
+""" + _icon("doc", 34, 55, 1.05) + """<text x="60" y="60" class="dg-t">임베딩</text>
 <text x="34" y="80" class="dg-ts">벡터로 변환</text>
 <text x="182" y="60" class="dg-t">벡터 검색</text>
 <text x="182" y="80" class="dg-ts">top-50 (빠름·거침)</text>
 <text x="330" y="60" class="dg-t">리랭커</text>
 <text x="330" y="80" class="dg-ts">top-5 (느림·정확)</text>
-<text x="478" y="60" class="dg-t">LLM</text>
+""" + _icon("brain", 478, 55, 1.05) + """<text x="504" y="60" class="dg-t">LLM</text>
 <text x="478" y="80" class="dg-ts">근거로만 답변</text>
 <line x1="140" y1="65" x2="162" y2="65" class="dg-arrow"/>
 <line x1="288" y1="65" x2="310" y2="65" class="dg-arrow"/>
@@ -310,7 +310,7 @@ def _flow(uid, steps, note=""):
 
 def _ladder(uid, rows, note=""):
     """세로 사다리. rows = [(층이름, 확인방법, 멈추면 무슨 뜻), ...]"""
-    n = len(rows); w = 640; rh = 40
+    n = len(rows); w = 640; rh = 48
     h = 20 + n * rh + (26 if note else 6)
     dur = round(n * 1.0, 2); win = round(100.0 / n * 0.6, 1)
     css = [_COMMON]
@@ -320,14 +320,19 @@ def _ladder(uid, rows, note=""):
     css.append(f"@keyframes {uid}-h{{0%,100%{{fill:var(--raise);stroke:var(--line)}}"
                f"2%,{win}%{{fill:var(--accent-soft);stroke:var(--accent)}}}}")
     o = [f'<svg viewBox="0 0 {w} {h}" role="img"><style>' + "\n".join(css) + "</style>"]
-    for i, (name, how, mean) in enumerate(rows):
+    for i, row in enumerate(rows):
+        name, how, mean = row[0], row[1], row[2]
+        ic = row[3] if len(row) > 3 else None
         y = 12 + i * rh
-        o.append(f'<rect class="dg-box dg-anim {uid}-{i}" x="12" y="{y}" width="616" height="32" rx="8"/>')
-        o.append(f'<circle cx="32" cy="{y + 16}" r="9" fill="var(--accent)" opacity=".18"/>')
-        o.append(f'<text x="28" y="{y + 21}" class="dg-ts" fill="var(--accent)">{i + 1}</text>')
-        o.append(f'<text x="50" y="{y + 21}" class="dg-t">{name}</text>')
-        o.append(f'<text x="210" y="{y + 21}" class="dg-ts">{how}</text>')
-        o.append(f'<text x="392" y="{y + 21}" class="dg-ts">{mean}</text>')
+        o.append(f'<rect class="dg-box dg-anim {uid}-{i}" x="12" y="{y}" width="616" height="38" rx="9"/>')
+        if ic:
+            o.append(_icon(ic, 36, y + 19, 1.15))
+        else:
+            o.append(f'<circle cx="34" cy="{y + 19}" r="12" fill="var(--dg-red)" opacity=".12"/>')
+            o.append(f'<text x="30" y="{y + 24}" class="dg-ts" fill="var(--dg-red)">{i + 1}</text>')
+        o.append(f'<text x="60" y="{y + 24}" class="dg-t">{name}</text>')
+        o.append(f'<text x="216" y="{y + 24}" class="dg-lab2">{how}</text>')
+        o.append(f'<text x="396" y="{y + 24}" class="dg-ts">{mean}</text>')
     if note:
         o.append(f'<text x="12" y="{h - 8}" class="dg-ts">{note}</text>')
     return "".join(o) + "</svg>"
@@ -335,7 +340,7 @@ def _ladder(uid, rows, note=""):
 
 def _bars(uid, items, maxv, note="", thr=None, thr_label=""):
     """가로 막대. items = [(라벨, 값, 값표기), ...]"""
-    n = len(items); w = 640; x0 = 156; bwmax = w - x0 - 128; rh = 40
+    n = len(items); w = 640; x0 = 164; bwmax = w - x0 - 128; rh = 44
     h = 16 + n * rh + (28 if note else 8)
     css = [_COMMON, f".{uid}-b{{animation:{uid}-g 2.6s ease-out infinite;transform-origin:left center;}}",
            f"@keyframes {uid}-g{{0%{{transform:scaleX(0)}}45%,100%{{transform:scaleX(1)}}}}"]
@@ -343,13 +348,19 @@ def _bars(uid, items, maxv, note="", thr=None, thr_label=""):
     if thr is not None:
         tx = x0 + bwmax * thr / maxv
         o.append(f'<line x1="{tx:.0f}" y1="6" x2="{tx:.0f}" y2="{16 + n * rh - 6}" class="dg-wall"/>')
-        o.append(f'<text x="{tx + 6:.0f}" y="16" class="dg-ts" fill="var(--accent)">{thr_label}</text>')
-    for i, (lab, val, txt) in enumerate(items):
+        o.append(f'<text x="{tx + 6:.0f}" y="16" class="dg-ts" fill="var(--dg-red)">{thr_label}</text>')
+    for i, item in enumerate(items):
+        lab, val, txt = item[0], item[1], item[2]
+        ic = item[3] if len(item) > 3 else None
         y = 22 + i * rh
         bw = bwmax * val / maxv
         over = thr is not None and val > thr
-        col = "#E5484D" if over else "var(--accent)"
-        o.append(f'<text x="12" y="{y + 18}" class="dg-t">{lab}</text>')
+        col = "var(--dg-red)" if over else "var(--dg-green)"
+        if ic:
+            o.append(_icon(ic, 30, y + 14, 1.0))
+            o.append(f'<text x="52" y="{y + 19}" class="dg-t">{lab}</text>')
+        else:
+            o.append(f'<text x="12" y="{y + 18}" class="dg-t">{lab}</text>')
         o.append(f'<rect x="{x0}" y="{y + 4}" width="{bwmax}" height="20" rx="5" '
                  f'fill="var(--line-2)"/>')
         o.append(f'<g class="dg-anim {uid}-b" style="animation-delay:{round(i * .18, 2)}s">'
@@ -360,22 +371,27 @@ def _bars(uid, items, maxv, note="", thr=None, thr_label=""):
     return "".join(o) + "</svg>"
 
 
-def _two(uid, lt, ll, rt, rl, note=""):
+def _two(uid, lt, ll, rt, rl, note="", licon=None, ricon=None):
     """2단 비교. ll/rl = [(mark, 텍스트)] — mark: ok|no|dot"""
     w = 640; pw = (w - 36) / 2
     rows = max(len(ll), len(rl))
-    h = 56 + rows * 24 + (26 if note else 10)
+    h = 68 + rows * 24 + (26 if note else 10)
     o = [f'<svg viewBox="0 0 {w} {h}" role="img"><style>' + _COMMON + "</style>"]
-    for k, (t, lines, x) in enumerate([(lt, ll, 12), (rt, rl, 24 + pw)]):
+    for k, (t, lines, x, ic) in enumerate([(lt, ll, 12, licon), (rt, rl, 24 + pw, ricon)]):
         o.append(f'<rect class="dg-box" x="{x:.0f}" y="10" width="{pw:.0f}" '
                  f'height="{h - (34 if note else 20)}" rx="12"/>')
-        o.append(f'<text x="{x + 16:.0f}" y="36" class="dg-tl">{t}</text>')
-        for i, (mk, tx) in enumerate(lines):
-            y = 62 + i * 24
-            sym = {"ok": ("✓", "var(--accent)"), "no": ("✕", "#E5484D"), "dot": ("·", "var(--muted)")}[mk]
-            o.append(f'<text x="{x + 16:.0f}" y="{y}" font-size="12" font-weight="700" '
+        tx = x + 16
+        if ic:
+            o.append(_icon(ic, x + 34, 40, 1.25))
+            tx = x + 60
+        o.append(f'<text x="{tx:.0f}" y="46" class="dg-tl">{t}</text>')
+        for i, (mk, txt) in enumerate(lines):
+            y = 76 + i * 24
+            sym = {"ok": ("✓", "var(--dg-green)"), "no": ("✕", "var(--dg-red)"),
+                   "dot": ("·", "var(--muted)")}[mk]
+            o.append(f'<text x="{x + 16:.0f}" y="{y}" font-size="13" font-weight="700" '
                      f'fill="{sym[1]}">{sym[0]}</text>')
-            o.append(f'<text x="{x + 32:.0f}" y="{y}" class="dg-ts">{tx}</text>')
+            o.append(f'<text x="{x + 32:.0f}" y="{y}" class="dg-ts">{txt}</text>')
     if note:
         o.append(f'<text x="12" y="{h - 8}" class="dg-ts">{note}</text>')
     return "".join(o) + "</svg>"
@@ -386,20 +402,20 @@ _add("triage-ladder", "접속 실패, 계층별 진단 사다리",
      "아래층부터 한 칸씩 올라가며 확인합니다. 멈춘 층이 곧 범인의 위치예요.",
      "network-triage",
      _ladder("tl", [
-         ("DNS 해석", "dig +short 도메인", "실패 → DNS 설정·오타"),
-         ("경로 도달", "traceroute 도메인", "멈춤 → 라우팅·구간 차단"),
-         ("포트 응답", "nc -vz 호스트 443", "실패 → 방화벽 or 앱 부재"),
-         ("리스닝 확인", "ss -tlnp | grep :443", "없음 → 앱 미기동·바인딩"),
-         ("방화벽", "ACG / NACL / iptables", "NACL은 응답 포트도 필요"),
-         ("앱 레벨", "curl -v .../health", "5xx → 앱 내부 오류"),
+         ("DNS 해석", "dig +short 도메인", "실패 → DNS 설정·오타", "globe"),
+         ("경로 도달", "traceroute 도메인", "멈춤 → 라우팅 차단", "router"),
+         ("포트 응답", "nc -vz 호스트 443", "실패 → 방화벽·앱 부재", "switch"),
+         ("리스닝 확인", "ss -tlnp | grep :443", "없음 → 미기동·바인딩", "server"),
+         ("방화벽", "ACG / NACL / iptables", "NACL은 응답 포트도", "firewall"),
+         ("앱 레벨", "curl -v .../health", "5xx → 앱 내부 오류", "doc"),
      ], "위에서 아래로 내려가는 게 아니라, 아래(네트워크)에서 위(앱)로 올라가며 좁힙니다"))
 
 _add("grep-awk-sed", "grep · awk · sed 역할 분담",
      "줄을 고르고 → 칸을 자르고 → 글자를 다듬는다. 파이프는 접시를 넘기는 컨베이어입니다.",
      "grep-awk-sed",
-     _flow("gas", [("grep", "줄 고르기 (행 필터)"),
-                   ("awk", "칸 자르기 (필드 추출)"),
-                   ("sed", "글자 바꾸기 (치환)")],
+     _flow("gas", [("grep", "줄 고르기", "doc"),
+                   ("awk", "칸 자르기", "switch"),
+                   ("sed", "글자 바꾸기", "box")],
            "랭킹 관용구: … | sort | uniq -c | sort -rn | head  ← 세어서 순위 만들기"))
 
 _add("curl-stages", "curl -v가 보여주는 4단계",
@@ -414,36 +430,36 @@ _add("curl-stages", "curl -v가 보여주는 4단계",
 _add("kubectl-five", "kubectl 디버깅 다섯 개의 창",
      "앱의 말 → 쿠버의 말 → 현장 → 설계도 → 직통. 대개 이 순서로 꺼냅니다.",
      "kubectl-five",
-     _flow("kf", [("logs", "앱의 말·유언"),
-                  ("describe", "쿠버의 말·Events"),
-                  ("exec", "현장 진입"),
-                  ("get -o yaml", "설계도 원본"),
-                  ("port-forward", "직통 전화")],
+     _flow("kf", [("logs", "앱의 말", "doc"),
+                  ("describe", "쿠버의 말", "box"),
+                  ("exec", "현장 진입", "server"),
+                  ("get -o yaml", "설계도", "doc"),
+                  ("port-fwd", "직통", "router")],
            "CrashLoop이면 logs --previous 부터 · 연결 문제면 port-forward로 구간 이분탐색"))
 
 _add("healthcheck-gates", "헬스체크가 통과해야 하는 3개의 관문",
      "노크가 닿고(방화벽), 문이 맞고(포트), 대답이 200이어야(경로) 살아있음 도장이 찍힙니다.",
      "lb-healthcheck",
-     _flow("hg", [("① 방화벽", "ACG·NACL 통과"),
-                  ("② 포트", "앱이 그 포트 리스닝"),
-                  ("③ 경로+200", "/health 가 200 반환")],
+     _flow("hg", [("① 방화벽", "ACG·NACL 통과", "firewall"),
+                  ("② 포트", "리스닝 확인", "server"),
+                  ("③ 경로+200", "/health 200", "shield")],
            "진단: tcpdump(노크 도착?) → ss(포트 맞나?) → curl 127.0.0.1(200 주나?)"))
 
 _add("static-hosting", "정적 호스팅 3단 구성",
      "버킷은 원본 창고, CDN이 HTTPS·도메인·캐시를 담당합니다. 버킷 단독으로는 HTTPS가 안 돼요.",
      "object-storage-hosting",
-     _flow("sh", [("사용자", "브라우저 요청"),
-                  ("CDN", "HTTPS·도메인·캐시"),
-                  ("버킷", "정적 파일 원본")],
+     _flow("sh", [("사용자", "브라우저 요청", "user"),
+                  ("CDN", "HTTPS·캐시", "cloud"),
+                  ("버킷", "정적 파일 원본", "database")],
            "공개 버킷은 사이트 파일만 · SPA는 에러문서를 index.html 로 · 캐시는 해시 파일명으로"))
 
 _add("agent-loop", "에이전트의 실행 루프",
      "모델은 실행 '요청서'를 쓸 뿐이고, 방아쇠는 항상 우리 코드가 당깁니다. 그 사이가 안전장치의 자리죠.",
      "agents-tool-use",
-     _flow("al", [("① 도구 명세", "모델에 목록 전달"),
-                  ("② 도구 요청", "모델이 이름+인자 지정"),
-                  ("③ 우리가 실행", "권한·승인 게이트"),
-                  ("④ 결과 회신", "대화에 붙여 재질의")],
+     _flow("al", [("① 도구 명세", "목록 전달", "doc"),
+                  ("② 도구 요청", "모델이 지정", "brain"),
+                  ("③ 우리가 실행", "승인 게이트", "gateway"),
+                  ("④ 결과 회신", "붙여 재질의", "box")],
            "④ 다음 다시 ②로 — 도구 요청이 안 나올 때까지 반복하는 while 루프가 에이전트의 정체"))
 
 _add("mcp-mxn", "M×N 어댑터 지옥 → M+N",
@@ -459,14 +475,14 @@ _add("mcp-mxn", "M×N 어댑터 지옥 → M+N",
          ("ok", "클라이언트는 MCP 지원 1번만"),
          ("ok", "10 + 4 = 14 로 감소"),
          ("dot", "규격 콘센트에 꽂기만"),
-     ], "서버가 내놓는 것: Tools(실행) · Resources(읽을 데이터) · Prompts(작업 템플릿)"))
+     ], "서버가 내놓는 것: Tools(실행) · Resources(읽을 데이터) · Prompts(작업 템플릿)", licon="box", ricon="gateway"))
 
 _add("quantization-size", "양자화별 모델 무게 (14B 기준)",
      "파라미터 개수 × 숫자 하나의 크기. 4bit면 1/4이 되어 16GB 카드에 들어갑니다.",
      "quantization",
-     _bars("qz", [("FP16 (16bit)", 28, "28 GB 초과"),
-                  ("INT8 (8bit)", 14, "14 GB 아슬"),
-                  ("INT4 (4bit)", 7, "7 GB 여유")],
+     _bars("qz", [("FP16", 28, "28 GB 초과", "box"),
+                  ("INT8", 14, "14 GB 아슬", "box"),
+                  ("INT4", 7, "7 GB 여유", "box")],
            32, "여기에 KV 캐시·오버헤드가 얹힙니다. 같은 VRAM이면 '큰 모델 4bit'가 대개 이깁니다",
            thr=16, thr_label="16GB 카드 한계"))
 
@@ -483,7 +499,7 @@ _add("finetune-vs-rag", "파인튜닝 vs RAG — 무엇을 넣는가",
          ("ok", "도메인 방언, 좁은 작업 특화"),
          ("no", "갱신마다 데이터셋+학습 반복"),
          ("no", "지식 주입 수단으로는 신뢰도 낮음"),
-     ], "순서 원칙: 프롬프트 엔지니어링 → RAG → 파인튜닝 (싸고 되돌리기 쉬운 것부터)"))
+     ], "순서 원칙: 프롬프트 엔지니어링 → RAG → 파인튜닝 (싸고 되돌리기 쉬운 것부터)", licon="doc", ricon="brain"))
 
 _add("managed-db-line", "관리형 DB — 책임 경계선",
      "서버 관리는 벤더가, DB 관리는 여전히 우리 몫입니다. 이 선을 모르면 '관리형인데 왜 터지죠'가 됩니다.",
@@ -498,7 +514,7 @@ _add("managed-db-line", "관리형 DB — 책임 경계선",
          ("no", "백업 보존기간 + 복구 리허설"),
          ("no", "다중화 옵션 선택 · 앱의 재연결"),
          ("no", "네트워크 접근 통제 재설계"),
-     ], "이관 체크리스트 1번: 기존 SHOW VARIABLES 결과와 새 파라미터 그룹 대조"))
+     ], "이관 체크리스트 1번: 기존 SHOW VARIABLES 결과와 새 파라미터 그룹 대조", licon="cloud", ricon="user"))
 
 
 # ══════════════════════════════════════════════════════════════
@@ -511,13 +527,13 @@ _add("unicode-nfc-nfd", "같은 '한', 다른 바이트",
 .un-p{animation:un-p 3s ease-in-out infinite;}
 @keyframes un-p{0%,100%{opacity:.35}50%{opacity:1}}
 </style>
-<text x="14" y="24" class="dg-tl">윈도우 · 웹 표준 — NFC (합쳐서 1개)</text>
+""" + _icon("server", 24, 20, 1.05) + """<text x="50" y="24" class="dg-tl">윈도우 · 웹 표준 — NFC (1개)</text>
 <rect x="14" y="36" width="290" height="58" rx="10" class="dg-box"/>
 <rect x="30" y="48" width="46" height="34" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
 <text x="42" y="72" class="dg-t">한</text>
 <text x="92" y="62" class="dg-ts">코드포인트 1개</text>
 <text x="92" y="80" class="dg-ts">len("한") == 1</text>
-<text x="336" y="24" class="dg-tl">맥 (APFS/HFS+) — NFD (자모 3개)</text>
+""" + _icon("laptop", 346, 20, 1.05) + """<text x="372" y="24" class="dg-tl">맥 — NFD (자모 3개)</text>
 <rect x="336" y="36" width="290" height="58" rx="10" class="dg-box"/>
 <rect x="352" y="48" width="34" height="34" rx="6" fill="none" stroke="var(--muted)" stroke-width="1.3"/>
 <text x="362" y="72" class="dg-t">ㅎ</text>
@@ -600,7 +616,7 @@ _add("context-desk", "컨텍스트 윈도우 = 책상 크기",
 @keyframes cd-new{0%,40%{transform:translateX(90px);opacity:0}75%,100%{transform:translateX(0);opacity:1}}
 </style>
 <rect x="60" y="40" width="520" height="96" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
-<text x="70" y="32" class="dg-ts" fill="var(--accent)">책상 = 컨텍스트 윈도우 (질문 + 문서 + 대화이력 + 답변 전부 포함)</text>
+""" + _icon("doc", 40, 28, 1.05) + """<text x="68" y="32" class="dg-ts" fill="var(--dg-blue)">책상 = 컨텍스트 윈도우 (질문 + 문서 + 대화이력 + 답변 전부 포함)</text>
 <g class="dg-anim cd-out"><rect x="76" y="58" width="70" height="60" rx="6" class="dg-box"/>
 <text x="86" y="84" class="dg-ts">초반</text><text x="86" y="100" class="dg-ts">대화</text></g>
 <rect x="158" y="58" width="70" height="60" rx="6" class="dg-box"/><text x="168" y="92" class="dg-ts">지시문</text>
@@ -657,13 +673,13 @@ _add("docker-cache-order", "Dockerfile 순서가 캐시를 살린다",
 .dc-x{animation:dc-p 3s ease-in-out infinite;}
 @keyframes dc-p{0%,100%{opacity:.4}50%{opacity:1}}
 </style>
-<text x="14" y="22" class="dg-tl">나쁜 순서 — 코드 한 줄 고치면 전부 재빌드</text>
+""" + _icon("box", 24, 18, 1.05) + """<text x="50" y="22" class="dg-tl">나쁜 순서 — 코드 고치면 전부 재빌드</text>
 <rect x="14" y="32" width="300" height="150" rx="10" class="dg-box"/>
 <rect x="34" y="130" width="260" height="30" rx="5" fill="var(--line-2)" stroke="var(--line)"/><text x="46" y="150" class="dg-ts">FROM python:3.12  (캐시 유지)</text>
 <rect x="34" y="94" width="260" height="30" rx="5" fill="#FCE9EA" stroke="#E5484D"/><text x="46" y="114" class="dg-ts">COPY . .  ← 코드 변경으로 무효화</text>
 <rect x="34" y="58" width="260" height="30" rx="5" fill="#FCE9EA" stroke="#E5484D"/><text x="46" y="78" class="dg-ts">RUN pip install  ← 같이 무효화 (느림)</text>
 <g class="dg-anim dc-x"><text x="298" y="80" font-size="15" class="dg-no" font-weight="700">✕</text></g>
-<text x="326" y="22" class="dg-tl">좋은 순서 — 의존성 층이 캐시로 남음</text>
+""" + _icon("box", 336, 18, 1.05) + """<text x="362" y="22" class="dg-tl">좋은 순서 — 의존성 층이 캐시</text>
 <rect x="326" y="32" width="300" height="150" rx="10" class="dg-box"/>
 <rect x="346" y="148" width="260" height="26" rx="5" fill="var(--line-2)" stroke="var(--line)"/><text x="358" y="165" class="dg-ts">FROM python:3.12</text>
 <rect x="346" y="116" width="260" height="26" rx="5" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="358" y="133" class="dg-ts">COPY requirements.txt .   CACHED</text>
@@ -684,7 +700,7 @@ _add("scalein-deadzone", "오토스케일링의 사각지대",
 <rect x="216" y="52" width="208" height="34" fill="#FFF4E6"/>
 <line x1="216" y1="42" x2="216" y2="96" class="dg-wall"/>
 <line x1="424" y1="42" x2="424" y2="96" class="dg-wall"/>
-<text x="60" y="42" class="dg-ts">평균 CPU 0%</text>
+""" + _icon("server", 28, 66, 1.05) + """<text x="68" y="42" class="dg-ts">평균 CPU 0%</text>
 <text x="540" y="42" class="dg-ts">100%</text>
 <text x="180" y="112" class="dg-ts" fill="var(--accent)">축소 30%</text>
 <text x="392" y="112" class="dg-ts" fill="var(--accent)">확장 70%</text>
@@ -705,7 +721,7 @@ _add("cutoff-timeline", "지식 컷오프 — 동결된 시점",
 <line x1="336" y1="76" x2="620" y2="76" stroke="var(--faint)" stroke-width="7" stroke-dasharray="7 7" stroke-linecap="round"/>
 <line x1="333" y1="46" x2="333" y2="106" class="dg-wall"/>
 <text x="290" y="38" class="dg-ts" fill="var(--accent)">컷오프</text>
-<text x="20" y="112" class="dg-t">학습된 세상 — 잘 안다</text>
+""" + _icon("brain", 30, 108, 1.05) + """<text x="58" y="112" class="dg-t">학습된 세상 — 잘 안다</text>
 <text x="400" y="112" class="dg-t">모르는 구간</text>
 <rect x="216" y="56" width="112" height="40" rx="6" fill="var(--accent-soft)" opacity=".55"/>
 <text x="222" y="80" class="dg-ts">직전 몇 달: 어설프게 아는 회색지대</text>
@@ -724,14 +740,14 @@ _add("envelope-keys", "봉투암호화 — DEK와 KEK",
 <rect x="392" y="24" width="234" height="182" rx="12" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="6 4"/>
 <text x="404" y="44" class="dg-ts" fill="var(--accent)">KMS — 마스터키는 밖으로 안 나감</text>
 <rect x="424" y="60" width="170" height="52" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
-<text x="442" y="82" class="dg-t">마스터키 (KEK)</text>
+""" + _icon("shield", 452, 84, 0.95) + """<text x="474" y="88" class="dg-t">마스터키 (KEK)</text>
 <text x="442" y="100" class="dg-ts">봉투를 봉인·개봉만</text>
 <rect x="14" y="40" width="180" height="70" rx="10" class="dg-box"/>
-<text x="30" y="66" class="dg-t">데이터 (1GB)</text>
+""" + _icon("doc", 40, 66, 1.05) + """<text x="68" y="70" class="dg-t">데이터 (1GB)</text>
 <text x="30" y="86" class="dg-ts">DEK로 로컬에서 암호화</text>
 <text x="30" y="102" class="dg-ts">→ 빠름, 네트워크 불필요</text>
 <rect x="14" y="126" width="180" height="62" rx="10" fill="var(--raise)" stroke="var(--accent)" stroke-width="1.5"/>
-<text x="30" y="150" class="dg-t">봉인된 봉투</text>
+""" + _icon("lock", 40, 150, 1.05) + """<text x="68" y="154" class="dg-t">봉인된 봉투</text>
 <text x="30" y="170" class="dg-ts">암호화된 DEK — 데이터와 함께 보관</text>
 <path d="M194 158 H 392 V 96" class="dg-arrow"/>
 <g class="dg-anim ev-k"><circle cx="300" cy="158" r="7" class="dg-ok"/></g>
@@ -748,17 +764,17 @@ _add("docker-localhost-3", "컨테이너의 주소 체계 3가지",
 @keyframes dl-p{0%,100%{opacity:.45}50%{opacity:1}}
 </style>
 <rect x="14" y="16" width="612" height="46" rx="10" class="dg-box"/>
-<text x="28" y="38" class="dg-t">① 컨테이너 → 호스트의 서비스</text>
+""" + _icon("box", 34, 32, 1.05) + """<text x="60" y="38" class="dg-t">① 컨테이너 &#8594; 호스트</text>
 <g class="dg-anim dl-x"><text x="300" y="38" class="dg-ts" fill="#E5484D">✕ localhost</text></g>
 <text x="404" y="38" class="dg-ts" fill="var(--accent)">✓ host.docker.internal</text>
 <text x="28" y="55" class="dg-ts">Linux는 --add-host=host.docker.internal:host-gateway 필요 · 호스트는 0.0.0.0 바인딩</text>
 <rect x="14" y="72" width="612" height="46" rx="10" class="dg-box"/>
-<text x="28" y="94" class="dg-t">② 컨테이너 → 옆 컨테이너</text>
+""" + _icon("box", 34, 88, 1.05) + """<text x="60" y="94" class="dg-t">② 컨테이너 &#8594; 옆 컨테이너</text>
 <g class="dg-anim dl-x"><text x="300" y="94" class="dg-ts" fill="#E5484D">✕ localhost</text></g>
 <text x="404" y="94" class="dg-ts" fill="var(--accent)">✓ 컨테이너 이름 (예: db)</text>
 <text x="28" y="111" class="dg-ts">같은 사용자 정의 네트워크에 있어야 이름 해석됨 (compose는 자동)</text>
 <rect x="14" y="128" width="612" height="46" rx="10" class="dg-box"/>
-<text x="28" y="150" class="dg-t">③ 호스트 → 컨테이너</text>
+""" + _icon("laptop", 34, 144, 1.05) + """<text x="60" y="150" class="dg-t">③ 호스트 &#8594; 컨테이너</text>
 <text x="404" y="150" class="dg-ts" fill="var(--accent)">✓ -p 8080:80 로 포트 공개</text>
 <text x="28" y="167" class="dg-ts">-p 없으면 호스트에서 접근 불가가 정상 (담장 안)</text>
 <text x="14" y="194" class="dg-ts">예외: --network host 는 컨테이너가 호스트 네트워크를 그대로 사용 (격리 상실, Linux 전용)</text>
@@ -771,11 +787,11 @@ _add("inode-gauge", "용량은 남았는데 'No space left'",
 .ig-b{animation:ig-g 2.6s ease-out infinite;transform-origin:left center;}
 @keyframes ig-g{0%{transform:scaleX(0)}45%,100%{transform:scaleX(1)}}
 </style>
-<text x="14" y="26" class="dg-t">df -h  (용량)</text>
+""" + _icon("database", 26, 22, 1.05) + """<text x="52" y="26" class="dg-t">df -h (용량)</text>
 <rect x="160" y="12" width="420" height="22" rx="5" fill="var(--line-2)"/>
 <g class="dg-anim ig-b"><rect x="160" y="12" width="126" height="22" rx="5" fill="var(--accent)" opacity=".85"/></g>
 <text x="590" y="28" class="dg-ts">30%</text>
-<text x="14" y="76" class="dg-t">df -i  (inode)</text>
+""" + _icon("doc", 26, 72, 1.05) + """<text x="52" y="76" class="dg-t">df -i (inode)</text>
 <rect x="160" y="62" width="420" height="22" rx="5" fill="var(--line-2)"/>
 <g class="dg-anim ig-b" style="animation-delay:.2s"><rect x="160" y="62" width="420" height="22" rx="5" fill="#E5484D" opacity=".85"/></g>
 <text x="590" y="78" class="dg-ts" fill="#E5484D">100%</text>
@@ -799,7 +815,7 @@ _add("ann-search", "전수조사 vs ANN (고속도로망)",
     f'<circle cx="{40 + (i % 10) * 27}" cy="{56 + (i // 10) * 24}" r="5" fill="var(--muted)" style="animation-delay:{i * 0.02:.2f}s"/>'
     for i in range(40)) + """</g>
 <text x="40" y="152" class="dg-ts">전부 다 재본다 → 정확하지만 실시간 불가</text>
-<text x="326" y="22" class="dg-tl">HNSW — 점프로 몇십 번</text>
+""" + _icon("database", 336, 18, 1.05) + """<text x="362" y="22" class="dg-tl">HNSW — 점프로 몇십 번</text>
 <rect x="326" y="32" width="300" height="130" rx="10" class="dg-box"/>
 <g opacity=".3">""" + "".join(
     f'<circle cx="{352 + (i % 10) * 27}" cy="{56 + (i // 10) * 24}" r="5" fill="var(--muted)"/>'
@@ -825,7 +841,7 @@ _add("volume-vs-bind", "볼륨 vs 바인드 마운트",
          ("ok", "에디터 수정이 즉시 반영"),
          ("no", "호스트 경로에 종속 · UID 권한 문제"),
          ("no", "운영 데이터 보관용으로는 부적합"),
-     ], "점검: docker inspect 컨테이너 --format '{{json .Mounts}}' — 비어 있으면 데이터가 사라질 위험"))
+     ], "점검: docker inspect 컨테이너 --format '{{json .Mounts}}' — 비어 있으면 데이터가 사라질 위험", licon="database", ricon="doc"))
 
 _add("keyscope", "마스터키 vs 카드키 — 토큰 범위",
      "유출은 언제든 일어납니다. 그때 피해 크기를 정하는 건 토큰에 부여한 범위예요.",
@@ -840,7 +856,7 @@ _add("keyscope", "마스터키 vs 카드키 — 토큰 범위",
          ("ok", "Contents: Read and write 만"),
          ("ok", "만료 7일 등 짧게"),
          ("ok", "유출 시 = 그 저장소만, 곧 만료"),
-     ], "노출되면 고민 말고 즉시 폐기(revoke) 후 재발급 · CI에서는 값이 아니라 Secret 이름만 참조"))
+     ], "노출되면 고민 말고 즉시 폐기(revoke) 후 재발급 · CI에서는 값이 아니라 Secret 이름만 참조", licon="lock", ricon="shield"))
 
 
 # ── 2차 배치 ──────────────────────────────────────────────────
@@ -880,7 +896,7 @@ _add("chunk-overlap", "청크 크기와 오버랩",
 <rect x="366" y="46" width="60" height="20" rx="4" fill="var(--line-2)" stroke="var(--line)"/>
 <rect x="432" y="46" width="60" height="20" rx="4" fill="var(--line-2)" stroke="var(--line)"/>
 <text x="500" y="61" class="dg-ts">뭐의 예외인지 모름</text>
-<text x="14" y="100" class="dg-t">적당히 + 오버랩</text>
+""" + _icon("doc", 26, 96, 1.05) + """<text x="54" y="100" class="dg-t">적당히 + 오버랩</text>
 <rect x="300" y="86" width="150" height="22" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
 <rect x="410" y="112" width="150" height="22" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
 <rect x="410" y="86" width="40" height="48" rx="3" fill="var(--accent)" opacity=".22" class="dg-anim co-h"/>
@@ -894,17 +910,17 @@ _add("syn-patterns", "tcpdump로 읽는 SYN 3패턴",
      "서버에서 캡처를 켜고 접속을 시도하면, 세 가지 중 하나가 보입니다. 그게 곧 책임 구간입니다.",
      "tcpdump-basics",
      _ladder("sp", [
-         ("① 아무것도 안 보임", "(정적)", "앞단 방화벽·NACL·라우팅"),
-         ("② SYN → RST 응답", "Flags [S] → Flags [R.]", "포트에 앱 없음 (ss로 확인)"),
-         ("③ SYN 반복, 응답 없음", "Flags [S] × 3회 재전송", "응답 경로 차단 (임시포트·DROP)"),
+         ("① 아무것도 안 보임", "(정적)", "앞단 방화벽·라우팅", "firewall"),
+         ("② SYN → RST", "Flags [S] → [R.]", "포트에 앱 없음", "server"),
+         ("③ SYN 반복", "재전송 × 3회", "응답 경로 차단", "router"),
      ], "sudo tcpdump -ni any port 8080 -c 30  ← 내가 curl로 재현하며 그 파문만 관찰하는 게 요령"))
 
 _add("load-per-core", "load average는 코어 수로 나눠 읽는다",
      "같은 4.2라도 서버에 따라 의미가 정반대입니다. load ÷ 코어 ≈ 1.0이 만석 기준선이에요.",
      "load-average",
-     _bars("lc", [("2코어 · load 4.2", 2.1, "2.1배 과부하"),
-                  ("4코어 · load 4.2", 1.05, "1.05배 만석"),
-                  ("16코어 · load 4.2", 0.26, "0.26배 한산")],
+     _bars("lc", [("2코어 load 4.2", 2.1, "2.1배 과부하", "server"),
+                  ("4코어 load 4.2", 1.05, "1.05배 만석", "server"),
+                  ("16코어 load 4.2", 0.26, "0.26배 한산", "server")],
            2.4, "숫자 3개는 1분/5분/15분 평균 — 1분<15분이면 가라앉는 중, 1분>15분이면 차오르는 중",
            thr=1.0, thr_label="기준선 1.0"))
 
@@ -921,7 +937,7 @@ _add("l7-vs-l4", "ALB(L7) vs NLB(L4)",
          ("ok", "초고성능 저지연 · 고정 IP(EIP) 부착"),
          ("ok", "클라이언트 IP 보존"),
          ("no", "그래서 방화벽을 클라이언트 IP 기준으로 열어야 함"),
-     ], "둘 다 필요하면 NLB(고정IP) → ALB(L7 라우팅) → 서버 체인 구성이 흔합니다"))
+     ], "둘 다 필요하면 NLB(고정IP) → ALB(L7 라우팅) → 서버 체인 구성이 흔합니다", licon="doc", ricon="switch"))
 
 _add("route-table-diff", "public / private을 정하는 한 줄",
      "서브넷에 붙은 딱지가 아니라 라우팅 테이블의 기본 경로가 정체를 결정합니다.",
@@ -936,7 +952,7 @@ _add("route-table-diff", "public / private을 정하는 한 줄",
          ("no", "0.0.0.0/0 → 없음 (인터넷 직통 불가)"),
          ("ok", "0.0.0.0/0 → nat (나가기 전용 문)"),
          ("dot", "WAS · DB 가 사는 곳"),
-     ], "공인 IP를 붙여도 IGW 경로가 없으면 통신 불가 — IP보다 경로가 먼저입니다"))
+     ], "공인 IP를 붙여도 IGW 경로가 없으면 통신 불가 — IP보다 경로가 먼저입니다", licon="globe", ricon="gateway"))
 
 _add("secret-spread", "코드에 박은 비밀은 복제된다",
      "한 번 커밋되면 히스토리·노트북·백업으로 퍼지고 교체가 불가능해집니다. 금고에 두고 실행 시점에 꺼내 쓰세요.",
@@ -951,7 +967,7 @@ _add("secret-spread", "코드에 박은 비밀은 복제된다",
          ("ok", "누가 언제 꺼냈는지 감사 로그"),
          ("ok", "교체는 금고 값만 갱신 (재배포 불필요)"),
          ("ok", "IAM으로 접근 권한 즉시 회수"),
-     ], "이미 커밋했다면 히스토리 청소보다 '즉시 교체'가 1순위 · gitleaks로 재발 차단"))
+     ], "이미 커밋했다면 히스토리 청소보다 '즉시 교체'가 1순위 · gitleaks로 재발 차단", licon="doc", ricon="lock"))
 
 _add("backoff-growth", "CrashLoopBackOff의 재시도 간격",
      "죽을 때마다 대기 시간이 늘어납니다. 상태명은 '재시도 중'이라는 뜻일 뿐, 원인은 따로 찾아야 하죠.",
@@ -971,10 +987,10 @@ _add("backoff-growth", "CrashLoopBackOff의 재시도 간격",
 _add("oom-selection", "OOM Killer의 피해자 선정",
      "메모리가 바닥나면 커널이 oom_score 최고점을 즉살합니다. 로그가 없는 게 오히려 단서예요.",
      "oom-killer",
-     _flow("oo", [("메모리 고갈", "overcommit 지급 불능"),
-                  ("oom_score 계산", "많이 쓰는 놈이 고점"),
-                  ("최고점 즉살", "SIGKILL — 유언 없음"),
-                  ("dmesg에 기록", "Out of memory: Killed")],
+     _flow("oo", [("메모리 고갈", "지급 불능", "server"),
+                  ("oom_score", "많이 쓰면 고점", "box"),
+                  ("최고점 즉살", "SIGKILL", "firewall"),
+                  ("dmesg 기록", "Killed process", "doc")],
            "확인: dmesg -T | grep -i 'out of memory' · 보호는 OOMScoreAdjust (단, 폭탄 돌리기)"))
 
 _add("cache-bust", "CDN 캐시 — 회수보다 새 이름",
@@ -988,17 +1004,17 @@ _add("cache-bust", "CDN 캐시 — 회수보다 새 이름",
          ("ok", "app.3f9c2a.js — 내용 바뀌면 이름도 바뀜"),
          ("ok", "정적 자원 max-age=31536000, immutable"),
          ("ok", "index.html 만 no-cache → 무효화 거의 불필요"),
-     ], "안 바뀌는 미스터리는 캐시 키 확인 (쿼리스트링 포함 여부) · 검증은 시크릿 창으로"))
+     ], "안 바뀌는 미스터리는 캐시 키 확인 (쿼리스트링 포함 여부) · 검증은 시크릿 창으로", licon="cloud", ricon="doc"))
 
 _add("cost-leaks", "클라우드 비용이 새는 다섯 군데",
      "범인은 화려한 서비스가 아니라 잊혀진 것들입니다. 월 1회 30분 점검이면 고지서가 달라져요.",
      "cloud-cost-leaks",
      _ladder("cl", [
-         ("고아 자원", "미사용 공인 IP · 볼륨", "서버 삭제 시 세트로 삭제"),
-         ("무한 스냅샷", "백업 개수 세보기", "보존 정책 필수 (일7+주4+월3)"),
-         ("밤샘 개발서버", "24h 가동 여부", "저녁 정지 / 아침 시작 스케줄"),
-         ("안 줄는 스케일링", "스케일링 이력 확인", "축소 정책 · 사각지대 · min 값"),
-         ("보이지 않는 전송량", "NAT·CDN 없는 오리진", "엔드포인트 / CDN 으로 우회"),
+         ("고아 자원", "미사용 IP · 볼륨", "서버 삭제 시 세트로", "database"),
+         ("무한 스냅샷", "백업 개수 세보기", "보존 정책 필수", "doc"),
+         ("밤샘 개발서버", "24h 가동 여부", "정지/시작 스케줄", "server"),
+         ("안 줄는 스케일링", "스케일링 이력", "축소 정책·사각지대", "box"),
+         ("보이지 않는 전송량", "CDN 없는 오리진", "엔드포인트로 우회", "cloud"),
      ], "습관: 태그 규칙(owner/project/expire) · 예산 알람 50·80·100% · 월 1회 정기 점검"))
 
 _add("closed-open-book", "클로즈드북 → 오픈북 (RAG)",
@@ -1014,7 +1030,7 @@ _add("closed-open-book", "클로즈드북 → 오픈북 (RAG)",
          ("ok", "문서만 갱신하면 지식도 갱신"),
          ("ok", "'근거에 없으면 모른다'로 통제 가능"),
          ("ok", "근거 문서로 검증·인용 가능"),
-     ], "4단계: 자르기(chunk) → 임베딩 → 검색(top-k) → 근거와 함께 질문"))
+     ], "4단계: 자르기(chunk) → 임베딩 → 검색(top-k) → 근거와 함께 질문", licon="brain", ricon="doc"))
 
 _add("static-vs-dynamic", "정적 사이트 vs 동적 사이트",
      "매번 조립할 게 없는 블로그는 미리 인쇄한 전단지면 충분합니다. 그래서 서버가 필요 없죠.",
@@ -1027,7 +1043,7 @@ _add("static-vs-dynamic", "정적 사이트 vs 동적 사이트",
          ("ok", "완성된 HTML을 그대로 전달"),
          ("ok", "서버 0원, 사실상 안 죽는다"),
          ("ok", "빠르고 보안 표면도 작다"),
-     ], "필수 3종: 완성된 HTML · .nojekyll(빌드 생략) · Pages 소스 폴더와 index.html 위치 일치"))
+     ], "필수 3종: 완성된 HTML · .nojekyll(빌드 생략) · Pages 소스 폴더와 index.html 위치 일치", licon="server", ricon="doc"))
 
 _add("hallucination-exit", "'모른다'라는 출구를 열어주기",
      "환각은 거짓말이 아니라 멈추지 못하는 그럴듯함입니다. 무응답이 정답이 될 수 있게 만들어야 하죠.",
@@ -1040,7 +1056,7 @@ _add("hallucination-exit", "'모른다'라는 출구를 열어주기",
          ("ok", "'아래 근거만 사용해 답하라'"),
          ("ok", "'없으면 문서에서 확인 불가라고 답하라'"),
          ("ok", "'주장마다 근거 원문을 인용하라'"),
-     ], "지표: '확인 불가' 응답률이 0%면 오히려 의심 — 출구를 안 쓰고 여전히 찍는 중일 수 있습니다"))
+     ], "지표: '확인 불가' 응답률이 0%면 오히려 의심 — 출구를 안 쓰고 여전히 찍는 중일 수 있습니다", licon="brain", ricon="shield"))
 
 _add("injection-defense", "프롬프트 주입 — 2층 방어",
      "완치가 없으니 목표를 바꿉니다. 막는 게 아니라, 성공해도 피해가 안 나게 설계하는 것.",
@@ -1055,7 +1071,7 @@ _add("injection-defense", "프롬프트 주입 — 2층 방어",
          ("ok", "파괴·유출 작업은 사람 승인 게이트"),
          ("ok", "외부로 나가는 요청·이미지 렌더 차단"),
          ("ok", "도구 호출 로그로 사후 추적"),
-     ], "투입 경로: RAG 문서 · 웹페이지 · 도구 출력 · 도구 설명 — 모델이 읽는 모든 외부 텍스트"))
+     ], "투입 경로: RAG 문서 · 웹페이지 · 도구 출력 · 도구 설명 — 모델이 읽는 모든 외부 텍스트", licon="doc", ricon="shield"))
 
 _add("timewait-ports", "TIME_WAIT — 언제 문제인가",
      "수만 개는 대개 '바쁘다'는 증거입니다. 진짜 문제는 한 목적지로 나가는 연결이 임시 포트를 태울 때뿐이죠.",
@@ -1068,7 +1084,7 @@ _add("timewait-ports", "TIME_WAIT — 언제 문제인가",
          ("no", "같은 목적지로 초당 수백 개 신규 아웃바운드"),
          ("no", "임시 포트(약 2.8만) 소진"),
          ("no", "cannot assign requested address"),
-     ], "판별: ss -tan state time-wait 로 목적지 집계 · 해법은 커널 튜닝이 아니라 keep-alive/커넥션 풀"))
+     ], "판별: ss -tan state time-wait 로 목적지 집계 · 해법은 커널 튜닝이 아니라 keep-alive/커넥션 풀", licon="switch", ricon="firewall"))
 
 _add("empty-kitchen", "크론은 '빈 주방'에서 실행된다",
      "터미널에서 되는 스크립트가 크론에서만 죽는 건, 코드가 아니라 실행 환경이 다르기 때문입니다.",
@@ -1083,26 +1099,26 @@ _add("empty-kitchen", "크론은 '빈 주방'에서 실행된다",
          ("no", ".bashrc를 읽지 않음 → 변수 없음"),
          ("no", "작업 디렉토리 = 홈"),
          ("no", "셸 = sh (dash일 수도)"),
-     ], "재현: env -i /bin/sh -c 스크립트 · 처방: PATH 명시 · env 로드 · cd 스크립트위치 · 로그 리다이렉트"))
+     ], "재현: env -i /bin/sh -c 스크립트 · 처방: PATH 명시 · env 로드 · cd 스크립트위치 · 로그 리다이렉트", licon="laptop", ricon="server"))
 
 
 _add("journal-order", "죽는 서비스, 보는 순서",
      "status는 요약본, journalctl이 전문입니다. 원인은 대개 넷 중 하나예요.",
      "journalctl-debug",
-     _flow("jo", [("systemctl status", "Result · 종료코드"),
-                  ("journalctl -u", "유언 전문 확인"),
-                  ("원인 톱4 대조", "앱·OOM·의존성·한도"),
-                  ("-f 로 재현", "죽는 순간 목격")],
+     _flow("jo", [("status", "종료코드", "server"),
+                  ("journalctl -u", "유언 전문", "doc"),
+                  ("원인 톱4", "앱·OOM·의존성", "box"),
+                  ("-f 재현", "죽는 순간", "brain")],
            "종료코드가 힌트: 203/EXEC 경로·권한 · 217/USER 계정 없음 · signal=KILL 이면 dmesg로 OOM 확인"))
 
 _add("iam-routine", "최소권한, 네 가지 습관",
      "완벽한 설계가 아니라 루틴입니다. 읽기전용에서 시작해 그룹으로 주고, 앱엔 역할을, 분기마다 회수.",
      "iam-least-privilege",
      _ladder("ir", [
-         ("① 읽기전용에서 시작", "ReadOnly 부여", "막히는 것만 추가"),
-         ("② 그룹·역할에만 부여", "사람 → 그룹 → 정책", "입퇴사 = 멤버십 변경"),
-         ("③ 앱엔 키 대신 역할", "인스턴스 역할", "영구 액세스키 제거"),
-         ("④ 분기마다 회수", "admin 명단·미사용 키", "90일 미사용 비활성화"),
+         ("① 읽기전용 시작", "ReadOnly 부여", "막히는 것만 추가", "doc"),
+         ("② 그룹·역할에만", "사람 → 그룹 → 정책", "입퇴사 = 멤버십", "user"),
+         ("③ 앱엔 역할", "인스턴스 역할", "영구 키 제거", "lock"),
+         ("④ 분기마다 회수", "admin·미사용 키", "90일 미사용 비활성", "shield"),
      ], "비상구를 설계에 포함: 봉인된 break-glass admin (MFA+알림) — 새벽 장애가 원칙을 무너뜨리지 않게"))
 
 
@@ -1130,7 +1146,7 @@ _add("mtu-fragmentation", "MTU 초과 — 쪼개지거나 버려진다",
 <rect x="14" y="32" width="612" height="104" rx="12" class="dg-box"/>
 <rect x="300" y="40" width="30" height="88" rx="6" fill="none" stroke="var(--accent)" stroke-width="2"/>
 <rect x="304" y="66" width="22" height="36" rx="4" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.4"/>
-<text x="256" y="150" class="dg-ts">터널 입구 — 실효 MTU 1400</text>
+""" + _icon("router", 244, 148, 1.05) + """<text x="274" y="152" class="dg-ts">터널 입구 — 실효 MTU 1400</text>
 <g class="dg-anim mf-a"><rect x="40" y="66" width="120" height="36" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
 <text x="56" y="89" class="dg-ts">패킷 1500</text></g>
 <g class="dg-anim mf-f1"><rect x="352" y="52" width="56" height="26" rx="4" fill="var(--accent)" opacity=".8"/></g>
@@ -1167,22 +1183,15 @@ _add("blast-radius", "장애 반경 — 어디까지 죽으면 우리도 죽나"
 <g class="dg-anim br-die">
 <rect x="34" y="56" width="270" height="118" rx="10" class="dg-box"/>
 <text x="48" y="78" class="dg-t">가용영역 A — 건물 1</text>
-<rect x="48" y="90" width="72" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
-<text x="62" y="111" class="dg-ts">서버</text>
-<rect x="130" y="90" width="72" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
-<text x="144" y="111" class="dg-ts">서버</text>
-<rect x="48" y="132" width="154" height="30" rx="6" fill="#FFF4E6" stroke="#E8842C" stroke-width="1.4"/>
-<text x="62" y="152" class="dg-ts">NAT GW (한쪽에만!)</text>
+""" + _icon("server", 76, 106, 1.15) + _icon("server", 148, 106, 1.15) + """
+""" + _icon("gateway", 66, 148, 1.0) + """<text x="88" y="153" class="dg-warn" font-size="11">NAT GW (한쪽에만!)</text>
 </g>
 <g class="dg-anim br-x"><text x="200" y="122" font-size="26" class="dg-no" font-weight="700">✕</text>
 <text x="196" y="146" class="dg-ts" fill="#E5484D">정전</text></g>
 <rect x="332" y="56" width="270" height="118" rx="10" class="dg-box"/>
 <text x="346" y="78" class="dg-t">가용영역 B — 건물 2</text>
 <g class="dg-anim br-shift">
-<rect x="346" y="90" width="72" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
-<text x="360" y="111" class="dg-ts">서버</text>
-<rect x="428" y="90" width="72" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
-<text x="442" y="111" class="dg-ts">서버</text>
+""" + _icon("server", 374, 106, 1.15) + _icon("server", 446, 106, 1.15) + """
 </g>
 <g class="dg-anim br-warn"><text x="346" y="152" class="dg-ts" fill="#E8842C">살아있지만 외부 통신 불가</text>
 <text x="346" y="166" class="dg-ts" fill="#E8842C">→ NAT이 죽은 AZ에 있었다</text></g>
@@ -1203,13 +1212,13 @@ _add("eval-loop", "LLM 앱 평가 루프",
  4%,22%{fill:var(--accent-soft);stroke:var(--accent)}}
 </style>
 <rect class="dg-box dg-anim el-1" x="18" y="30" width="140" height="60" rx="10"/>
-<text x="36" y="54" class="dg-t">① 골든셋</text>
+""" + _icon("doc", 42, 50, 1.05) + """<text x="70" y="54" class="dg-t">① 골든셋</text>
 <text x="36" y="74" class="dg-ts">실제 질문 50~200개</text>
 <rect class="dg-box dg-anim el-2" x="250" y="30" width="140" height="60" rx="10"/>
 <text x="268" y="54" class="dg-t">② 일괄 실행</text>
 <text x="268" y="74" class="dg-ts">현재 버전으로</text>
 <rect class="dg-box dg-anim el-3" x="482" y="30" width="140" height="60" rx="10"/>
-<text x="500" y="54" class="dg-t">③ 채점</text>
+""" + _icon("brain", 506, 50, 1.05) + """<text x="534" y="54" class="dg-t">③ 채점</text>
 <text x="500" y="74" class="dg-ts">규칙 · LLM · 사람</text>
 <rect class="dg-box dg-anim el-4" x="250" y="158" width="140" height="60" rx="10"/>
 <text x="268" y="182" class="dg-t">④ 유형별 비교</text>

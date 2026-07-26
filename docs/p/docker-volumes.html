@@ -36,11 +36,11 @@
 <article><div class="post-meta"><span>2026-07-17</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>컨테이너를 지웠더니 DB가 날아갔다 — 볼륨과 바인드 마운트 제대로 알기</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 컨테이너의 파일시스템은 <strong>컨테이너가 지워지면 함께 사라집니다.</strong> 살아남아야 할 데이터(DB, 업로드 파일)는 반드시 <strong>볼륨</strong>이나 <strong>바인드 마운트</strong>로 밖에 두세요. 운영 데이터는 볼륨, 개발 중 소스코드는 바인드 마운트 — 이 구분이 기본기입니다.</p>
 </blockquote>
-<figure class="diagram"><div class="dg-cap">볼륨 vs 바인드 마운트</div><svg viewBox="0 0 640 178" role="img"><style>
+<figure class="diagram"><div class="dg-cap">볼륨 vs 바인드 마운트</div><svg viewBox="0 0 640 190" role="img"><style>
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -53,7 +53,14 @@
 @media (prefers-reduced-motion: reduce){
   .dg-anim{animation:none !important;}
 }
-</style><rect class="dg-box" x="12" y="10" width="302" height="144" rx="12"/><text x="28" y="36" class="dg-tl">볼륨 — 운영 데이터</text><text x="28" y="62" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="44" y="62" class="dg-ts">-v pgdata:/var/lib/postgresql/data</text><text x="28" y="86" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="44" y="86" class="dg-ts">도커가 관리, 컨테이너보다 오래 산다</text><text x="28" y="110" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="44" y="110" class="dg-ts">DB·업로드 파일에 사용</text><text x="28" y="134" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="44" y="134" class="dg-ts">compose down -v 는 볼륨까지 삭제!</text><rect class="dg-box" x="326" y="10" width="302" height="144" rx="12"/><text x="342" y="36" class="dg-tl">바인드 마운트 — 개발 편의</text><text x="342" y="62" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="62" class="dg-ts">-v /home/me/src:/app/src (경로로 시작)</text><text x="342" y="86" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="86" class="dg-ts">에디터 수정이 즉시 반영</text><text x="342" y="110" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="358" y="110" class="dg-ts">호스트 경로에 종속 · UID 권한 문제</text><text x="342" y="134" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="358" y="134" class="dg-ts">운영 데이터 보관용으로는 부적합</text><text x="12" y="170" class="dg-ts">점검: docker inspect 컨테이너 --format '{{json .Mounts}}' — 비어 있으면 데이터가 사라질 위험</text></svg><figcaption>컨테이너는 언제든 버려질 수 있는 호텔 방입니다. 살아남을 데이터는 방 밖(볼륨)에 둬야 합니다.</figcaption></figure>
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><g transform="translate(26.0,20.0) scale(1.250)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="72" y="46" class="dg-tl">볼륨 — 운영 데이터</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="76" class="dg-ts">-v pgdata:/var/lib/postgresql/data</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="100" class="dg-ts">도커가 관리, 컨테이너보다 오래 산다</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="124" class="dg-ts">DB·업로드 파일에 사용</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="148" class="dg-ts">compose down -v 는 볼륨까지 삭제!</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><g transform="translate(340.0,20.0) scale(1.250)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="386" y="46" class="dg-tl">바인드 마운트 — 개발 편의</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">-v /home/me/src:/app/src (경로로 시작)</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">에디터 수정이 즉시 반영</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="124" class="dg-ts">호스트 경로에 종속 · UID 권한 문제</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="148" class="dg-ts">운영 데이터 보관용으로는 부적합</text><text x="12" y="182" class="dg-ts">점검: docker inspect 컨테이너 --format '{{json .Mounts}}' — 비어 있으면 데이터가 사라질 위험</text></svg><figcaption>컨테이너는 언제든 버려질 수 있는 호텔 방입니다. 살아남을 데이터는 방 밖(볼륨)에 둬야 합니다.</figcaption></figure>
 <h2 id="_1">사고 현장</h2>
 <p>디스크 정리한다고 <code>docker rm</code> 몇 번, 혹은 <code>docker compose down</code> 후 다시 <code>up</code>. 그런데 DB가 텅 비어 있습니다. 백업은... 없죠. 원인은 단순합니다 — <strong>데이터가 컨테이너 안에</strong> 있었던 거예요.</p>
 <h2 id="_2">비유: 호텔 방과 개인 창고</h2>

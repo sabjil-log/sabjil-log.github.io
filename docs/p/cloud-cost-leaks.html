@@ -36,11 +36,11 @@
 <article><div class="post-meta"><span>2026-07-16</span><a class="chip" href="../c/cloud.html">--cloud</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>클라우드 비용이 새는 곳 톱5 — 고지서가 놀라기 전에 잡는 법</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 요금이 새는 곳은 화려한 신규 서비스가 아니라 <strong>잊혀진 것들</strong>입니다 — 떠돌이 IP·디스크, 쌓이기만 하는 스냅샷, 새벽에도 도는 개발 서버, 안 줄어드는 오토스케일링, 그리고 조용히 나가는 전송량. <strong>수도꼭지가 아니라 배관 누수</strong>를 찾아야 해요.</p>
 </blockquote>
-<figure class="diagram"><div class="dg-cap">클라우드 비용이 새는 다섯 군데</div><svg viewBox="0 0 640 246" role="img"><style>
+<figure class="diagram"><div class="dg-cap">클라우드 비용이 새는 다섯 군데</div><svg viewBox="0 0 640 286" role="img"><style>
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -59,7 +59,26 @@
 .cl-2{animation:cl-h 5.0s ease-in-out infinite;animation-delay:2.0s;}
 .cl-3{animation:cl-h 5.0s ease-in-out infinite;animation-delay:3.0s;}
 .cl-4{animation:cl-h 5.0s ease-in-out infinite;animation-delay:4.0s;}
-@keyframes cl-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,12.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim cl-0" x="12" y="12" width="616" height="32" rx="8"/><circle cx="32" cy="28" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="33" class="dg-ts" fill="var(--accent)">1</text><text x="50" y="33" class="dg-t">고아 자원</text><text x="210" y="33" class="dg-ts">미사용 공인 IP · 볼륨</text><text x="392" y="33" class="dg-ts">서버 삭제 시 세트로 삭제</text><rect class="dg-box dg-anim cl-1" x="12" y="52" width="616" height="32" rx="8"/><circle cx="32" cy="68" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="73" class="dg-ts" fill="var(--accent)">2</text><text x="50" y="73" class="dg-t">무한 스냅샷</text><text x="210" y="73" class="dg-ts">백업 개수 세보기</text><text x="392" y="73" class="dg-ts">보존 정책 필수 (일7+주4+월3)</text><rect class="dg-box dg-anim cl-2" x="12" y="92" width="616" height="32" rx="8"/><circle cx="32" cy="108" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="113" class="dg-ts" fill="var(--accent)">3</text><text x="50" y="113" class="dg-t">밤샘 개발서버</text><text x="210" y="113" class="dg-ts">24h 가동 여부</text><text x="392" y="113" class="dg-ts">저녁 정지 / 아침 시작 스케줄</text><rect class="dg-box dg-anim cl-3" x="12" y="132" width="616" height="32" rx="8"/><circle cx="32" cy="148" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="153" class="dg-ts" fill="var(--accent)">4</text><text x="50" y="153" class="dg-t">안 줄는 스케일링</text><text x="210" y="153" class="dg-ts">스케일링 이력 확인</text><text x="392" y="153" class="dg-ts">축소 정책 · 사각지대 · min 값</text><rect class="dg-box dg-anim cl-4" x="12" y="172" width="616" height="32" rx="8"/><circle cx="32" cy="188" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="193" class="dg-ts" fill="var(--accent)">5</text><text x="50" y="193" class="dg-t">보이지 않는 전송량</text><text x="210" y="193" class="dg-ts">NAT·CDN 없는 오리진</text><text x="392" y="193" class="dg-ts">엔드포인트 / CDN 으로 우회</text><text x="12" y="238" class="dg-ts">습관: 태그 규칙(owner/project/expire) · 예산 알람 50·80·100% · 월 1회 정기 점검</text></svg><figcaption>범인은 화려한 서비스가 아니라 잊혀진 것들입니다. 월 1회 30분 점검이면 고지서가 달라져요.</figcaption></figure>
+@keyframes cl-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,12.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim cl-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="60" y="36" class="dg-t">고아 자원</text><text x="216" y="36" class="dg-lab2">미사용 IP · 볼륨</text><text x="396" y="36" class="dg-ts">서버 삭제 시 세트로</text><rect class="dg-box dg-anim cl-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="60" y="84" class="dg-t">무한 스냅샷</text><text x="216" y="84" class="dg-lab2">백업 개수 세보기</text><text x="396" y="84" class="dg-ts">보존 정책 필수</text><rect class="dg-box dg-anim cl-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="60" y="132" class="dg-t">밤샘 개발서버</text><text x="216" y="132" class="dg-lab2">24h 가동 여부</text><text x="396" y="132" class="dg-ts">정지/시작 스케줄</text><rect class="dg-box dg-anim cl-3" x="12" y="156" width="616" height="38" rx="9"/><g transform="translate(17.6,156.6) scale(1.150)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="60" y="180" class="dg-t">안 줄는 스케일링</text><text x="216" y="180" class="dg-lab2">스케일링 이력</text><text x="396" y="180" class="dg-ts">축소 정책·사각지대</text><rect class="dg-box dg-anim cl-4" x="12" y="204" width="616" height="38" rx="9"/><g transform="translate(17.6,204.6) scale(1.150)">
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g><text x="60" y="228" class="dg-t">보이지 않는 전송량</text><text x="216" y="228" class="dg-lab2">CDN 없는 오리진</text><text x="396" y="228" class="dg-ts">엔드포인트로 우회</text><text x="12" y="278" class="dg-ts">습관: 태그 규칙(owner/project/expire) · 예산 알람 50·80·100% · 월 1회 정기 점검</text></svg><figcaption>범인은 화려한 서비스가 아니라 잊혀진 것들입니다. 월 1회 30분 점검이면 고지서가 달라져요.</figcaption></figure>
 <h2 id="_1">왜 항상 "모르는 새" 새나</h2>
 <p>클라우드 요금은 <strong>시간 단위 종량제</strong>입니다. 수도요금과 같아서, 쓰는 건 눈에 보이는데 <strong>잠그는 걸 잊은 것</strong>은 안 보여요. 프로젝트가 끝나도 자원은 스스로 사라지지 않습니다 — 삭제 버튼을 누른 것만 사라지죠. 그래서 비용 점검은 "뭘 쓰고 있나"가 아니라 <strong>"뭘 쓰고 있는지도 몰랐나"</strong>를 찾는 일입니다.</p>
 <h2 id="1-ip">누수 ① — 고아 자원: 주인 잃은 IP와 디스크</h2>

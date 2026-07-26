@@ -36,11 +36,11 @@
 <article><div class="post-meta"><span>2026-07-09</span><a class="chip" href="../c/network.html">--network</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>&#x27;포트는 열렸다는데 접속이 안 돼요&#x27; — 계층별로 찔러보는 진단법</h1><blockquote>
 <p><strong>한 줄 요약:</strong> "접속이 안 된다"는 하나의 문제가 아니라, DNS → 경로 → 포트 → 리스닝 → 앱 중 <strong>어느 한 층</strong>이 막힌 겁니다. 아래에서 위로 한 칸씩 짚으면 범인이 튀어나와요.</p>
 </blockquote>
-<figure class="diagram"><div class="dg-cap">접속 실패, 계층별 진단 사다리</div><svg viewBox="0 0 640 286" role="img"><style>
+<figure class="diagram"><div class="dg-cap">접속 실패, 계층별 진단 사다리</div><svg viewBox="0 0 640 334" role="img"><style>
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -60,7 +60,38 @@
 .tl-3{animation:tl-h 6.0s ease-in-out infinite;animation-delay:3.0s;}
 .tl-4{animation:tl-h 6.0s ease-in-out infinite;animation-delay:4.0s;}
 .tl-5{animation:tl-h 6.0s ease-in-out infinite;animation-delay:5.0s;}
-@keyframes tl-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,10.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim tl-0" x="12" y="12" width="616" height="32" rx="8"/><circle cx="32" cy="28" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="33" class="dg-ts" fill="var(--accent)">1</text><text x="50" y="33" class="dg-t">DNS 해석</text><text x="210" y="33" class="dg-ts">dig +short 도메인</text><text x="392" y="33" class="dg-ts">실패 → DNS 설정·오타</text><rect class="dg-box dg-anim tl-1" x="12" y="52" width="616" height="32" rx="8"/><circle cx="32" cy="68" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="73" class="dg-ts" fill="var(--accent)">2</text><text x="50" y="73" class="dg-t">경로 도달</text><text x="210" y="73" class="dg-ts">traceroute 도메인</text><text x="392" y="73" class="dg-ts">멈춤 → 라우팅·구간 차단</text><rect class="dg-box dg-anim tl-2" x="12" y="92" width="616" height="32" rx="8"/><circle cx="32" cy="108" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="113" class="dg-ts" fill="var(--accent)">3</text><text x="50" y="113" class="dg-t">포트 응답</text><text x="210" y="113" class="dg-ts">nc -vz 호스트 443</text><text x="392" y="113" class="dg-ts">실패 → 방화벽 or 앱 부재</text><rect class="dg-box dg-anim tl-3" x="12" y="132" width="616" height="32" rx="8"/><circle cx="32" cy="148" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="153" class="dg-ts" fill="var(--accent)">4</text><text x="50" y="153" class="dg-t">리스닝 확인</text><text x="210" y="153" class="dg-ts">ss -tlnp | grep :443</text><text x="392" y="153" class="dg-ts">없음 → 앱 미기동·바인딩</text><rect class="dg-box dg-anim tl-4" x="12" y="172" width="616" height="32" rx="8"/><circle cx="32" cy="188" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="193" class="dg-ts" fill="var(--accent)">5</text><text x="50" y="193" class="dg-t">방화벽</text><text x="210" y="193" class="dg-ts">ACG / NACL / iptables</text><text x="392" y="193" class="dg-ts">NACL은 응답 포트도 필요</text><rect class="dg-box dg-anim tl-5" x="12" y="212" width="616" height="32" rx="8"/><circle cx="32" cy="228" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="233" class="dg-ts" fill="var(--accent)">6</text><text x="50" y="233" class="dg-t">앱 레벨</text><text x="210" y="233" class="dg-ts">curl -v .../health</text><text x="392" y="233" class="dg-ts">5xx → 앱 내부 오류</text><text x="12" y="278" class="dg-ts">위에서 아래로 내려가는 게 아니라, 아래(네트워크)에서 위(앱)로 올라가며 좁힙니다</text></svg><figcaption>아래층부터 한 칸씩 올라가며 확인합니다. 멈춘 층이 곧 범인의 위치예요.</figcaption></figure>
+@keyframes tl-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,10.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim tl-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<circle cx="16" cy="16" r="13" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<ellipse cx="16" cy="16" rx="5.5" ry="13" fill="none" stroke="var(--dg-blue)" stroke-width="1.4"/>
+<path d="M3 16 h26 M5.2 9.5 h21.6 M5.2 22.5 h21.6" stroke="var(--dg-blue)" stroke-width="1.4"/></g><text x="60" y="36" class="dg-t">DNS 해석</text><text x="216" y="36" class="dg-lab2">dig +short 도메인</text><text x="396" y="36" class="dg-ts">실패 → DNS 설정·오타</text><rect class="dg-box dg-anim tl-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<rect x="3" y="17" width="26" height="10" rx="3" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M10 17 L 7 6" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<path d="M22 17 L 25 6" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<circle cx="9" cy="22" r="1.2" fill="var(--dg-green)"/>
+<circle cx="13.5" cy="22" r="1.2" fill="var(--dg-green)"/>
+<circle cx="18" cy="22" r="1.2" fill="var(--dg-amber)"/></g><text x="60" y="84" class="dg-t">경로 도달</text><text x="216" y="84" class="dg-lab2">traceroute 도메인</text><text x="396" y="84" class="dg-ts">멈춤 → 라우팅 차단</text><rect class="dg-box dg-anim tl-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<rect x="2" y="11" width="28" height="11" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="5" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="10" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="15" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="20" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<circle cx="26.5" cy="16.5" r="1.2" fill="var(--dg-green)"/></g><text x="60" y="132" class="dg-t">포트 응답</text><text x="216" y="132" class="dg-lab2">nc -vz 호스트 443</text><text x="396" y="132" class="dg-ts">실패 → 방화벽·앱 부재</text><rect class="dg-box dg-anim tl-3" x="12" y="156" width="616" height="38" rx="9"/><g transform="translate(17.6,156.6) scale(1.150)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="60" y="180" class="dg-t">리스닝 확인</text><text x="216" y="180" class="dg-lab2">ss -tlnp | grep :443</text><text x="396" y="180" class="dg-ts">없음 → 미기동·바인딩</text><rect class="dg-box dg-anim tl-4" x="12" y="204" width="616" height="38" rx="9"/><g transform="translate(17.6,204.6) scale(1.150)">
+<rect x="3" y="6" width="26" height="20" rx="2" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.7"/>
+<path d="M3 12.6 h26 M3 19.3 h26" stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M11 6 v6.6 M20 6 v6.6 M7 12.6 v6.7 M16 12.6 v6.7 M24.5 12.6 v6.7 M11 19.3 v6.7 M20 19.3 v6.7"
+      stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M16 13 c2.6 2.4 3.4 4.2 3.4 6 a3.4 3.4 0 0 1 -6.8 0 c0 -1.8 0.8 -3.6 3.4 -6 z"
+      fill="var(--dg-amber)" stroke="var(--dg-red)" stroke-width="1.3"/></g><text x="60" y="228" class="dg-t">방화벽</text><text x="216" y="228" class="dg-lab2">ACG / NACL / iptables</text><text x="396" y="228" class="dg-ts">NACL은 응답 포트도</text><rect class="dg-box dg-anim tl-5" x="12" y="252" width="616" height="38" rx="9"/><g transform="translate(17.6,252.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="60" y="276" class="dg-t">앱 레벨</text><text x="216" y="276" class="dg-lab2">curl -v .../health</text><text x="396" y="276" class="dg-ts">5xx → 앱 내부 오류</text><text x="12" y="326" class="dg-ts">위에서 아래로 내려가는 게 아니라, 아래(네트워크)에서 위(앱)로 올라가며 좁힙니다</text></svg><figcaption>아래층부터 한 칸씩 올라가며 확인합니다. 멈춘 층이 곧 범인의 위치예요.</figcaption></figure>
 <h2 id="_1">이런 적 있으신가요</h2>
 <p><code>curl</code>은 타임아웃, 브라우저는 무한 로딩. 방화벽 담당자는 "포트 열려 있는데요?" 개발자는 "서버는 떠 있어요." 서로 핑퐁만 하다 30분 날립니다. 문제는 <strong>어디서 끊겼는지</strong>를 안 봤기 때문이에요.</p>
 <h2 id="_2">비유: 택배가 안 왔을 때</h2>

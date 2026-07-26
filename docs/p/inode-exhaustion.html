@@ -38,9 +38,9 @@
 </blockquote>
 <figure class="diagram"><div class="dg-cap">용량은 남았는데 'No space left'</div><svg viewBox="0 0 640 170" role="img"><style>
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -57,11 +57,18 @@
 .ig-b{animation:ig-g 2.6s ease-out infinite;transform-origin:left center;}
 @keyframes ig-g{0%{transform:scaleX(0)}45%,100%{transform:scaleX(1)}}
 </style>
-<text x="14" y="26" class="dg-t">df -h  (용량)</text>
+<g transform="translate(9.2,5.2) scale(1.050)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="52" y="26" class="dg-t">df -h (용량)</text>
 <rect x="160" y="12" width="420" height="22" rx="5" fill="var(--line-2)"/>
 <g class="dg-anim ig-b"><rect x="160" y="12" width="126" height="22" rx="5" fill="var(--accent)" opacity=".85"/></g>
 <text x="590" y="28" class="dg-ts">30%</text>
-<text x="14" y="76" class="dg-t">df -i  (inode)</text>
+<g transform="translate(9.2,55.2) scale(1.050)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="52" y="76" class="dg-t">df -i (inode)</text>
 <rect x="160" y="62" width="420" height="22" rx="5" fill="var(--line-2)"/>
 <g class="dg-anim ig-b" style="animation-delay:.2s"><rect x="160" y="62" width="420" height="22" rx="5" fill="#E5484D" opacity=".85"/></g>
 <text x="590" y="78" class="dg-ts" fill="#E5484D">100%</text>

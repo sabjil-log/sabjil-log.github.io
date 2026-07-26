@@ -36,11 +36,11 @@
 <article><div class="post-meta"><span>2026-07-18</span><a class="chip" href="../c/network.html">--network</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>말싸움 끝내는 법 — tcpdump로 &#x27;누가 응답을 안 하는지&#x27; 눈으로 보기</h1><blockquote>
 <p><strong>한 줄 요약:</strong> "방화벽은 열려 있어요" vs "서버는 정상이에요"의 말싸움은 tcpdump 한 줄이 끝냅니다. <strong>패킷이 도착했는지, 답이 나갔는지</strong>를 눈으로 보면 책임 구간이 물리적으로 갈려요. 필요한 건 필터 문법 조금과 <strong>SYN 3종 시나리오</strong> 읽는 법뿐입니다.</p>
 </blockquote>
-<figure class="diagram"><div class="dg-cap">tcpdump로 읽는 SYN 3패턴</div><svg viewBox="0 0 640 166" role="img"><style>
+<figure class="diagram"><div class="dg-cap">tcpdump로 읽는 SYN 3패턴</div><svg viewBox="0 0 640 190" role="img"><style>
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -57,7 +57,26 @@
 .sp-0{animation:sp-h 3.0s ease-in-out infinite;animation-delay:0.0s;}
 .sp-1{animation:sp-h 3.0s ease-in-out infinite;animation-delay:1.0s;}
 .sp-2{animation:sp-h 3.0s ease-in-out infinite;animation-delay:2.0s;}
-@keyframes sp-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,20.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim sp-0" x="12" y="12" width="616" height="32" rx="8"/><circle cx="32" cy="28" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="33" class="dg-ts" fill="var(--accent)">1</text><text x="50" y="33" class="dg-t">① 아무것도 안 보임</text><text x="210" y="33" class="dg-ts">(정적)</text><text x="392" y="33" class="dg-ts">앞단 방화벽·NACL·라우팅</text><rect class="dg-box dg-anim sp-1" x="12" y="52" width="616" height="32" rx="8"/><circle cx="32" cy="68" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="73" class="dg-ts" fill="var(--accent)">2</text><text x="50" y="73" class="dg-t">② SYN → RST 응답</text><text x="210" y="73" class="dg-ts">Flags [S] → Flags [R.]</text><text x="392" y="73" class="dg-ts">포트에 앱 없음 (ss로 확인)</text><rect class="dg-box dg-anim sp-2" x="12" y="92" width="616" height="32" rx="8"/><circle cx="32" cy="108" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="113" class="dg-ts" fill="var(--accent)">3</text><text x="50" y="113" class="dg-t">③ SYN 반복, 응답 없음</text><text x="210" y="113" class="dg-ts">Flags [S] × 3회 재전송</text><text x="392" y="113" class="dg-ts">응답 경로 차단 (임시포트·DROP)</text><text x="12" y="158" class="dg-ts">sudo tcpdump -ni any port 8080 -c 30  ← 내가 curl로 재현하며 그 파문만 관찰하는 게 요령</text></svg><figcaption>서버에서 캡처를 켜고 접속을 시도하면, 세 가지 중 하나가 보입니다. 그게 곧 책임 구간입니다.</figcaption></figure>
+@keyframes sp-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,20.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim sp-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<rect x="3" y="6" width="26" height="20" rx="2" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.7"/>
+<path d="M3 12.6 h26 M3 19.3 h26" stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M11 6 v6.6 M20 6 v6.6 M7 12.6 v6.7 M16 12.6 v6.7 M24.5 12.6 v6.7 M11 19.3 v6.7 M20 19.3 v6.7"
+      stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M16 13 c2.6 2.4 3.4 4.2 3.4 6 a3.4 3.4 0 0 1 -6.8 0 c0 -1.8 0.8 -3.6 3.4 -6 z"
+      fill="var(--dg-amber)" stroke="var(--dg-red)" stroke-width="1.3"/></g><text x="60" y="36" class="dg-t">① 아무것도 안 보임</text><text x="216" y="36" class="dg-lab2">(정적)</text><text x="396" y="36" class="dg-ts">앞단 방화벽·라우팅</text><rect class="dg-box dg-anim sp-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="60" y="84" class="dg-t">② SYN → RST</text><text x="216" y="84" class="dg-lab2">Flags [S] → [R.]</text><text x="396" y="84" class="dg-ts">포트에 앱 없음</text><rect class="dg-box dg-anim sp-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<rect x="3" y="17" width="26" height="10" rx="3" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M10 17 L 7 6" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<path d="M22 17 L 25 6" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<circle cx="9" cy="22" r="1.2" fill="var(--dg-green)"/>
+<circle cx="13.5" cy="22" r="1.2" fill="var(--dg-green)"/>
+<circle cx="18" cy="22" r="1.2" fill="var(--dg-amber)"/></g><text x="60" y="132" class="dg-t">③ SYN 반복</text><text x="216" y="132" class="dg-lab2">재전송 × 3회</text><text x="396" y="132" class="dg-ts">응답 경로 차단</text><text x="12" y="182" class="dg-ts">sudo tcpdump -ni any port 8080 -c 30  ← 내가 curl로 재현하며 그 파문만 관찰하는 게 요령</text></svg><figcaption>서버에서 캡처를 켜고 접속을 시도하면, 세 가지 중 하나가 보입니다. 그게 곧 책임 구간입니다.</figcaption></figure>
 <h2 id="_1">언제 꺼내는 칼인가</h2>
 <p>계층 진단(dig→ping→nc→ss)을 다 돌았는데도 애매할 때, 또는 두 팀이 서로 "우리 쪽은 정상"이라고 우길 때. tcpdump는 네트워크의 <strong>CCTV</strong>입니다 — 추측이 아니라 녹화 영상으로 말하게 해줘요.</p>
 <h2 id="_2">최소 문법 — 이것만 외우면 된다</h2>

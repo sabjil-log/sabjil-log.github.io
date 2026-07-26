@@ -36,11 +36,11 @@
 <article><div class="post-meta"><span>2026-07-10</span><a class="chip" href="../c/security.html">--security</a><span>1 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>토큰은 딱 필요한 만큼만 — fine-grained PAT로 최소권한 실천하기</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 접근 토큰은 <strong>마스터키가 아니라 카드키</strong>여야 합니다. 저장소 하나, 동작 하나, 짧은 만료 — 이 셋이 유출 사고의 크기를 결정합니다.</p>
 </blockquote>
-<figure class="diagram"><div class="dg-cap">마스터키 vs 카드키 — 토큰 범위</div><svg viewBox="0 0 640 178" role="img"><style>
+<figure class="diagram"><div class="dg-cap">마스터키 vs 카드키 — 토큰 범위</div><svg viewBox="0 0 640 190" role="img"><style>
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -53,7 +53,15 @@
 @media (prefers-reduced-motion: reduce){
   .dg-anim{animation:none !important;}
 }
-</style><rect class="dg-box" x="12" y="10" width="302" height="144" rx="12"/><text x="28" y="36" class="dg-tl">넓은 토큰 (마스터키)</text><text x="28" y="62" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="44" y="62" class="dg-ts">계정 전체 저장소 접근</text><text x="28" y="86" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="44" y="86" class="dg-ts">읽기+쓰기+삭제+설정 변경</text><text x="28" y="110" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="44" y="110" class="dg-ts">만료 없음 / 무기한</text><text x="28" y="134" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="44" y="134" class="dg-ts">유출 시 = 계정 전체 사고</text><rect class="dg-box" x="326" y="10" width="302" height="144" rx="12"/><text x="342" y="36" class="dg-tl">fine-grained (카드키)</text><text x="342" y="62" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="62" class="dg-ts">그 저장소 하나만 선택</text><text x="342" y="86" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="86" class="dg-ts">Contents: Read and write 만</text><text x="342" y="110" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="110" class="dg-ts">만료 7일 등 짧게</text><text x="342" y="134" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="134" class="dg-ts">유출 시 = 그 저장소만, 곧 만료</text><text x="12" y="170" class="dg-ts">노출되면 고민 말고 즉시 폐기(revoke) 후 재발급 · CI에서는 값이 아니라 Secret 이름만 참조</text></svg><figcaption>유출은 언제든 일어납니다. 그때 피해 크기를 정하는 건 토큰에 부여한 범위예요.</figcaption></figure>
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><g transform="translate(26.0,20.0) scale(1.250)">
+<path d="M10 14 v-3.5 a6 6 0 0 1 12 0 V14" fill="none" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<rect x="6.5" y="14" width="19" height="14" rx="2.5" fill="var(--dg-amber-s)" stroke="var(--dg-amber)" stroke-width="1.8"/>
+<circle cx="16" cy="20" r="2" fill="var(--dg-amber)"/>
+<path d="M16 21.5 v3" stroke="var(--dg-amber)" stroke-width="2" stroke-linecap="round"/></g><text x="72" y="46" class="dg-tl">넓은 토큰 (마스터키)</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="76" class="dg-ts">계정 전체 저장소 접근</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="100" class="dg-ts">읽기+쓰기+삭제+설정 변경</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="124" class="dg-ts">만료 없음 / 무기한</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="148" class="dg-ts">유출 시 = 계정 전체 사고</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><g transform="translate(340.0,20.0) scale(1.250)">
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
+      stroke-linecap="round" stroke-linejoin="round"/></g><text x="386" y="46" class="dg-tl">fine-grained (카드키)</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">그 저장소 하나만 선택</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">Contents: Read and write 만</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="124" class="dg-ts">만료 7일 등 짧게</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="148" class="dg-ts">유출 시 = 그 저장소만, 곧 만료</text><text x="12" y="182" class="dg-ts">노출되면 고민 말고 즉시 폐기(revoke) 후 재발급 · CI에서는 값이 아니라 Secret 이름만 참조</text></svg><figcaption>유출은 언제든 일어납니다. 그때 피해 크기를 정하는 건 토큰에 부여한 범위예요.</figcaption></figure>
 <h2 id="_1">왜 중요한가</h2>
 <p>자동화한다고 "다 되는" 만능 토큰을 하나 발급해서 여기저기 붙여 쓰기 쉽습니다. 그러다 로그·코드·채팅 어딘가에 토큰이 새면, 그 순간 <strong>계정 전체</strong>가 위험해져요. 권한을 좁혀놨다면 피해는 "그 저장소 하나"로 끝납니다. 이 차이가 사고와 재앙을 가릅니다.</p>
 <h2 id="vs">비유: 마스터키 vs 카드키</h2>

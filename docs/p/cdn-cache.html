@@ -36,11 +36,11 @@
 <article><div class="post-meta"><span>2026-07-14</span><a class="chip" href="../c/cloud.html">--cloud</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>배포했는데 예전 화면이 나와요 — CDN 캐시가 안 갱신되는 3가지 이유</h1><blockquote>
 <p><strong>한 줄 요약:</strong> CDN은 원본의 복사본을 <strong>약속된 기한(TTL)까지</strong> 나눠주는 편의점 체인입니다. 배포를 해도 옛 화면이 나오는 건 CDN이 고장 나서가 아니라 <strong>약속대로 아직 유효한 복사본을 주고 있는 것</strong> — 해법은 TTL 설계, 무효화, 캐시 키 세 가지에 있습니다.</p>
 </blockquote>
-<figure class="diagram"><div class="dg-cap">CDN 캐시 — 회수보다 새 이름</div><svg viewBox="0 0 640 154" role="img"><style>
+<figure class="diagram"><div class="dg-cap">CDN 캐시 — 회수보다 새 이름</div><svg viewBox="0 0 640 166" role="img"><style>
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -53,7 +53,12 @@
 @media (prefers-reduced-motion: reduce){
   .dg-anim{animation:none !important;}
 }
-</style><rect class="dg-box" x="12" y="10" width="302" height="120" rx="12"/><text x="28" y="36" class="dg-tl">무효화 (응급처치)</text><text x="28" y="62" font-size="12" font-weight="700" fill="var(--muted)">·</text><text x="44" y="62" class="dg-ts">전 지점에 '그 물건 회수' 공문</text><text x="28" y="86" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="44" y="86" class="dg-ts">전파에 시간 · 횟수 제한/비용</text><text x="28" y="110" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="44" y="110" class="dg-ts">매 배포마다 /* 는 임시방편</text><rect class="dg-box" x="326" y="10" width="302" height="120" rx="12"/><text x="342" y="36" class="dg-tl">해시 파일명 (근본)</text><text x="342" y="62" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="62" class="dg-ts">app.3f9c2a.js — 내용 바뀌면 이름도 바뀜</text><text x="342" y="86" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="86" class="dg-ts">정적 자원 max-age=31536000, immutable</text><text x="342" y="110" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="110" class="dg-ts">index.html 만 no-cache → 무효화 거의 불필요</text><text x="12" y="146" class="dg-ts">안 바뀌는 미스터리는 캐시 키 확인 (쿼리스트링 포함 여부) · 검증은 시크릿 창으로</text></svg><figcaption>무효화는 응급처치고, 근본은 해시 파일명입니다. HTML만 짧게, 해시 붙은 자원은 1년으로.</figcaption></figure>
+</style><rect class="dg-box" x="12" y="10" width="302" height="132" rx="12"/><g transform="translate(26.0,20.0) scale(1.250)">
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g><text x="72" y="46" class="dg-tl">무효화 (응급처치)</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--muted)">·</text><text x="44" y="76" class="dg-ts">전 지점에 '그 물건 회수' 공문</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="100" class="dg-ts">전파에 시간 · 횟수 제한/비용</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="124" class="dg-ts">매 배포마다 /* 는 임시방편</text><rect class="dg-box" x="326" y="10" width="302" height="132" rx="12"/><g transform="translate(340.0,20.0) scale(1.250)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="386" y="46" class="dg-tl">해시 파일명 (근본)</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">app.3f9c2a.js — 내용 바뀌면 이름도 바뀜</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">정적 자원 max-age=31536000, immutable</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="124" class="dg-ts">index.html 만 no-cache → 무효화 거의 불필요</text><text x="12" y="158" class="dg-ts">안 바뀌는 미스터리는 캐시 키 확인 (쿼리스트링 포함 여부) · 검증은 시크릿 창으로</text></svg><figcaption>무효화는 응급처치고, 근본은 해시 파일명입니다. HTML만 짧게, 해시 붙은 자원은 1년으로.</figcaption></figure>
 <h2 id="_1">상황</h2>
 <p>새 버전을 배포하고 자신 있게 새로고침. 그런데 예전 화면이 그대로 나옵니다. 서버 로그를 보니 요청이 <strong>오지도 않았어요.</strong> 범인은 중간에서 복사본을 나눠주고 있는 CDN입니다.</p>
 <h2 id="_2">비유: 본사 공장과 동네 편의점</h2>

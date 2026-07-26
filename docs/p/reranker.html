@@ -48,9 +48,9 @@
 <style>
 
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -85,13 +85,19 @@
 <rect class="dg-box dg-anim d3-3" x="310" y="34" width="126" height="62" rx="10"/>
 <rect class="dg-box dg-anim d3-4" x="458" y="34" width="126" height="62" rx="10"/>
 </g>
-<text x="34" y="60" class="dg-t">임베딩</text>
+<g transform="translate(17.2,38.2) scale(1.050)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="60" y="60" class="dg-t">임베딩</text>
 <text x="34" y="80" class="dg-ts">벡터로 변환</text>
 <text x="182" y="60" class="dg-t">벡터 검색</text>
 <text x="182" y="80" class="dg-ts">top-50 (빠름·거침)</text>
 <text x="330" y="60" class="dg-t">리랭커</text>
 <text x="330" y="80" class="dg-ts">top-5 (느림·정확)</text>
-<text x="478" y="60" class="dg-t">LLM</text>
+<g transform="translate(461.2,38.2) scale(1.050)">
+<path d="M16 5 a6 6 0 0 0 -6 6 a5 5 0 0 0 -2 9 a5.5 5.5 0 0 0 8 6 a5.5 5.5 0 0 0 8 -6 a5 5 0 0 0 -2 -9 a6 6 0 0 0 -6 -6 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.8"/>
+<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.4" stroke-linecap="round"/></g><text x="504" y="60" class="dg-t">LLM</text>
 <text x="478" y="80" class="dg-ts">근거로만 답변</text>
 <line x1="140" y1="65" x2="162" y2="65" class="dg-arrow"/>
 <line x1="288" y1="65" x2="310" y2="65" class="dg-arrow"/>

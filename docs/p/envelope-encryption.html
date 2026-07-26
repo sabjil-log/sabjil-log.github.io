@@ -38,9 +38,9 @@
 </blockquote>
 <figure class="diagram"><div class="dg-cap">봉투암호화 — DEK와 KEK</div><svg viewBox="0 0 640 230" role="img"><style>
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -60,14 +60,25 @@
 <rect x="392" y="24" width="234" height="182" rx="12" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="6 4"/>
 <text x="404" y="44" class="dg-ts" fill="var(--accent)">KMS — 마스터키는 밖으로 안 나감</text>
 <rect x="424" y="60" width="170" height="52" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
-<text x="442" y="82" class="dg-t">마스터키 (KEK)</text>
+<g transform="translate(436.8,68.8) scale(0.950)">
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
+      stroke-linecap="round" stroke-linejoin="round"/></g><text x="474" y="88" class="dg-t">마스터키 (KEK)</text>
 <text x="442" y="100" class="dg-ts">봉투를 봉인·개봉만</text>
 <rect x="14" y="40" width="180" height="70" rx="10" class="dg-box"/>
-<text x="30" y="66" class="dg-t">데이터 (1GB)</text>
+<g transform="translate(23.2,49.2) scale(1.050)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="68" y="70" class="dg-t">데이터 (1GB)</text>
 <text x="30" y="86" class="dg-ts">DEK로 로컬에서 암호화</text>
 <text x="30" y="102" class="dg-ts">→ 빠름, 네트워크 불필요</text>
 <rect x="14" y="126" width="180" height="62" rx="10" fill="var(--raise)" stroke="var(--accent)" stroke-width="1.5"/>
-<text x="30" y="150" class="dg-t">봉인된 봉투</text>
+<g transform="translate(23.2,133.2) scale(1.050)">
+<path d="M10 14 v-3.5 a6 6 0 0 1 12 0 V14" fill="none" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<rect x="6.5" y="14" width="19" height="14" rx="2.5" fill="var(--dg-amber-s)" stroke="var(--dg-amber)" stroke-width="1.8"/>
+<circle cx="16" cy="20" r="2" fill="var(--dg-amber)"/>
+<path d="M16 21.5 v3" stroke="var(--dg-amber)" stroke-width="2" stroke-linecap="round"/></g><text x="68" y="154" class="dg-t">봉인된 봉투</text>
 <text x="30" y="170" class="dg-ts">암호화된 DEK — 데이터와 함께 보관</text>
 <path d="M194 158 H 392 V 96" class="dg-arrow"/>
 <g class="dg-anim ev-k"><circle cx="300" cy="158" r="7" class="dg-ok"/></g>

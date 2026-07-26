@@ -38,9 +38,9 @@
 </blockquote>
 <figure class="diagram"><div class="dg-cap">OOM Killer의 피해자 선정</div><svg viewBox="0 0 640 116" role="img"><style>
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -58,7 +58,26 @@
 .oo-1{animation:oo-h 4.6s ease-in-out infinite;animation-delay:1.15s;}
 .oo-2{animation:oo-h 4.6s ease-in-out infinite;animation-delay:2.3s;}
 .oo-3{animation:oo-h 4.6s ease-in-out infinite;animation-delay:3.45s;}
-@keyframes oo-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim oo-0" x="12" y="18" width="145" height="58" rx="10"/><text x="23" y="42" class="dg-key">메모리 고갈</text><text x="23" y="62" class="dg-lab2">overcommit 지급 불능</text><line x1="157" y1="47" x2="169" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim oo-1" x="169" y="18" width="145" height="58" rx="10"/><text x="180" y="42" class="dg-key">oom_score 계산</text><text x="180" y="62" class="dg-lab2">많이 쓰는 놈이 고점</text><line x1="314" y1="47" x2="326" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim oo-2" x="326" y="18" width="145" height="58" rx="10"/><text x="337" y="42" class="dg-key">최고점 즉살</text><text x="337" y="62" class="dg-lab2">SIGKILL — 유언 없음</text><line x1="471" y1="47" x2="483" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim oo-3" x="483" y="18" width="145" height="58" rx="10"/><text x="494" y="42" class="dg-key">dmesg에 기록</text><text x="494" y="62" class="dg-lab2">Out of memory: Killed</text><text x="12" y="102" class="dg-ts">확인: dmesg -T | grep -i 'out of memory' · 보호는 OOMScoreAdjust (단, 폭탄 돌리기)</text></svg><figcaption>메모리가 바닥나면 커널이 oom_score 최고점을 즉살합니다. 로그가 없는 게 오히려 단서예요.</figcaption></figure>
+@keyframes oo-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim oo-0" x="12" y="18" width="145" height="58" rx="10"/><g transform="translate(18.8,23.8) scale(1.450)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="66" y="42" class="dg-key">메모리 고갈</text><text x="66" y="62" class="dg-lab2">지급 불능</text><line x1="157" y1="47" x2="169" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim oo-1" x="169" y="18" width="145" height="58" rx="10"/><g transform="translate(175.8,23.8) scale(1.450)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="223" y="42" class="dg-key">oom_score</text><text x="223" y="62" class="dg-lab2">많이 쓰면 고점</text><line x1="314" y1="47" x2="326" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim oo-2" x="326" y="18" width="145" height="58" rx="10"/><g transform="translate(332.8,23.8) scale(1.450)">
+<rect x="3" y="6" width="26" height="20" rx="2" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.7"/>
+<path d="M3 12.6 h26 M3 19.3 h26" stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M11 6 v6.6 M20 6 v6.6 M7 12.6 v6.7 M16 12.6 v6.7 M24.5 12.6 v6.7 M11 19.3 v6.7 M20 19.3 v6.7"
+      stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M16 13 c2.6 2.4 3.4 4.2 3.4 6 a3.4 3.4 0 0 1 -6.8 0 c0 -1.8 0.8 -3.6 3.4 -6 z"
+      fill="var(--dg-amber)" stroke="var(--dg-red)" stroke-width="1.3"/></g><text x="380" y="42" class="dg-key">최고점 즉살</text><text x="380" y="62" class="dg-lab2">SIGKILL</text><line x1="471" y1="47" x2="483" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim oo-3" x="483" y="18" width="145" height="58" rx="10"/><g transform="translate(489.8,23.8) scale(1.450)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="537" y="42" class="dg-key">dmesg 기록</text><text x="537" y="62" class="dg-lab2">Killed process</text><text x="12" y="102" class="dg-ts">확인: dmesg -T | grep -i 'out of memory' · 보호는 OOMScoreAdjust (단, 폭탄 돌리기)</text></svg><figcaption>메모리가 바닥나면 커널이 oom_score 최고점을 즉살합니다. 로그가 없는 게 오히려 단서예요.</figcaption></figure>
 <h2 id="_1">증상</h2>
 <p>새벽에 앱이 사라졌습니다. 앱 로그는 평범한 마지막 줄에서 뚝 끊겼고, 에러도 스택트레이스도 없어요. <code>systemctl status</code>엔 <code>signal=KILL(9)</code>. SIGKILL은 앱이 인지할 수도, 유언을 남길 수도 없는 신호라 <strong>로그가 없는 게 오히려 단서</strong>입니다. 그리고 SIGKILL을 날리는 대표 용의자가 커널의 OOM Killer예요.</p>
 <h2 id="_2">왜 커널이 살인을 하나</h2>

@@ -36,11 +36,11 @@
 <article><div class="post-meta"><span>2026-07-13</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>16GB 그래픽카드에 14B 모델이 들어가는 마법 — 4-bit 양자화</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 모델 무게의 정체는 <strong>파라미터 개수 × 숫자 하나의 크기</strong>입니다. 양자화는 숫자 하나를 16비트에서 4비트로 <strong>줄여서(반올림해서)</strong> 저장하는 것 — 크기가 1/4로 줄어 14B 모델이 16GB 카드에 들어갑니다. 대가는 약간의 정밀도예요.</p>
 </blockquote>
-<figure class="diagram"><div class="dg-cap">양자화별 모델 무게 (14B 기준)</div><svg viewBox="0 0 640 164" role="img"><style>
+<figure class="diagram"><div class="dg-cap">양자화별 모델 무게 (14B 기준)</div><svg viewBox="0 0 640 176" role="img"><style>
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -55,7 +55,16 @@
 }
 
 .qz-b{animation:qz-g 2.6s ease-out infinite;transform-origin:left center;}
-@keyframes qz-g{0%{transform:scaleX(0)}45%,100%{transform:scaleX(1)}}</style><line x1="334" y1="6" x2="334" y2="130" class="dg-wall"/><text x="340" y="16" class="dg-ts" fill="var(--accent)">16GB 카드 한계</text><text x="12" y="40" class="dg-t">FP16 (16bit)</text><rect x="156" y="26" width="356" height="20" rx="5" fill="var(--line-2)"/><g class="dg-anim qz-b" style="animation-delay:0.0s"><rect x="156" y="26" width="312" height="20" rx="5" fill="#E5484D" opacity=".85"/></g><text x="476" y="41" class="dg-ts">28 GB 초과</text><text x="12" y="80" class="dg-t">INT8 (8bit)</text><rect x="156" y="66" width="356" height="20" rx="5" fill="var(--line-2)"/><g class="dg-anim qz-b" style="animation-delay:0.18s"><rect x="156" y="66" width="156" height="20" rx="5" fill="var(--accent)" opacity=".85"/></g><text x="320" y="81" class="dg-ts">14 GB 아슬</text><text x="12" y="120" class="dg-t">INT4 (4bit)</text><rect x="156" y="106" width="356" height="20" rx="5" fill="var(--line-2)"/><g class="dg-anim qz-b" style="animation-delay:0.36s"><rect x="156" y="106" width="78" height="20" rx="5" fill="var(--accent)" opacity=".85"/></g><text x="242" y="121" class="dg-ts">7 GB 여유</text><text x="12" y="156" class="dg-ts">여기에 KV 캐시·오버헤드가 얹힙니다. 같은 VRAM이면 '큰 모델 4bit'가 대개 이깁니다</text></svg><figcaption>파라미터 개수 × 숫자 하나의 크기. 4bit면 1/4이 되어 16GB 카드에 들어갑니다.</figcaption></figure>
+@keyframes qz-g{0%{transform:scaleX(0)}45%,100%{transform:scaleX(1)}}</style><line x1="338" y1="6" x2="338" y2="142" class="dg-wall"/><text x="344" y="16" class="dg-ts" fill="var(--dg-red)">16GB 카드 한계</text><g transform="translate(14.0,20.0) scale(1.000)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="52" y="41" class="dg-t">FP16</text><rect x="164" y="26" width="348" height="20" rx="5" fill="var(--line-2)"/><g class="dg-anim qz-b" style="animation-delay:0.0s"><rect x="164" y="26" width="304" height="20" rx="5" fill="var(--dg-red)" opacity=".85"/></g><text x="476" y="41" class="dg-ts">28 GB 초과</text><g transform="translate(14.0,64.0) scale(1.000)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="52" y="85" class="dg-t">INT8</text><rect x="164" y="70" width="348" height="20" rx="5" fill="var(--line-2)"/><g class="dg-anim qz-b" style="animation-delay:0.18s"><rect x="164" y="70" width="152" height="20" rx="5" fill="var(--dg-green)" opacity=".85"/></g><text x="324" y="85" class="dg-ts">14 GB 아슬</text><g transform="translate(14.0,108.0) scale(1.000)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="52" y="129" class="dg-t">INT4</text><rect x="164" y="114" width="348" height="20" rx="5" fill="var(--line-2)"/><g class="dg-anim qz-b" style="animation-delay:0.36s"><rect x="164" y="114" width="76" height="20" rx="5" fill="var(--dg-green)" opacity=".85"/></g><text x="248" y="129" class="dg-ts">7 GB 여유</text><text x="12" y="168" class="dg-ts">여기에 KV 캐시·오버헤드가 얹힙니다. 같은 VRAM이면 '큰 모델 4bit'가 대개 이깁니다</text></svg><figcaption>파라미터 개수 × 숫자 하나의 크기. 4bit면 1/4이 되어 16GB 카드에 들어갑니다.</figcaption></figure>
 <h2 id="_1">계산부터 해보자</h2>
 <p>모델 용량은 곱셈 하나로 감이 옵니다.</p>
 <div class="highlight"><pre><span></span><code>14B 모델의 무게:

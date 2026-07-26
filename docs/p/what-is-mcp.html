@@ -36,11 +36,11 @@
 <article><div class="post-meta"><span>2026-07-19</span><a class="chip" href="../c/ai.html">--ai</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>MCP가 뭔데 다들 만드나 — AI 도구 연결의 USB 규격</h1><blockquote>
 <p><strong>한 줄 요약:</strong> MCP(Model Context Protocol)는 <strong>AI와 도구 사이의 표준 콘센트</strong>입니다. 도구를 MCP 서버로 한 번 만들어두면, 그 규격을 지원하는 <strong>어떤 AI 클라이언트에든</strong> 꽂아 쓸 수 있어요 — 도구 통합의 M×N 문제를 M+N으로 바꾸는 게 핵심 가치입니다.</p>
 </blockquote>
-<figure class="diagram"><div class="dg-cap">M×N 어댑터 지옥 → M+N</div><svg viewBox="0 0 640 178" role="img"><style>
+<figure class="diagram"><div class="dg-cap">M×N 어댑터 지옥 → M+N</div><svg viewBox="0 0 640 190" role="img"><style>
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -53,7 +53,13 @@
 @media (prefers-reduced-motion: reduce){
   .dg-anim{animation:none !important;}
 }
-</style><rect class="dg-box" x="12" y="10" width="302" height="144" rx="12"/><text x="28" y="36" class="dg-tl">MCP 없이 — M×N</text><text x="28" y="62" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="44" y="62" class="dg-ts">도구 10개 × 클라이언트 4개 = 통합 40번</text><text x="28" y="86" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="44" y="86" class="dg-ts">클라이언트마다 연동 방식이 다름</text><text x="28" y="110" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="44" y="110" class="dg-ts">도구 하나 고치면 어댑터 전부 손봄</text><text x="28" y="134" font-size="12" font-weight="700" fill="var(--muted)">·</text><text x="44" y="134" class="dg-ts">USB 이전의 충전 단자 난립 상태</text><rect class="dg-box" x="326" y="10" width="302" height="144" rx="12"/><text x="342" y="36" class="dg-tl">MCP로 — M+N</text><text x="342" y="62" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="62" class="dg-ts">도구는 MCP 서버로 1번만 구현</text><text x="342" y="86" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="86" class="dg-ts">클라이언트는 MCP 지원 1번만</text><text x="342" y="110" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="110" class="dg-ts">10 + 4 = 14 로 감소</text><text x="342" y="134" font-size="12" font-weight="700" fill="var(--muted)">·</text><text x="358" y="134" class="dg-ts">규격 콘센트에 꽂기만</text><text x="12" y="170" class="dg-ts">서버가 내놓는 것: Tools(실행) · Resources(읽을 데이터) · Prompts(작업 템플릿)</text></svg><figcaption>도구마다 클라이언트마다 어댑터를 짜던 걸, 표준 콘센트 하나로 수렴시키는 게 MCP의 가치입니다.</figcaption></figure>
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><g transform="translate(26.0,20.0) scale(1.250)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="72" y="46" class="dg-tl">MCP 없이 — M×N</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="76" class="dg-ts">도구 10개 × 클라이언트 4개 = 통합 40번</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="100" class="dg-ts">클라이언트마다 연동 방식이 다름</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="124" class="dg-ts">도구 하나 고치면 어댑터 전부 손봄</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--muted)">·</text><text x="44" y="148" class="dg-ts">USB 이전의 충전 단자 난립 상태</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><g transform="translate(340.0,20.0) scale(1.250)">
+<path d="M5 29 V13 a11 11 0 0 1 22 0 v16 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.8"/>
+<path d="M11 29 V15 a5 5 0 0 1 10 0 v14 z" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.7"/>
+<circle cx="19" cy="22" r="1.2" fill="var(--dg-blue)"/></g><text x="386" y="46" class="dg-tl">MCP로 — M+N</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">도구는 MCP 서버로 1번만 구현</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">클라이언트는 MCP 지원 1번만</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="124" class="dg-ts">10 + 4 = 14 로 감소</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--muted)">·</text><text x="358" y="148" class="dg-ts">규격 콘센트에 꽂기만</text><text x="12" y="182" class="dg-ts">서버가 내놓는 것: Tools(실행) · Resources(읽을 데이터) · Prompts(작업 템플릿)</text></svg><figcaption>도구마다 클라이언트마다 어댑터를 짜던 걸, 표준 콘센트 하나로 수렴시키는 게 MCP의 가치입니다.</figcaption></figure>
 <h2 id="_1">문제: 어댑터 지옥</h2>
 <p>에이전트 글에서 봤듯, LLM에 손발을 다는 건 "도구 명세 + 실행 루프"입니다. 그런데 현실의 고통은 그다음이에요 — 사내 DB 조회 도구를 만들었다 칩시다. 이걸 챗 서비스 A에도, IDE 어시스턴트 B에도, 자체 에이전트 C에도 붙이려면? <strong>셋 다 연동 방식이 달라서 어댑터를 세 번</strong> 짭니다. 도구가 10개, 클라이언트가 4개면 통합 작업이 40번 — 이게 M×N 문제입니다.</p>
 <p>전자기기 세계가 이미 푼 문제죠. 기기마다 제각각이던 충전 단자가 <strong>USB라는 규격 하나</strong>로 수렴하니, 기기 제조사는 USB만 달면 되고 충전기 제조사도 USB만 만들면 됩니다. MCP가 노리는 게 정확히 이것 — <strong>도구는 MCP 서버로 한 번만, 클라이언트는 MCP 지원 한 번만.</strong> M×N이 M+N이 됩니다.</p>

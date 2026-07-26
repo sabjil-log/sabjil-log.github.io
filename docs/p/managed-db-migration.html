@@ -36,11 +36,11 @@
 <article><div class="post-meta"><span>2026-07-17</span><a class="chip" href="../c/cloud.html">--cloud</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>관리형 DB로 옮기면 끝인 줄 알았다 — 이관할 때 놓치는 것들</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 관리형 DB(RDS, Cloud DB)가 대신해주는 건 <strong>서버 관리</strong>(설치·패치·하드웨어·기본 백업)입니다. <strong>DB 관리</strong>(파라미터, 백업 검증, 장애조치 설계, 권한, 성능)는 여전히 우리 일이에요. 이 경계를 모르면 "관리형인데 왜 터지죠"가 됩니다.</p>
 </blockquote>
-<figure class="diagram"><div class="dg-cap">관리형 DB — 책임 경계선</div><svg viewBox="0 0 640 178" role="img"><style>
+<figure class="diagram"><div class="dg-cap">관리형 DB — 책임 경계선</div><svg viewBox="0 0 640 190" role="img"><style>
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -53,7 +53,12 @@
 @media (prefers-reduced-motion: reduce){
   .dg-anim{animation:none !important;}
 }
-</style><rect class="dg-box" x="12" y="10" width="302" height="144" rx="12"/><text x="28" y="36" class="dg-tl">벤더가 해주는 것</text><text x="28" y="62" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="44" y="62" class="dg-ts">설치·패치·하드웨어</text><text x="28" y="86" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="44" y="86" class="dg-ts">자동 백업 실행</text><text x="28" y="110" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="44" y="110" class="dg-ts">장애조치 기능 제공</text><text x="28" y="134" font-size="12" font-weight="700" fill="var(--muted)">·</text><text x="44" y="134" class="dg-ts">= 서버 관리</text><rect class="dg-box" x="326" y="10" width="302" height="144" rx="12"/><text x="342" y="36" class="dg-tl">여전히 내 몫</text><text x="342" y="62" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="358" y="62" class="dg-ts">파라미터 그룹 (max_connections 등)</text><text x="342" y="86" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="358" y="86" class="dg-ts">백업 보존기간 + 복구 리허설</text><text x="342" y="110" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="358" y="110" class="dg-ts">다중화 옵션 선택 · 앱의 재연결</text><text x="342" y="134" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="358" y="134" class="dg-ts">네트워크 접근 통제 재설계</text><text x="12" y="170" class="dg-ts">이관 체크리스트 1번: 기존 SHOW VARIABLES 결과와 새 파라미터 그룹 대조</text></svg><figcaption>서버 관리는 벤더가, DB 관리는 여전히 우리 몫입니다. 이 선을 모르면 '관리형인데 왜 터지죠'가 됩니다.</figcaption></figure>
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><g transform="translate(26.0,20.0) scale(1.250)">
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g><text x="72" y="46" class="dg-tl">벤더가 해주는 것</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="76" class="dg-ts">설치·패치·하드웨어</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="100" class="dg-ts">자동 백업 실행</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="124" class="dg-ts">장애조치 기능 제공</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--muted)">·</text><text x="44" y="148" class="dg-ts">= 서버 관리</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><g transform="translate(340.0,20.0) scale(1.250)">
+<circle cx="16" cy="10" r="6" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<path d="M4.5 29 c0 -6.6 5.2 -11 11.5 -11 s11.5 4.4 11.5 11" fill="var(--dg-blue-s)"
+      stroke="var(--dg-blue)" stroke-width="1.8" stroke-linecap="round"/></g><text x="386" y="46" class="dg-tl">여전히 내 몫</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="76" class="dg-ts">파라미터 그룹 (max_connections 등)</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="100" class="dg-ts">백업 보존기간 + 복구 리허설</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="124" class="dg-ts">다중화 옵션 선택 · 앱의 재연결</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="148" class="dg-ts">네트워크 접근 통제 재설계</text><text x="12" y="182" class="dg-ts">이관 체크리스트 1번: 기존 SHOW VARIABLES 결과와 새 파라미터 그룹 대조</text></svg><figcaption>서버 관리는 벤더가, DB 관리는 여전히 우리 몫입니다. 이 선을 모르면 '관리형인데 왜 터지죠'가 됩니다.</figcaption></figure>
 <h2 id="_1">착각의 구조</h2>
 <p>"관리형"이라는 말이 주는 인상: 이제 DB는 신경 안 써도 된다. 현실: <strong>건물 관리인이 생긴 것</strong>이지 집사가 생긴 게 아닙니다. 청소·수도·전기(인프라)는 해주지만, 집 안 가구 배치와 금고 비밀번호(설정과 데이터)는 여전히 집주인 몫이에요. 이관 때 놓치는 것들이 정확히 이 경계선 위에 있습니다.</p>
 <h2 id="1-mycnf">놓치는 것 ① — 파라미터 그룹: my.cnf는 어디 갔나</h2>

@@ -38,9 +38,9 @@
 </blockquote>
 <figure class="diagram"><div class="dg-cap">kubectl 디버깅 다섯 개의 창</div><svg viewBox="0 0 640 116" role="img"><style>
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
-.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
 .dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
-.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
@@ -59,7 +59,29 @@
 .kf-2{animation:kf-h 5.75s ease-in-out infinite;animation-delay:2.3s;}
 .kf-3{animation:kf-h 5.75s ease-in-out infinite;animation-delay:3.45s;}
 .kf-4{animation:kf-h 5.75s ease-in-out infinite;animation-delay:4.6s;}
-@keyframes kf-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,12.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim kf-0" x="12" y="18" width="114" height="58" rx="10"/><text x="23" y="42" class="dg-key">logs</text><text x="23" y="62" class="dg-lab2">앱의 말·유언</text><line x1="126" y1="47" x2="138" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim kf-1" x="138" y="18" width="114" height="58" rx="10"/><text x="149" y="42" class="dg-key">describe</text><text x="149" y="62" class="dg-lab2">쿠버의 말·Events</text><line x1="251" y1="47" x2="263" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim kf-2" x="263" y="18" width="114" height="58" rx="10"/><text x="274" y="42" class="dg-key">exec</text><text x="274" y="62" class="dg-lab2">현장 진입</text><line x1="377" y1="47" x2="389" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim kf-3" x="389" y="18" width="114" height="58" rx="10"/><text x="400" y="42" class="dg-key">get -o yaml</text><text x="400" y="62" class="dg-lab2">설계도 원본</text><line x1="502" y1="47" x2="514" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim kf-4" x="514" y="18" width="114" height="58" rx="10"/><text x="525" y="42" class="dg-key">port-forward</text><text x="525" y="62" class="dg-lab2">직통 전화</text><text x="12" y="102" class="dg-ts">CrashLoop이면 logs --previous 부터 · 연결 문제면 port-forward로 구간 이분탐색</text></svg><figcaption>앱의 말 → 쿠버의 말 → 현장 → 설계도 → 직통. 대개 이 순서로 꺼냅니다.</figcaption></figure>
+@keyframes kf-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,12.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim kf-0" x="12" y="18" width="114" height="58" rx="10"/><g transform="translate(18.8,23.8) scale(1.450)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="66" y="42" class="dg-key">logs</text><text x="66" y="62" class="dg-lab2">앱의 말</text><line x1="126" y1="47" x2="138" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim kf-1" x="138" y="18" width="114" height="58" rx="10"/><g transform="translate(144.4,23.8) scale(1.450)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="192" y="42" class="dg-key">describe</text><text x="192" y="62" class="dg-lab2">쿠버의 말</text><line x1="251" y1="47" x2="263" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim kf-2" x="263" y="18" width="114" height="58" rx="10"/><g transform="translate(270.0,23.8) scale(1.450)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="317" y="42" class="dg-key">exec</text><text x="317" y="62" class="dg-lab2">현장 진입</text><line x1="377" y1="47" x2="389" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim kf-3" x="389" y="18" width="114" height="58" rx="10"/><g transform="translate(395.6,23.8) scale(1.450)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="443" y="42" class="dg-key">get -o yaml</text><text x="443" y="62" class="dg-lab2">설계도</text><line x1="502" y1="47" x2="514" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim kf-4" x="514" y="18" width="114" height="58" rx="10"/><g transform="translate(521.2,23.8) scale(1.450)">
+<rect x="3" y="17" width="26" height="10" rx="3" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M10 17 L 7 6" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<path d="M22 17 L 25 6" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<circle cx="9" cy="22" r="1.2" fill="var(--dg-green)"/>
+<circle cx="13.5" cy="22" r="1.2" fill="var(--dg-green)"/>
+<circle cx="18" cy="22" r="1.2" fill="var(--dg-amber)"/></g><text x="568" y="42" class="dg-key">port-fwd</text><text x="568" y="62" class="dg-lab2">직통</text><text x="12" y="102" class="dg-ts">CrashLoop이면 logs --previous 부터 · 연결 문제면 port-forward로 구간 이분탐색</text></svg><figcaption>앱의 말 → 쿠버의 말 → 현장 → 설계도 → 직통. 대개 이 순서로 꺼냅니다.</figcaption></figure>
 <h2 id="_1">왜 다섯 개인가</h2>
 <p>문제가 생기면 확인할 것은 결국 넷입니다. 앱이 뭐라고 하는가, 쿠버네티스가 뭐라고 하는가, 현장(컨테이너 안)은 어떤가, 설정은 내 의도대로인가. 다섯 명령이 정확히 이 창들이에요. 하나씩 —</p>
 <h2 id="1-logs">① logs — 앱의 말부터</h2>
