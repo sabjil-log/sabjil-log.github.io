@@ -36,6 +36,38 @@
 <article><div class="post-meta"><span>2026-07-14</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>컨테이너에서 localhost가 안 통하는 이유 — 도커 네트워크의 착각</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 컨테이너 안에서 <code>localhost</code>는 <strong>호스트 머신이 아니라 컨테이너 자기 자신</strong>입니다. 컨테이너마다 자기만의 네트워크 공간(집)을 갖기 때문 — 호스트나 옆 컨테이너로 가려면 <strong>다른 주소</strong>로 불러야 해요.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">컨테이너의 주소 체계 3가지</div><svg viewBox="0 0 640 200" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.dl-x{animation:dl-p 2.8s ease-in-out infinite;}
+@keyframes dl-p{0%,100%{opacity:.45}50%{opacity:1}}
+</style>
+<rect x="14" y="16" width="612" height="46" rx="10" class="dg-box"/>
+<text x="28" y="38" class="dg-t">① 컨테이너 → 호스트의 서비스</text>
+<g class="dg-anim dl-x"><text x="300" y="38" class="dg-ts" fill="#E5484D">✕ localhost</text></g>
+<text x="404" y="38" class="dg-ts" fill="var(--accent)">✓ host.docker.internal</text>
+<text x="28" y="55" class="dg-ts">Linux는 --add-host=host.docker.internal:host-gateway 필요 · 호스트는 0.0.0.0 바인딩</text>
+<rect x="14" y="72" width="612" height="46" rx="10" class="dg-box"/>
+<text x="28" y="94" class="dg-t">② 컨테이너 → 옆 컨테이너</text>
+<g class="dg-anim dl-x"><text x="300" y="94" class="dg-ts" fill="#E5484D">✕ localhost</text></g>
+<text x="404" y="94" class="dg-ts" fill="var(--accent)">✓ 컨테이너 이름 (예: db)</text>
+<text x="28" y="111" class="dg-ts">같은 사용자 정의 네트워크에 있어야 이름 해석됨 (compose는 자동)</text>
+<rect x="14" y="128" width="612" height="46" rx="10" class="dg-box"/>
+<text x="28" y="150" class="dg-t">③ 호스트 → 컨테이너</text>
+<text x="404" y="150" class="dg-ts" fill="var(--accent)">✓ -p 8080:80 로 포트 공개</text>
+<text x="28" y="167" class="dg-ts">-p 없으면 호스트에서 접근 불가가 정상 (담장 안)</text>
+<text x="14" y="194" class="dg-ts">예외: --network host 는 컨테이너가 호스트 네트워크를 그대로 사용 (격리 상실, Linux 전용)</text>
+</svg><figcaption>컨테이너 안의 localhost는 자기 자신입니다. 목적지마다 불러야 하는 주소가 다릅니다.</figcaption></figure>
 <h2 id="3">증상 3종 세트</h2>
 <ul>
 <li>컨테이너 안 앱이 호스트에 띄운 DB(<code>localhost:5432</code>)에 연결 실패</li>

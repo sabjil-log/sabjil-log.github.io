@@ -36,6 +36,43 @@
 <article><div class="post-meta"><span>2026-07-10</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>임베딩은 왜 &#x27;거리&#x27;가 아니라 &#x27;각도&#x27;로 비슷함을 재나 — 코사인 유사도</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 임베딩끼리 비슷한지 잴 때는 <strong>길이(크기)를 무시하고 방향(각도)만</strong> 봅니다. 두 벡터가 <strong>같은 쪽을 가리키면</strong> 뜻이 비슷하다고 보는 것 — 이게 코사인 유사도예요.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">의미의 닮음은 '각도'로 잰다</div><svg viewBox="0 0 640 240" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.cs-arc{animation:cs-a 3.2s ease-in-out infinite;}
+@keyframes cs-a{0%,100%{opacity:.25}50%{opacity:.9}}
+</style>
+<line x1="60" y1="200" x2="380" y2="200" class="dg-arrow"/>
+<line x1="60" y1="200" x2="60" y2="30" class="dg-arrow"/>
+<line x1="60" y1="200" x2="290" y2="70" stroke="var(--accent)" stroke-width="2.4"/>
+<circle cx="290" cy="70" r="4" class="dg-ok"/><text x="298" y="66" class="dg-ts">"강아지가 뛴다"</text>
+<line x1="60" y1="200" x2="216" y2="76" stroke="var(--accent)" stroke-width="2.4" opacity=".7"/>
+<circle cx="216" cy="76" r="4" class="dg-ok"/><text x="150" y="58" class="dg-ts">"반려견이 산책"</text>
+<line x1="60" y1="200" x2="330" y2="176" stroke="#E5484D" stroke-width="2.2"/>
+<circle cx="330" cy="176" r="4" class="dg-no"/><text x="292" y="196" class="dg-ts">"환율 급등"</text>
+<path d="M120 172 A 66 66 0 0 1 128 152" fill="none" stroke="var(--accent)" stroke-width="2" class="dg-anim cs-arc"/>
+<text x="132" y="140" class="dg-ts" fill="var(--accent)">작은 각 = 비슷</text>
+<path d="M148 196 A 92 92 0 0 0 134 158" fill="none" stroke="#E5484D" stroke-width="2" class="dg-anim cs-arc"/>
+<text x="152" y="176" class="dg-ts" fill="#E5484D">큰 각 = 무관</text>
+<rect x="410" y="40" width="216" height="150" rx="12" class="dg-box"/>
+<text x="428" y="66" class="dg-tl">cos(θ) 값</text>
+<text x="428" y="94" class="dg-ts">1 에 가까움 → 같은 방향 (비슷)</text>
+<text x="428" y="116" class="dg-ts">0 → 직각 (무관)</text>
+<text x="428" y="138" class="dg-ts">-1 → 정반대</text>
+<text x="428" y="168" class="dg-ts">길이로 나누는 과정이</text>
+<text x="428" y="182" class="dg-ts">곧 '크기 무시'</text>
+<text x="14" y="228" class="dg-ts">팁: 정규화된(길이 1) 임베딩이면 내적만 계산해도 코사인과 같아 검색이 더 빠릅니다</text>
+</svg><figcaption>벡터의 길이(문장 길이·강도)는 무시하고 방향만 봅니다. 같은 쪽을 가리키면 뜻이 비슷한 거죠.</figcaption></figure>
 <h2 id="_1">배경</h2>
 <p>RAG나 검색에서 문장을 임베딩(숫자 벡터)으로 바꾼 뒤, "질문과 가장 비슷한 문장"을 찾습니다. 그런데 '비슷함'을 어떻게 숫자로 잴까요? 직선 거리로 잴 것 같지만, 실제로는 대부분 <strong>코사인 유사도(방향의 닮음)</strong>를 씁니다. 왜일까요?</p>
 <h2 id="vs">비유: 나침반 방향 vs 걸은 거리</h2>

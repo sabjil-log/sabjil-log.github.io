@@ -36,6 +36,34 @@
 <article><div class="post-meta"><span>2026-07-11</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>디스크 여유는 있는데 &#x27;No space left on device&#x27;? — inode 고갈 이야기</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 디스크에는 <strong>용량</strong>말고도 <strong>inode(파일 개수 한도)</strong>라는 별도의 자원이 있습니다. 용량이 남아도 inode가 바닥나면 파일을 못 만들어요. <code>df -h</code> 말고 <strong><code>df -i</code></strong> 를 봐야 잡히는 문제입니다.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">용량은 남았는데 'No space left'</div><svg viewBox="0 0 640 170" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.ig-b{animation:ig-g 2.6s ease-out infinite;transform-origin:left center;}
+@keyframes ig-g{0%{transform:scaleX(0)}45%,100%{transform:scaleX(1)}}
+</style>
+<text x="14" y="26" class="dg-t">df -h  (용량)</text>
+<rect x="160" y="12" width="420" height="22" rx="5" fill="var(--line-2)"/>
+<g class="dg-anim ig-b"><rect x="160" y="12" width="126" height="22" rx="5" fill="var(--accent)" opacity=".85"/></g>
+<text x="590" y="28" class="dg-ts">30%</text>
+<text x="14" y="76" class="dg-t">df -i  (inode)</text>
+<rect x="160" y="62" width="420" height="22" rx="5" fill="var(--line-2)"/>
+<g class="dg-anim ig-b" style="animation-delay:.2s"><rect x="160" y="62" width="420" height="22" rx="5" fill="#E5484D" opacity=".85"/></g>
+<text x="590" y="78" class="dg-ts" fill="#E5484D">100%</text>
+<text x="160" y="106" class="dg-ts">주차장 비유: 바닥 면적(용량)은 남았는데 발급할 주차권(inode)이 동난 상태</text>
+<text x="14" y="132" class="dg-ts">파일 1개 = inode 1개 (크기 무관) → 0바이트 파일 수백만 개도 고갈을 일으킵니다</text>
+<text x="14" y="154" class="dg-ts">범인 찾기: for d in /var/*; do echo -n "$d: "; find "$d" -xdev -type f | wc -l; done</text>
+</svg><figcaption>디스크에는 용량과 inode(파일 개수 한도), 두 개의 한계가 있습니다. df -h가 아니라 df -i를 봐야 잡히죠.</figcaption></figure>
 <h2 id="_1">증상</h2>
 <p>로그에 <code>No space left on device</code>. 그런데 <code>df -h</code> 를 치면 사용률 30%, 수백 GB가 남아 있습니다. "공간이 남는데 왜 못 쓴다는 거야?" — 리눅스 트러블슈팅의 고전 미스터리죠.</p>
 <h2 id="_2">비유: 주차장의 두 가지 한계</h2>

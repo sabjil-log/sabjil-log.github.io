@@ -36,6 +36,24 @@
 <article><div class="post-meta"><span>2026-07-16</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>프로세스가 흔적도 없이 사라졌다 — OOM Killer의 소행 확인하기</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 메모리가 바닥나면 커널은 시스템 전체가 죽는 걸 막으려고 <strong>프로세스 하나를 골라 즉살</strong>합니다. 이게 OOM Killer — 죽은 앱의 로그에는 아무것도 안 남고, <strong>범행 기록은 커널 로그(dmesg)에만</strong> 남아요.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">OOM Killer의 피해자 선정</div><svg viewBox="0 0 640 116" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.oo-0{animation:oo-h 4.6s ease-in-out infinite;animation-delay:0.0s;}
+.oo-1{animation:oo-h 4.6s ease-in-out infinite;animation-delay:1.15s;}
+.oo-2{animation:oo-h 4.6s ease-in-out infinite;animation-delay:2.3s;}
+.oo-3{animation:oo-h 4.6s ease-in-out infinite;animation-delay:3.45s;}
+@keyframes oo-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim oo-0" x="12" y="18" width="145" height="58" rx="10"/><text x="23" y="42" class="dg-t">메모리 고갈</text><text x="23" y="62" class="dg-ts">overcommit 지급 불능</text><line x1="157" y1="47" x2="169" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim oo-1" x="169" y="18" width="145" height="58" rx="10"/><text x="180" y="42" class="dg-t">oom_score 계산</text><text x="180" y="62" class="dg-ts">많이 쓰는 놈이 고점</text><line x1="314" y1="47" x2="326" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim oo-2" x="326" y="18" width="145" height="58" rx="10"/><text x="337" y="42" class="dg-t">최고점 즉살</text><text x="337" y="62" class="dg-ts">SIGKILL — 유언 없음</text><line x1="471" y1="47" x2="483" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim oo-3" x="483" y="18" width="145" height="58" rx="10"/><text x="494" y="42" class="dg-t">dmesg에 기록</text><text x="494" y="62" class="dg-ts">Out of memory: Killed</text><text x="12" y="102" class="dg-ts">확인: dmesg -T | grep -i 'out of memory' · 보호는 OOMScoreAdjust (단, 폭탄 돌리기)</text></svg><figcaption>메모리가 바닥나면 커널이 oom_score 최고점을 즉살합니다. 로그가 없는 게 오히려 단서예요.</figcaption></figure>
 <h2 id="_1">증상</h2>
 <p>새벽에 앱이 사라졌습니다. 앱 로그는 평범한 마지막 줄에서 뚝 끊겼고, 에러도 스택트레이스도 없어요. <code>systemctl status</code>엔 <code>signal=KILL(9)</code>. SIGKILL은 앱이 인지할 수도, 유언을 남길 수도 없는 신호라 <strong>로그가 없는 게 오히려 단서</strong>입니다. 그리고 SIGKILL을 날리는 대표 용의자가 커널의 OOM Killer예요.</p>
 <h2 id="_2">왜 커널이 살인을 하나</h2>

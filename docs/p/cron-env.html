@@ -36,6 +36,19 @@
 <article><div class="post-meta"><span>2026-07-15</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>손으로 돌리면 되는데 크론으로는 안 되는 스크립트 — 환경변수의 배신</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 크론은 스크립트를 <strong>당신의 터미널이 아니라, 텅 빈 환경에서</strong> 실행합니다. <code>PATH</code>는 최소한이고, <code>.bashrc</code>도 안 읽고, 작업 디렉토리도 다릅니다. "손으로는 되는데 크론으로는 안 되는" 미스터리의 답은 거의 항상 여기에 있어요.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">크론은 '빈 주방'에서 실행된다</div><svg viewBox="0 0 640 178" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="144" rx="12"/><text x="28" y="36" class="dg-tl">내 터미널 (내 주방)</text><text x="28" y="62" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="44" y="62" class="dg-ts">PATH에 /usr/local/bin 등 다 있음</text><text x="28" y="86" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="44" y="86" class="dg-ts">.bashrc의 환경변수 로드됨</text><text x="28" y="110" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="44" y="110" class="dg-ts">작업 디렉토리 = 내가 있던 곳</text><text x="28" y="134" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="44" y="134" class="dg-ts">셸 = bash</text><rect class="dg-box" x="326" y="10" width="302" height="144" rx="12"/><text x="342" y="36" class="dg-tl">크론 (빈 주방)</text><text x="342" y="62" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="358" y="62" class="dg-ts">PATH는 /usr/bin:/bin 정도</text><text x="342" y="86" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="358" y="86" class="dg-ts">.bashrc를 읽지 않음 → 변수 없음</text><text x="342" y="110" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="358" y="110" class="dg-ts">작업 디렉토리 = 홈</text><text x="342" y="134" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="358" y="134" class="dg-ts">셸 = sh (dash일 수도)</text><text x="12" y="170" class="dg-ts">재현: env -i /bin/sh -c 스크립트 · 처방: PATH 명시 · env 로드 · cd 스크립트위치 · 로그 리다이렉트</text></svg><figcaption>터미널에서 되는 스크립트가 크론에서만 죽는 건, 코드가 아니라 실행 환경이 다르기 때문입니다.</figcaption></figure>
 <h2 id="_1">증상</h2>
 <p>백업 스크립트를 만들어 터미널에서 실행 — 완벽하게 됩니다. crontab에 등록하고 퇴근. 다음 날 보니 백업이 없습니다. 크론 자체는 돌았는데(로그에 흔적 있음) 스크립트만 실패했어요. 코드를 아무리 봐도 문제가 없습니다. 당연하죠 — <strong>코드 문제가 아니니까.</strong></p>
 <h2 id="vs">비유: 내 주방 vs 빈 주방</h2>

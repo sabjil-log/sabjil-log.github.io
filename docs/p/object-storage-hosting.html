@@ -36,6 +36,23 @@
 <article><div class="post-meta"><span>2026-07-15</span><a class="chip" href="../c/cloud.html">--cloud</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>서버 없이 웹사이트 띄우기 2탄 — 오브젝트 스토리지 정적 호스팅</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 오브젝트 스토리지는 파일 창고지만, <strong>"이 버킷의 파일을 웹으로 서빙해줘"</strong> 스위치를 켜면 웹서버가 됩니다. 서버 관리 0, 용량 걱정 0 — 대신 <strong>공개 범위, index 문서, HTTPS</strong> 세 가지 함정만 알고 시작하면 돼요.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">정적 호스팅 3단 구성</div><svg viewBox="0 0 640 116" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.sh-0{animation:sh-h 3.45s ease-in-out infinite;animation-delay:0.0s;}
+.sh-1{animation:sh-h 3.45s ease-in-out infinite;animation-delay:1.15s;}
+.sh-2{animation:sh-h 3.45s ease-in-out infinite;animation-delay:2.3s;}
+@keyframes sh-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,20.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim sh-0" x="12" y="18" width="197" height="58" rx="10"/><text x="23" y="42" class="dg-t">사용자</text><text x="23" y="62" class="dg-ts">브라우저 요청</text><line x1="209" y1="47" x2="221" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim sh-1" x="221" y="18" width="197" height="58" rx="10"/><text x="232" y="42" class="dg-t">CDN</text><text x="232" y="62" class="dg-ts">HTTPS·도메인·캐시</text><line x1="419" y1="47" x2="431" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim sh-2" x="431" y="18" width="197" height="58" rx="10"/><text x="442" y="42" class="dg-t">버킷</text><text x="442" y="62" class="dg-ts">정적 파일 원본</text><text x="12" y="102" class="dg-ts">공개 버킷은 사이트 파일만 · SPA는 에러문서를 index.html 로 · 캐시는 해시 파일명으로</text></svg><figcaption>버킷은 원본 창고, CDN이 HTTPS·도메인·캐시를 담당합니다. 버킷 단독으로는 HTTPS가 안 돼요.</figcaption></figure>
 <h2 id="_1">언제 쓰나</h2>
 <p>GitHub Pages로 블로그를 띄우는 것과 같은 원리인데, 무대가 회사 클라우드입니다. 사내 대시보드, 제품 랜딩페이지, SPA(React 빌드 결과물), 문서 사이트 — HTML/JS/CSS만으로 되는 것들은 전부 후보예요. 특히 <strong>회사 인프라 안에서, 도메인·권한을 우리가 통제해야 할 때</strong> GitHub Pages 대신 이걸 씁니다.</p>
 <h2 id="_2">원리: 창고에 진열대 스위치가 있다</h2>

@@ -36,6 +36,19 @@
 <article><div class="post-meta"><span>2026-07-10</span><a class="chip" href="../c/cloud.html">--cloud</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>서버 없이 블로그 띄우기 — GitHub Pages가 공짜로 되는 원리</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 블로그처럼 매번 계산할 게 없는 사이트는 <strong>완성된 HTML을 그대로 나눠주기만</strong> 하면 됩니다. GitHub Pages가 그 배달을 공짜로 해줘요. 서버를 빌릴 필요가 없습니다.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">정적 사이트 vs 동적 사이트</div><svg viewBox="0 0 640 154" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="120" rx="12"/><text x="28" y="36" class="dg-tl">동적 — 주문 요리</text><text x="28" y="62" font-size="12" font-weight="700" fill="var(--muted)">·</text><text x="44" y="62" class="dg-ts">요청마다 서버가 DB 뒤져 페이지 조립</text><text x="28" y="86" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="44" y="86" class="dg-ts">서버·OS·nginx·인증서 관리 필요</text><text x="28" y="110" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="44" y="110" class="dg-ts">트래픽 몰리면 느려지고 죽는다</text><rect class="dg-box" x="326" y="10" width="302" height="120" rx="12"/><text x="342" y="36" class="dg-tl">정적 — 미리 인쇄한 전단지</text><text x="342" y="62" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="62" class="dg-ts">완성된 HTML을 그대로 전달</text><text x="342" y="86" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="86" class="dg-ts">서버 0원, 사실상 안 죽는다</text><text x="342" y="110" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="110" class="dg-ts">빠르고 보안 표면도 작다</text><text x="12" y="146" class="dg-ts">필수 3종: 완성된 HTML · .nojekyll(빌드 생략) · Pages 소스 폴더와 index.html 위치 일치</text></svg><figcaption>매번 조립할 게 없는 블로그는 미리 인쇄한 전단지면 충분합니다. 그래서 서버가 필요 없죠.</figcaption></figure>
 <h2 id="_1">이런 고민</h2>
 <p>개인 블로그 하나 띄우자고 서버 빌리고, OS 깔고, nginx 설정하고, 인증서 붙이고… 배보다 배꼽이 큽니다. 대부분의 블로그는 사실 그렇게까지 필요 없어요.</p>
 <h2 id="vs">비유: 전단지 vs 주문 요리</h2>

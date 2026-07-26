@@ -33,9 +33,28 @@
   <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
 </div></header>
 <main class="wrap">
-<article><div class="post-meta"><span>2026-07-16</span><a class="chip" href="../c/cloud.html">--cloud</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>클라우드 비용이 새는 곳 톱5 — 고지서가 놀라기 전에 잡는 법</h1><blockquote>
+<article><div class="post-meta"><span>2026-07-16</span><a class="chip" href="../c/cloud.html">--cloud</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>클라우드 비용이 새는 곳 톱5 — 고지서가 놀라기 전에 잡는 법</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 요금이 새는 곳은 화려한 신규 서비스가 아니라 <strong>잊혀진 것들</strong>입니다 — 떠돌이 IP·디스크, 쌓이기만 하는 스냅샷, 새벽에도 도는 개발 서버, 안 줄어드는 오토스케일링, 그리고 조용히 나가는 전송량. <strong>수도꼭지가 아니라 배관 누수</strong>를 찾아야 해요.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">클라우드 비용이 새는 다섯 군데</div><svg viewBox="0 0 640 246" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.cl-0{animation:cl-h 5.0s ease-in-out infinite;animation-delay:0.0s;}
+.cl-1{animation:cl-h 5.0s ease-in-out infinite;animation-delay:1.0s;}
+.cl-2{animation:cl-h 5.0s ease-in-out infinite;animation-delay:2.0s;}
+.cl-3{animation:cl-h 5.0s ease-in-out infinite;animation-delay:3.0s;}
+.cl-4{animation:cl-h 5.0s ease-in-out infinite;animation-delay:4.0s;}
+@keyframes cl-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,12.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim cl-0" x="12" y="12" width="616" height="32" rx="8"/><circle cx="32" cy="28" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="33" class="dg-ts" fill="var(--accent)">1</text><text x="50" y="33" class="dg-t">고아 자원</text><text x="210" y="33" class="dg-ts">미사용 공인 IP · 볼륨</text><text x="392" y="33" class="dg-ts">서버 삭제 시 세트로 삭제</text><rect class="dg-box dg-anim cl-1" x="12" y="52" width="616" height="32" rx="8"/><circle cx="32" cy="68" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="73" class="dg-ts" fill="var(--accent)">2</text><text x="50" y="73" class="dg-t">무한 스냅샷</text><text x="210" y="73" class="dg-ts">백업 개수 세보기</text><text x="392" y="73" class="dg-ts">보존 정책 필수 (일7+주4+월3)</text><rect class="dg-box dg-anim cl-2" x="12" y="92" width="616" height="32" rx="8"/><circle cx="32" cy="108" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="113" class="dg-ts" fill="var(--accent)">3</text><text x="50" y="113" class="dg-t">밤샘 개발서버</text><text x="210" y="113" class="dg-ts">24h 가동 여부</text><text x="392" y="113" class="dg-ts">저녁 정지 / 아침 시작 스케줄</text><rect class="dg-box dg-anim cl-3" x="12" y="132" width="616" height="32" rx="8"/><circle cx="32" cy="148" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="153" class="dg-ts" fill="var(--accent)">4</text><text x="50" y="153" class="dg-t">안 줄는 스케일링</text><text x="210" y="153" class="dg-ts">스케일링 이력 확인</text><text x="392" y="153" class="dg-ts">축소 정책 · 사각지대 · min 값</text><rect class="dg-box dg-anim cl-4" x="12" y="172" width="616" height="32" rx="8"/><circle cx="32" cy="188" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="193" class="dg-ts" fill="var(--accent)">5</text><text x="50" y="193" class="dg-t">보이지 않는 전송량</text><text x="210" y="193" class="dg-ts">NAT·CDN 없는 오리진</text><text x="392" y="193" class="dg-ts">엔드포인트 / CDN 으로 우회</text><text x="12" y="238" class="dg-ts">습관: 태그 규칙(owner/project/expire) · 예산 알람 50·80·100% · 월 1회 정기 점검</text></svg><figcaption>범인은 화려한 서비스가 아니라 잊혀진 것들입니다. 월 1회 30분 점검이면 고지서가 달라져요.</figcaption></figure>
 <h2 id="_1">왜 항상 "모르는 새" 새나</h2>
 <p>클라우드 요금은 <strong>시간 단위 종량제</strong>입니다. 수도요금과 같아서, 쓰는 건 눈에 보이는데 <strong>잠그는 걸 잊은 것</strong>은 안 보여요. 프로젝트가 끝나도 자원은 스스로 사라지지 않습니다 — 삭제 버튼을 누른 것만 사라지죠. 그래서 비용 점검은 "뭘 쓰고 있나"가 아니라 <strong>"뭘 쓰고 있는지도 몰랐나"</strong>를 찾는 일입니다.</p>
 <h2 id="1-ip">누수 ① — 고아 자원: 주인 잃은 IP와 디스크</h2>

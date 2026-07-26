@@ -36,6 +36,34 @@
 <article><div class="post-meta"><span>2026-07-17</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>LLM은 왜 최신 뉴스를 모를까 — 지식 컷오프와 그 대처법</h1><blockquote>
 <p><strong>한 줄 요약:</strong> LLM의 지식은 <strong>학습 데이터를 수집한 시점(컷오프)에서 동결</strong>돼 있습니다. 진짜 위험은 모르는 게 아니라 — 컷오프 이후 일도 <strong>그럴듯하게 아는 척</strong>한다는 것. 대처는 최신 정보를 <strong>밖에서 넣어주는 것</strong>(검색, RAG)뿐입니다.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">지식 컷오프 — 동결된 시점</div><svg viewBox="0 0 640 180" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.ct-q{animation:ct-q 2.6s ease-in-out infinite;}
+@keyframes ct-q{0%,100%{opacity:.4}50%{opacity:1}}
+</style>
+<line x1="20" y1="76" x2="330" y2="76" stroke="var(--accent)" stroke-width="7" stroke-linecap="round"/>
+<line x1="336" y1="76" x2="620" y2="76" stroke="var(--faint)" stroke-width="7" stroke-dasharray="7 7" stroke-linecap="round"/>
+<line x1="333" y1="46" x2="333" y2="106" class="dg-wall"/>
+<text x="290" y="38" class="dg-ts" fill="var(--accent)">컷오프</text>
+<text x="20" y="112" class="dg-t">학습된 세상 — 잘 안다</text>
+<text x="400" y="112" class="dg-t">모르는 구간</text>
+<rect x="216" y="56" width="112" height="40" rx="6" fill="var(--accent-soft)" opacity=".55"/>
+<text x="222" y="80" class="dg-ts">직전 몇 달: 어설프게 아는 회색지대</text>
+<g class="dg-anim ct-q"><text x="470" y="82" font-size="22" class="dg-no" font-weight="700">?</text></g>
+<text x="400" y="132" class="dg-ts">버전 · 가격 · 현직 · 일정</text>
+<text x="14" y="162" class="dg-ts">"현재·최신·요즘"이 들어간 질문은 위험군 → 검색·RAG·문서 첨부로 현재를 주입하고 교차 확인</text>
+</svg><figcaption>학습 데이터를 모은 날 이후의 세상은 모델에게 없습니다. 문제는 모른다고 안 하고 아는 척한다는 것.</figcaption></figure>
 <h2 id="_1">컷오프의 정체</h2>
 <p>모델 학습은 어느 날짜까지의 데이터를 긁어 모아 이뤄집니다. 그날 이후의 세상은 모델에게 <strong>존재하지 않아요.</strong> 비유하면 몇 달간 조난됐다 돌아온 사람입니다 — 조난 전 일은 잘 알지만, 그 후의 뉴스·버전업·인사이동은 백지죠.</p>
 <p>여기서 함정 하나: 컷오프는 칼로 자른 단면이 아닙니다. 컷오프 직전 몇 달의 사건은 데이터에 <strong>적게</strong> 들어가 있어서(그 사건에 대한 글이 아직 많이 안 쓰였을 때 수집됐으니), 모델이 알긴 아는데 <strong>어설프게</strong> 아는 회색지대가 존재해요. "그 모델은 v3까지 안다"라고 딱 잘라 믿기 어려운 이유입니다.</p>

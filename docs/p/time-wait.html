@@ -36,6 +36,19 @@
 <article><div class="post-meta"><span>2026-07-17</span><a class="chip" href="../c/network.html">--network</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>TIME_WAIT가 수만 개 쌓였는데 괜찮은 걸까 — 소켓 상태 읽는 법</h1><blockquote>
 <p><strong>한 줄 요약:</strong> TIME_WAIT는 고장이 아니라 <strong>TCP가 연결을 안전하게 닫는 정상 절차</strong>입니다(닫은 뒤 잠깐 자리를 비워두는 것). 수만 개여도 대부분 무해 — 진짜 문제는 <strong>한 목적지로 나가는 연결이 많아 로컬 포트가 고갈될 때</strong> 하나뿐이고, 근본 해법은 커널 튜닝이 아니라 <strong>커넥션 재사용</strong>입니다.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">TIME_WAIT — 언제 문제인가</div><svg viewBox="0 0 640 154" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="120" rx="12"/><text x="28" y="36" class="dg-tl">정상 (걱정 불필요)</text><text x="28" y="62" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="44" y="62" class="dg-ts">인바운드 연결의 TIME_WAIT 수만 개</text><text x="28" y="86" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="44" y="86" class="dg-ts">소켓당 메모리 미미</text><text x="28" y="110" font-size="12" font-weight="700" fill="var(--muted)">·</text><text x="44" y="110" class="dg-ts">TCP가 연결을 안전하게 닫는 절차</text><rect class="dg-box" x="326" y="10" width="302" height="120" rx="12"/><text x="342" y="36" class="dg-tl">위험 (포트 고갈)</text><text x="342" y="62" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="358" y="62" class="dg-ts">같은 목적지로 초당 수백 개 신규 아웃바운드</text><text x="342" y="86" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="358" y="86" class="dg-ts">임시 포트(약 2.8만) 소진</text><text x="342" y="110" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="358" y="110" class="dg-ts">cannot assign requested address</text><text x="12" y="146" class="dg-ts">판별: ss -tan state time-wait 로 목적지 집계 · 해법은 커널 튜닝이 아니라 keep-alive/커넥션 풀</text></svg><figcaption>수만 개는 대개 '바쁘다'는 증거입니다. 진짜 문제는 한 목적지로 나가는 연결이 임시 포트를 태울 때뿐이죠.</figcaption></figure>
 <h2 id="_1">상황</h2>
 <p>서버가 좀 느려진 것 같아 소켓을 봤더니:</p>
 <div class="highlight"><pre data-lang="bash"><span></span><code>ss<span class="w"> </span>-s

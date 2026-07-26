@@ -36,6 +36,24 @@
 <article><div class="post-meta"><span>2026-07-20</span><a class="chip" href="../c/network.html">--network</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>curl -v 출력, 한 줄씩 읽는 법 — 어디서 막혔는지 혼자 말해준다</h1><blockquote>
 <p><strong>한 줄 요약:</strong> <code>curl -v</code>의 출력은 접속의 네 단계 — <strong>DNS 해석 → TCP 연결 → TLS 악수 → HTTP 대화</strong> — 를 순서대로 보여주는 실황 중계입니다. <strong>출력이 어느 줄에서 멈추거나 에러를 내는지</strong>가 곧 "몇 층에서 막혔는지"의 답이에요.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">curl -v가 보여주는 4단계</div><svg viewBox="0 0 640 116" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.cv-0{animation:cv-h 4.6s ease-in-out infinite;animation-delay:0.0s;}
+.cv-1{animation:cv-h 4.6s ease-in-out infinite;animation-delay:1.15s;}
+.cv-2{animation:cv-h 4.6s ease-in-out infinite;animation-delay:2.3s;}
+.cv-3{animation:cv-h 4.6s ease-in-out infinite;animation-delay:3.45s;}
+@keyframes cv-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim cv-0" x="12" y="18" width="145" height="58" rx="10"/><text x="23" y="42" class="dg-t">DNS</text><text x="23" y="62" class="dg-ts">resolved → 이름 해석</text><line x1="157" y1="47" x2="169" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim cv-1" x="169" y="18" width="145" height="58" rx="10"/><text x="180" y="42" class="dg-t">TCP</text><text x="180" y="62" class="dg-ts">Connected → 연결</text><line x1="314" y1="47" x2="326" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim cv-2" x="326" y="18" width="145" height="58" rx="10"/><text x="337" y="42" class="dg-t">TLS</text><text x="337" y="62" class="dg-ts">certificate ok → 악수</text><line x1="471" y1="47" x2="483" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim cv-3" x="483" y="18" width="145" height="58" rx="10"/><text x="494" y="42" class="dg-t">HTTP</text><text x="494" y="62" class="dg-ts">&gt; 요청 / &lt; 응답</text><text x="12" y="102" class="dg-ts">refused = 도착했는데 아무도 없음 · timeout = 패킷이 증발 (방화벽 계열)</text></svg><figcaption>출력이 어느 단계에서 멈추는지가 곧 진단 결과입니다. refused와 timeout의 구분이 핵심.</figcaption></figure>
 <h2 id="_1">왜 이걸 읽을 줄 알아야 하나</h2>
 <p>계층 진단 글에서 dig, nc, tcpdump를 각각 썼는데, 사실 HTTPS 접속 문제라면 <strong>curl -v 한 방</strong>이 네 단계를 전부 순서대로 시연해줍니다. 읽는 법만 알면 별도 도구 없이 진단의 절반이 끝나요.</p>
 <h2 id="_2">출력 해부 — 정상 케이스</h2>

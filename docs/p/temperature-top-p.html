@@ -36,6 +36,47 @@
 <article><div class="post-meta"><span>2026-07-13</span><a class="chip" href="../c/ai.html">--ai</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>temperature와 top-p — LLM의 &#x27;창의성 다이얼&#x27;은 실제로 뭘 돌리는 걸까</h1><blockquote>
 <p><strong>한 줄 요약:</strong> LLM은 다음 토큰을 <strong>확률 뽑기</strong>로 고릅니다. <strong>temperature는 그 확률 분포를 얼마나 평평하게 만들지</strong>(흔들기 세기), <strong>top-p는 뽑기통에 넣을 후보를 어디까지 허용할지</strong>(후보 컷오프)를 정하는 다이얼이에요. 목적에 따라 돌리는 법이 다릅니다.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">temperature가 실제로 돌리는 것</div><svg viewBox="0 0 640 220" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.tp-b{animation:tp-g 2.8s ease-out infinite;transform-origin:center bottom;}
+@keyframes tp-g{0%{transform:scaleY(.2)}40%,100%{transform:scaleY(1)}}
+</style>
+<text x="14" y="22" class="dg-tl">temperature 낮음 — 뾰족 (1등 독식)</text>
+<rect x="14" y="32" width="300" height="130" rx="10" class="dg-box"/>
+<g class="dg-anim tp-b">
+<rect x="40" y="52" width="42" height="92" rx="4" fill="var(--accent)" opacity=".85"/>
+<rect x="98" y="132" width="42" height="12" rx="3" fill="var(--accent)" opacity=".5"/>
+<rect x="156" y="137" width="42" height="7" rx="3" fill="var(--accent)" opacity=".4"/>
+<rect x="214" y="140" width="42" height="4" rx="2" fill="var(--accent)" opacity=".3"/>
+</g>
+<line x1="30" y1="144" x2="300" y2="144" class="dg-arrow"/>
+<text x="40" y="158" class="dg-ts">서울 92%</text><text x="150" y="158" class="dg-ts">그 외 후보들</text>
+<text x="326" y="22" class="dg-tl">temperature 높음 — 평평 (다양성↑)</text>
+<rect x="326" y="32" width="300" height="130" rx="10" class="dg-box"/>
+<g class="dg-anim tp-b">
+<rect x="352" y="84" width="42" height="60" rx="4" fill="var(--accent)" opacity=".85"/>
+<rect x="410" y="98" width="42" height="46" rx="4" fill="var(--accent)" opacity=".7"/>
+<rect x="468" y="108" width="42" height="36" rx="4" fill="var(--accent)" opacity=".6"/>
+<rect x="526" y="116" width="42" height="28" rx="4" fill="var(--accent)" opacity=".5"/>
+</g>
+<line x1="342" y1="144" x2="612" y2="144" class="dg-arrow"/>
+<line x1="462" y1="40" x2="462" y2="152" class="dg-wall"/>
+<text x="468" y="52" class="dg-ts" fill="var(--accent)">top-p 컷</text>
+<text x="352" y="158" class="dg-ts">누적 확률 p 까지만 뽑기통에</text>
+<text x="14" y="186" class="dg-ts">정답이 정해진 일(코드·추출·분류) 낮게 · 발상이 필요한 일 높게 — 다이얼은 한 번에 하나만</text>
+<text x="14" y="208" class="dg-ts">상한은 제공자별로 다름 (Anthropic 0~1, OpenAI 0~2) · 높여도 '똑똑해지는' 건 아님</text>
+</svg><figcaption>확률 분포의 뾰족함을 조절합니다. 낮으면 1등 독식, 높으면 하위 후보도 뽑히죠. top-p는 후보를 잘라냅니다.</figcaption></figure>
 <h2 id="llm">전제: LLM은 매번 뽑기를 한다</h2>
 <p>"대한민국의 수도는" 다음에 올 토큰으로 모델은 후보마다 확률을 매깁니다.</p>
 <div class="highlight"><pre><span></span><code>서울   92%

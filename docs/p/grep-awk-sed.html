@@ -36,6 +36,23 @@
 <article><div class="post-meta"><span>2026-07-11</span><a class="chip" href="../c/linux.html">--linux</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>grep·awk·sed 삼총사 — 로그에서 원하는 값만 뽑아내는 법</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 역할만 외우면 됩니다. <strong>grep = 줄 고르기, awk = 칸 자르기, sed = 글자 바꾸기.</strong> 이 셋을 파이프(<code>|</code>)로 이으면 수만 줄 로그에서 원하는 값만 한 줄로 뽑아냅니다.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">grep · awk · sed 역할 분담</div><svg viewBox="0 0 640 116" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.gas-0{animation:gas-h 3.45s ease-in-out infinite;animation-delay:0.0s;}
+.gas-1{animation:gas-h 3.45s ease-in-out infinite;animation-delay:1.15s;}
+.gas-2{animation:gas-h 3.45s ease-in-out infinite;animation-delay:2.3s;}
+@keyframes gas-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,20.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim gas-0" x="12" y="18" width="197" height="58" rx="10"/><text x="23" y="42" class="dg-t">grep</text><text x="23" y="62" class="dg-ts">줄 고르기 (행 필터)</text><line x1="209" y1="47" x2="221" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim gas-1" x="221" y="18" width="197" height="58" rx="10"/><text x="232" y="42" class="dg-t">awk</text><text x="232" y="62" class="dg-ts">칸 자르기 (필드 추출)</text><line x1="419" y1="47" x2="431" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim gas-2" x="431" y="18" width="197" height="58" rx="10"/><text x="442" y="42" class="dg-t">sed</text><text x="442" y="62" class="dg-ts">글자 바꾸기 (치환)</text><text x="12" y="102" class="dg-ts">랭킹 관용구: … | sort | uniq -c | sort -rn | head  ← 세어서 순위 만들기</text></svg><figcaption>줄을 고르고 → 칸을 자르고 → 글자를 다듬는다. 파이프는 접시를 넘기는 컨베이어입니다.</figcaption></figure>
 <h2 id="_1">이런 상황</h2>
 <p>접속 로그 수십만 줄에서 "500 에러가 난 요청의 IP만, 많이 나온 순으로" 보고 싶습니다. 로그를 열어 눈으로 찾는 건 불가능하고, 엑셀로 옮기기엔 너무 큽니다. 삼총사가 나설 차례예요.</p>
 <h2 id="_2">비유: 조리 라인</h2>

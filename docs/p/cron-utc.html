@@ -36,6 +36,35 @@
 <article><div class="post-meta"><span>2026-07-10</span><a class="chip" href="../c/linux.html">--linux</a><span>1 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>cron이 새벽에 도는데 시간이 밀린다? — UTC 함정과 표현식 읽는 법</h1><blockquote>
 <p><strong>한 줄 요약:</strong> cron 표현식은 <strong>다섯 칸짜리 알람 다이얼</strong>입니다. 그리고 "새벽에 맞췄는데 낮에 돈다" 싶으면, 대개 서버·CI가 <strong>UTC 기준</strong>이라 내 시간과 어긋난 겁니다.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">cron 5칸과 UTC 시차</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.cu-m{animation:cu-m 3s ease-in-out infinite;}
+@keyframes cu-m{0%,100%{opacity:.4}50%{opacity:1}}
+</style>
+<rect x="14" y="14" width="612" height="52" rx="10" class="dg-box"/>
+<text x="30" y="36" class="dg-t">*  *  *  *  *</text>
+<text x="140" y="36" class="dg-ts">분(0-59) · 시(0-23) · 일(1-31) · 월(1-12) · 요일(0-6, 0=일)</text>
+<text x="30" y="56" class="dg-ts">0 18 * * *  → 매일 18:00 · */15 * * * * → 15분마다 · 0 9 * * 1 → 월요일 09:00</text>
+<line x1="40" y1="112" x2="600" y2="112" class="dg-arrow"/>
+<line x1="200" y1="98" x2="200" y2="126" stroke="var(--accent)" stroke-width="2.4"/>
+<text x="168" y="92" class="dg-ts" fill="var(--accent)">UTC 18:00</text>
+<line x1="440" y1="98" x2="440" y2="126" stroke="#E8842C" stroke-width="2.4"/>
+<text x="404" y="92" class="dg-ts" fill="#E8842C">KST 03:00</text>
+<path d="M200 132 H 440" stroke="var(--faint)" stroke-width="1.4" stroke-dasharray="4 4" fill="none"/>
+<g class="dg-anim cu-m"><text x="286" y="148" class="dg-ts">+9 시간</text></g>
+<text x="14" y="172" class="dg-ts">한국 새벽 3시에 돌리려면 3 − 9 = −6 → 전날 18:00 UTC 로 적어야 합니다 (0 18 * * *)</text>
+</svg><figcaption>표현식은 맞는데 시각이 어긋나면, 대개 그 시스템이 UTC로 해석하기 때문입니다.</figcaption></figure>
 <h2 id="_1">이런 적 있으신가요</h2>
 <p>"매일 새벽 3시에 돌게 해놨는데 왜 낮에 실행됐지?" GitHub Actions나 클라우드 스케줄러에서 특히 자주 겪습니다. 표현식은 맞는데 결과가 엉뚱하죠. 범인은 보통 <strong>타임존</strong>입니다.</p>
 <h2 id="cron-5">cron 5칸 읽기</h2>

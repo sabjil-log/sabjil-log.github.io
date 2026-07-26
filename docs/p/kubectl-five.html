@@ -36,6 +36,25 @@
 <article><div class="post-meta"><span>2026-07-19</span><a class="chip" href="../c/linux.html">--linux</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>kubectl 디버깅은 다섯 명령으로 끝난다 — logs, describe, exec, get -o, port-forward</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 쿠버네티스 디버깅의 기본 장비는 다섯 개입니다 — <strong>logs(앱의 말), describe(쿠버의 말), exec(현장 진입), get -o yaml(설계도 원본), port-forward(직통 전화).</strong> 순서는 대개 이 나열 그대로예요.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">kubectl 디버깅 다섯 개의 창</div><svg viewBox="0 0 640 116" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.kf-0{animation:kf-h 5.75s ease-in-out infinite;animation-delay:0.0s;}
+.kf-1{animation:kf-h 5.75s ease-in-out infinite;animation-delay:1.15s;}
+.kf-2{animation:kf-h 5.75s ease-in-out infinite;animation-delay:2.3s;}
+.kf-3{animation:kf-h 5.75s ease-in-out infinite;animation-delay:3.45s;}
+.kf-4{animation:kf-h 5.75s ease-in-out infinite;animation-delay:4.6s;}
+@keyframes kf-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,12.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim kf-0" x="12" y="18" width="114" height="58" rx="10"/><text x="23" y="42" class="dg-t">logs</text><text x="23" y="62" class="dg-ts">앱의 말·유언</text><line x1="126" y1="47" x2="138" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim kf-1" x="138" y="18" width="114" height="58" rx="10"/><text x="149" y="42" class="dg-t">describe</text><text x="149" y="62" class="dg-ts">쿠버의 말·Events</text><line x1="251" y1="47" x2="263" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim kf-2" x="263" y="18" width="114" height="58" rx="10"/><text x="274" y="42" class="dg-t">exec</text><text x="274" y="62" class="dg-ts">현장 진입</text><line x1="377" y1="47" x2="389" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim kf-3" x="389" y="18" width="114" height="58" rx="10"/><text x="400" y="42" class="dg-t">get -o yaml</text><text x="400" y="62" class="dg-ts">설계도 원본</text><line x1="502" y1="47" x2="514" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim kf-4" x="514" y="18" width="114" height="58" rx="10"/><text x="525" y="42" class="dg-t">port-forward</text><text x="525" y="62" class="dg-ts">직통 전화</text><text x="12" y="102" class="dg-ts">CrashLoop이면 logs --previous 부터 · 연결 문제면 port-forward로 구간 이분탐색</text></svg><figcaption>앱의 말 → 쿠버의 말 → 현장 → 설계도 → 직통. 대개 이 순서로 꺼냅니다.</figcaption></figure>
 <h2 id="_1">왜 다섯 개인가</h2>
 <p>문제가 생기면 확인할 것은 결국 넷입니다. 앱이 뭐라고 하는가, 쿠버네티스가 뭐라고 하는가, 현장(컨테이너 안)은 어떤가, 설정은 내 의도대로인가. 다섯 명령이 정확히 이 창들이에요. 하나씩 —</p>
 <h2 id="1-logs">① logs — 앱의 말부터</h2>

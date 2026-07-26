@@ -36,6 +36,24 @@
 <article><div class="post-meta"><span>2026-07-13</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>CrashLoopBackOff — 쿠버네티스가 &#x27;재시도 중&#x27;이라고 말하는 방식</h1><blockquote>
 <p><strong>한 줄 요약:</strong> CrashLoopBackOff는 에러의 <strong>원인이 아니라 상태</strong>입니다. "컨테이너가 시작하자마자 죽어서, 쿠버네티스가 <strong>점점 간격을 늘려가며 재시도 중</strong>"이라는 뜻이에요. 원인은 따로 찾아야 하고, 찾는 순서가 있습니다.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">CrashLoopBackOff의 재시도 간격</div><svg viewBox="0 0 640 180" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.bg-b{animation:bg-g 2.8s ease-out infinite;transform-origin:left center;}
+@keyframes bg-g{0%{transform:scaleX(0)}50%,100%{transform:scaleX(1)}}
+</style><text x="14" y="30" class="dg-ts">재시도 1</text><g class="dg-anim bg-b" style="animation-delay:0.00s"><rect x="86" y="18" width="24" height="16" rx="4" fill="var(--accent)" opacity=".8"/></g><text x="118" y="31" class="dg-ts">10s 대기</text><text x="14" y="56" class="dg-ts">재시도 2</text><g class="dg-anim bg-b" style="animation-delay:0.16s"><rect x="86" y="44" width="48" height="16" rx="4" fill="var(--accent)" opacity=".8"/></g><text x="142" y="57" class="dg-ts">20s 대기</text><text x="14" y="82" class="dg-ts">재시도 3</text><g class="dg-anim bg-b" style="animation-delay:0.32s"><rect x="86" y="70" width="96" height="16" rx="4" fill="var(--accent)" opacity=".8"/></g><text x="190" y="83" class="dg-ts">40s 대기</text><text x="14" y="108" class="dg-ts">재시도 4</text><g class="dg-anim bg-b" style="animation-delay:0.48s"><rect x="86" y="96" width="192" height="16" rx="4" fill="var(--accent)" opacity=".8"/></g><text x="286" y="109" class="dg-ts">80s 대기</text><text x="14" y="134" class="dg-ts">재시도 5</text><g class="dg-anim bg-b" style="animation-delay:0.64s"><rect x="86" y="122" width="384" height="16" rx="4" fill="var(--accent)" opacity=".8"/></g><text x="478" y="135" class="dg-ts">160s 대기</text>
+<text x="14" y="164" class="dg-ts">순서: logs --previous (유언) → describe (Exit Code·Events) → 톱4 (설정 · OOM 137 · 프로브 · 의존성)</text>
+</svg><figcaption>죽을 때마다 대기 시간이 늘어납니다. 상태명은 '재시도 중'이라는 뜻일 뿐, 원인은 따로 찾아야 하죠.</figcaption></figure>
 <h2 id="_1">이 상태의 정체</h2>
 <div class="highlight"><pre data-lang="bash"><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>pods
 <span class="c1"># NAME        READY   STATUS             RESTARTS   AGE</span>

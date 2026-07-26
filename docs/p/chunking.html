@@ -36,6 +36,39 @@
 <article><div class="post-meta"><span>2026-07-11</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>RAG 품질은 자르기에서 갈린다 — 청크 크기와 오버랩의 감각</h1><blockquote>
 <p><strong>한 줄 요약:</strong> RAG에서 문서를 자르는 단위(청크)가 검색 품질을 좌우합니다. <strong>크면 잡음, 작으면 문맥 상실.</strong> 정답 크기는 없지만, "한 청크 = 하나의 완결된 생각"이라는 기준과 <strong>오버랩</strong>이라는 안전장치가 있습니다.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">청크 크기와 오버랩</div><svg viewBox="0 0 640 220" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.co-h{animation:co-h 3s ease-in-out infinite;}
+@keyframes co-h{0%,100%{opacity:.35}50%{opacity:.85}}
+</style>
+<text x="14" y="22" class="dg-t">너무 크게 — 한 조각에 여러 주제(잡음)</text>
+<rect x="300" y="8" width="326" height="20" rx="4" fill="var(--line-2)" stroke="var(--line)"/>
+<text x="312" y="23" class="dg-ts">환불 + 배송 + 교환 + 회원가입 …</text>
+<text x="14" y="60" class="dg-t">너무 작게 — 문맥 끊김</text>
+<rect x="300" y="46" width="60" height="20" rx="4" fill="var(--line-2)" stroke="var(--line)"/><text x="308" y="61" class="dg-ts">단, 예외</text>
+<rect x="366" y="46" width="60" height="20" rx="4" fill="var(--line-2)" stroke="var(--line)"/>
+<rect x="432" y="46" width="60" height="20" rx="4" fill="var(--line-2)" stroke="var(--line)"/>
+<text x="500" y="61" class="dg-ts">뭐의 예외인지 모름</text>
+<text x="14" y="100" class="dg-t">적당히 + 오버랩</text>
+<rect x="300" y="86" width="150" height="22" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+<rect x="410" y="112" width="150" height="22" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+<rect x="410" y="86" width="40" height="48" rx="3" fill="var(--accent)" opacity=".22" class="dg-anim co-h"/>
+<text x="392" y="152" class="dg-ts" fill="var(--accent)">겹침 10~20%</text>
+<text x="306" y="101" class="dg-ts">청크 1</text><text x="470" y="127" class="dg-ts">청크 2</text>
+<text x="14" y="182" class="dg-ts">기준: "한 조각 = 하나의 완결된 생각" · 300~800토큰에서 시작해 평가로 조정</text>
+<text x="14" y="204" class="dg-ts">글자 수로 뚝 자르지 말고 문단 → 문장 경계를 존중 · 청크에 출처 메타데이터를 붙이기</text>
+</svg><figcaption>너무 크면 잡음이 섞이고, 너무 작으면 문맥이 끊깁니다. 겹치는 구간이 경계에 걸린 문장을 구해주죠.</figcaption></figure>
 <h2 id="_1">왜 잘라야 하나</h2>
 <p>RAG는 질문과 비슷한 문서 조각을 찾아 LLM에게 건네주는 구조입니다. 그런데 문서를 통째로 임베딩하면 안 될까요? 안 됩니다. 임베딩은 조각 하나를 <strong>벡터 하나</strong>로 요약하는데, 100페이지를 벡터 하나에 욱여넣으면 온갖 주제가 평균돼 <strong>아무것도 아닌 방향</strong>을 가리키게 돼요. 그래서 자릅니다.</p>
 <h2 id="_2">비유: 책을 인덱스카드로 만들기</h2>

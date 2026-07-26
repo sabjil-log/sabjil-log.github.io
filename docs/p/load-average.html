@@ -36,6 +36,21 @@
 <article><div class="post-meta"><span>2026-07-12</span><a class="chip" href="../c/linux.html">--linux</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>load average 4.0은 위험한가 — top 숫자를 읽을 줄 안다는 것</h1><blockquote>
 <p><strong>한 줄 요약:</strong> load average는 퍼센트가 아니라 <strong>"일하는 중 + 줄 서서 기다리는" 작업의 평균 개수</strong>입니다. 그래서 절대값이 아니라 <strong>CPU 코어 수와 비교</strong>해야 합니다. 4코어 서버의 4.0은 만석, 16코어 서버의 4.0은 한산한 거예요.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">load average는 코어 수로 나눠 읽는다</div><svg viewBox="0 0 640 164" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.lc-b{animation:lc-g 2.6s ease-out infinite;transform-origin:left center;}
+@keyframes lc-g{0%{transform:scaleX(0)}45%,100%{transform:scaleX(1)}}</style><line x1="304" y1="6" x2="304" y2="130" class="dg-wall"/><text x="310" y="16" class="dg-ts" fill="var(--accent)">기준선 1.0</text><text x="12" y="40" class="dg-t">2코어 · load 4.2</text><rect x="156" y="26" width="356" height="20" rx="5" fill="var(--line-2)"/><g class="dg-anim lc-b" style="animation-delay:0.0s"><rect x="156" y="26" width="312" height="20" rx="5" fill="#E5484D" opacity=".85"/></g><text x="476" y="41" class="dg-ts">2.1배 과부하</text><text x="12" y="80" class="dg-t">4코어 · load 4.2</text><rect x="156" y="66" width="356" height="20" rx="5" fill="var(--line-2)"/><g class="dg-anim lc-b" style="animation-delay:0.18s"><rect x="156" y="66" width="156" height="20" rx="5" fill="#E5484D" opacity=".85"/></g><text x="320" y="81" class="dg-ts">1.05배 만석</text><text x="12" y="120" class="dg-t">16코어 · load 4.2</text><rect x="156" y="106" width="356" height="20" rx="5" fill="var(--line-2)"/><g class="dg-anim lc-b" style="animation-delay:0.36s"><rect x="156" y="106" width="39" height="20" rx="5" fill="var(--accent)" opacity=".85"/></g><text x="203" y="121" class="dg-ts">0.26배 한산</text><text x="12" y="156" class="dg-ts">숫자 3개는 1분/5분/15분 평균 — 1분<15분이면 가라앉는 중, 1분>15분이면 차오르는 중</text></svg><figcaption>같은 4.2라도 서버에 따라 의미가 정반대입니다. load ÷ 코어 ≈ 1.0이 만석 기준선이에요.</figcaption></figure>
 <h2 id="_1">이런 장면</h2>
 <p>모니터링 알람: "load average 4.2!" 신입이 놀라서 달려옵니다. 그런데 그 서버가 16코어면 아무 일도 아닙니다. 반대로 2코어 서버의 4.2는 진짜 문제고요. <strong>같은 숫자, 다른 의미</strong> — 기준을 모르면 읽을 수 없는 지표입니다.</p>
 <h2 id="_2">비유: 계산대와 줄</h2>

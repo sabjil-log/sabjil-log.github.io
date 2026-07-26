@@ -36,6 +36,40 @@
 <article><div class="post-meta"><span>2026-07-13</span><a class="chip" href="../c/security.html">--security</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>KMS의 봉투암호화 — 금고 열쇠로 데이터를 직접 잠그지 않는 이유</h1><blockquote>
 <p><strong>한 줄 요약:</strong> KMS는 데이터를 직접 암호화하지 않습니다. <strong>데이터는 일회용 열쇠(DEK)로 잠그고, 그 일회용 열쇠를 KMS의 마스터키(KEK)로 잠가서</strong> 데이터 옆에 같이 보관합니다. 열쇠를 봉투에 넣어 봉인한다고 해서 <strong>봉투암호화(envelope encryption)</strong>예요.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">봉투암호화 — DEK와 KEK</div><svg viewBox="0 0 640 230" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.ev-k{animation:ev-k 3.6s ease-in-out infinite;}
+@keyframes ev-k{0%,100%{opacity:.35}50%{opacity:1}}
+</style>
+<rect x="392" y="24" width="234" height="182" rx="12" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="6 4"/>
+<text x="404" y="44" class="dg-ts" fill="var(--accent)">KMS — 마스터키는 밖으로 안 나감</text>
+<rect x="424" y="60" width="170" height="52" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="442" y="82" class="dg-t">마스터키 (KEK)</text>
+<text x="442" y="100" class="dg-ts">봉투를 봉인·개봉만</text>
+<rect x="14" y="40" width="180" height="70" rx="10" class="dg-box"/>
+<text x="30" y="66" class="dg-t">데이터 (1GB)</text>
+<text x="30" y="86" class="dg-ts">DEK로 로컬에서 암호화</text>
+<text x="30" y="102" class="dg-ts">→ 빠름, 네트워크 불필요</text>
+<rect x="14" y="126" width="180" height="62" rx="10" fill="var(--raise)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="30" y="150" class="dg-t">봉인된 봉투</text>
+<text x="30" y="170" class="dg-ts">암호화된 DEK — 데이터와 함께 보관</text>
+<path d="M194 158 H 392 V 96" class="dg-arrow"/>
+<g class="dg-anim ev-k"><circle cx="300" cy="158" r="7" class="dg-ok"/></g>
+<text x="214" y="148" class="dg-ts">봉투만 왕복 (수십 바이트)</text>
+<text x="214" y="182" class="dg-ts">평문 DEK는 즉시 파기</text>
+<text x="14" y="216" class="dg-ts">이점: 큰 데이터도 빠르게 · 키 회전은 봉투만 재봉인 · 모든 복호화가 KMS를 거쳐 감사 로그 남음</text>
+</svg><figcaption>데이터는 일회용 열쇠로 잠그고, 그 열쇠를 마스터키로 봉인해 데이터 옆에 붙여둡니다. 마스터키는 금고 밖으로 안 나가죠.</figcaption></figure>
 <h2 id="_1">순진한 설계는 왜 안 되나</h2>
 <p>"암호화 키를 안전하게 보관하는 서비스가 KMS라며? 그럼 파일을 KMS로 보내서 암호화해달라고 하면 되겠네" — 첫 직관은 이렇습니다. 안 되는 이유가 두 가지예요.</p>
 <ol>

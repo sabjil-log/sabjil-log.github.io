@@ -171,3 +171,834 @@ def render(name):
         return f"<!-- unknown diagram: {name} -->"
     return (f'<figure class="diagram"><div class="dg-cap">{d["title"]}</div>'
             f'{d["svg"]}<figcaption>{d["caption"]}</figcaption></figure>')
+
+
+# ══════════════════════════════════════════════════════════════
+#  재사용 생성기 — 흐름도 / 사다리 / 막대 / 2단 비교
+# ══════════════════════════════════════════════════════════════
+def _add(name, title, caption, post, svg):
+    DIAGRAMS[name] = {"title": title, "caption": caption, "post": post, "svg": svg}
+
+
+def _flow(uid, steps, note=""):
+    """가로 흐름도. steps = [(제목, 부제), ...] — 순서대로 하이라이트."""
+    n = len(steps); pad = gap = 12; w = 640
+    bw = (w - 2 * pad - (n - 1) * gap) / n
+    dur = round(n * 1.15, 2); win = round(100.0 / n * 0.6, 1)
+    css = [_COMMON]
+    for i in range(n):
+        css.append(f".{uid}-{i}{{animation:{uid}-h {dur}s ease-in-out infinite;"
+                   f"animation-delay:{round(i * dur / n, 2)}s;}}")
+    css.append(f"@keyframes {uid}-h{{0%,100%{{fill:var(--raise);stroke:var(--line)}}"
+               f"2%,{win}%{{fill:var(--accent-soft);stroke:var(--accent)}}}}")
+    h = 116 if note else 96
+    o = [f'<svg viewBox="0 0 {w} {h}" role="img"><style>' + "\n".join(css) + "</style>"]
+    for i, (t, sub) in enumerate(steps):
+        x = pad + i * (bw + gap)
+        o.append(f'<rect class="dg-box dg-anim {uid}-{i}" x="{x:.0f}" y="18" '
+                 f'width="{bw:.0f}" height="58" rx="10"/>')
+        o.append(f'<text x="{x + 11:.0f}" y="42" class="dg-t">{t}</text>')
+        o.append(f'<text x="{x + 11:.0f}" y="62" class="dg-ts">{sub}</text>')
+        if i < n - 1:
+            o.append(f'<line x1="{x + bw:.0f}" y1="47" x2="{x + bw + gap:.0f}" y2="47" class="dg-arrow"/>')
+    if note:
+        o.append(f'<text x="{pad}" y="102" class="dg-ts">{note}</text>')
+    return "".join(o) + "</svg>"
+
+
+def _ladder(uid, rows, note=""):
+    """세로 사다리. rows = [(층이름, 확인방법, 멈추면 무슨 뜻), ...]"""
+    n = len(rows); w = 640; rh = 40
+    h = 20 + n * rh + (26 if note else 6)
+    dur = round(n * 1.0, 2); win = round(100.0 / n * 0.6, 1)
+    css = [_COMMON]
+    for i in range(n):
+        css.append(f".{uid}-{i}{{animation:{uid}-h {dur}s ease-in-out infinite;"
+                   f"animation-delay:{round(i * dur / n, 2)}s;}}")
+    css.append(f"@keyframes {uid}-h{{0%,100%{{fill:var(--raise);stroke:var(--line)}}"
+               f"2%,{win}%{{fill:var(--accent-soft);stroke:var(--accent)}}}}")
+    o = [f'<svg viewBox="0 0 {w} {h}" role="img"><style>' + "\n".join(css) + "</style>"]
+    for i, (name, how, mean) in enumerate(rows):
+        y = 12 + i * rh
+        o.append(f'<rect class="dg-box dg-anim {uid}-{i}" x="12" y="{y}" width="616" height="32" rx="8"/>')
+        o.append(f'<circle cx="32" cy="{y + 16}" r="9" fill="var(--accent)" opacity=".18"/>')
+        o.append(f'<text x="28" y="{y + 21}" class="dg-ts" fill="var(--accent)">{i + 1}</text>')
+        o.append(f'<text x="50" y="{y + 21}" class="dg-t">{name}</text>')
+        o.append(f'<text x="210" y="{y + 21}" class="dg-ts">{how}</text>')
+        o.append(f'<text x="392" y="{y + 21}" class="dg-ts">{mean}</text>')
+    if note:
+        o.append(f'<text x="12" y="{h - 8}" class="dg-ts">{note}</text>')
+    return "".join(o) + "</svg>"
+
+
+def _bars(uid, items, maxv, note="", thr=None, thr_label=""):
+    """가로 막대. items = [(라벨, 값, 값표기), ...]"""
+    n = len(items); w = 640; x0 = 156; bwmax = w - x0 - 128; rh = 40
+    h = 16 + n * rh + (28 if note else 8)
+    css = [_COMMON, f".{uid}-b{{animation:{uid}-g 2.6s ease-out infinite;transform-origin:left center;}}",
+           f"@keyframes {uid}-g{{0%{{transform:scaleX(0)}}45%,100%{{transform:scaleX(1)}}}}"]
+    o = [f'<svg viewBox="0 0 {w} {h}" role="img"><style>' + "\n".join(css) + "</style>"]
+    if thr is not None:
+        tx = x0 + bwmax * thr / maxv
+        o.append(f'<line x1="{tx:.0f}" y1="6" x2="{tx:.0f}" y2="{16 + n * rh - 6}" class="dg-wall"/>')
+        o.append(f'<text x="{tx + 6:.0f}" y="16" class="dg-ts" fill="var(--accent)">{thr_label}</text>')
+    for i, (lab, val, txt) in enumerate(items):
+        y = 22 + i * rh
+        bw = bwmax * val / maxv
+        over = thr is not None and val > thr
+        col = "#E5484D" if over else "var(--accent)"
+        o.append(f'<text x="12" y="{y + 18}" class="dg-t">{lab}</text>')
+        o.append(f'<rect x="{x0}" y="{y + 4}" width="{bwmax}" height="20" rx="5" '
+                 f'fill="var(--line-2)"/>')
+        o.append(f'<g class="dg-anim {uid}-b" style="animation-delay:{round(i * .18, 2)}s">'
+                 f'<rect x="{x0}" y="{y + 4}" width="{bw:.0f}" height="20" rx="5" fill="{col}" opacity=".85"/></g>')
+        o.append(f'<text x="{x0 + bw + 8:.0f}" y="{y + 19}" class="dg-ts">{txt}</text>')
+    if note:
+        o.append(f'<text x="12" y="{h - 8}" class="dg-ts">{note}</text>')
+    return "".join(o) + "</svg>"
+
+
+def _two(uid, lt, ll, rt, rl, note=""):
+    """2단 비교. ll/rl = [(mark, 텍스트)] — mark: ok|no|dot"""
+    w = 640; pw = (w - 36) / 2
+    rows = max(len(ll), len(rl))
+    h = 56 + rows * 24 + (26 if note else 10)
+    o = [f'<svg viewBox="0 0 {w} {h}" role="img"><style>' + _COMMON + "</style>"]
+    for k, (t, lines, x) in enumerate([(lt, ll, 12), (rt, rl, 24 + pw)]):
+        o.append(f'<rect class="dg-box" x="{x:.0f}" y="10" width="{pw:.0f}" '
+                 f'height="{h - (34 if note else 20)}" rx="12"/>')
+        o.append(f'<text x="{x + 16:.0f}" y="36" class="dg-tl">{t}</text>')
+        for i, (mk, tx) in enumerate(lines):
+            y = 62 + i * 24
+            sym = {"ok": ("✓", "var(--accent)"), "no": ("✕", "#E5484D"), "dot": ("·", "var(--muted)")}[mk]
+            o.append(f'<text x="{x + 16:.0f}" y="{y}" font-size="12" font-weight="700" '
+                     f'fill="{sym[1]}">{sym[0]}</text>')
+            o.append(f'<text x="{x + 32:.0f}" y="{y}" class="dg-ts">{tx}</text>')
+    if note:
+        o.append(f'<text x="12" y="{h - 8}" class="dg-ts">{note}</text>')
+    return "".join(o) + "</svg>"
+
+
+# ── 생성기 기반 다이어그램 등록 ────────────────────────────────
+_add("triage-ladder", "접속 실패, 계층별 진단 사다리",
+     "아래층부터 한 칸씩 올라가며 확인합니다. 멈춘 층이 곧 범인의 위치예요.",
+     "network-triage",
+     _ladder("tl", [
+         ("DNS 해석", "dig +short 도메인", "실패 → DNS 설정·오타"),
+         ("경로 도달", "traceroute 도메인", "멈춤 → 라우팅·구간 차단"),
+         ("포트 응답", "nc -vz 호스트 443", "실패 → 방화벽 or 앱 부재"),
+         ("리스닝 확인", "ss -tlnp | grep :443", "없음 → 앱 미기동·바인딩"),
+         ("방화벽", "ACG / NACL / iptables", "NACL은 응답 포트도 필요"),
+         ("앱 레벨", "curl -v .../health", "5xx → 앱 내부 오류"),
+     ], "위에서 아래로 내려가는 게 아니라, 아래(네트워크)에서 위(앱)로 올라가며 좁힙니다"))
+
+_add("grep-awk-sed", "grep · awk · sed 역할 분담",
+     "줄을 고르고 → 칸을 자르고 → 글자를 다듬는다. 파이프는 접시를 넘기는 컨베이어입니다.",
+     "grep-awk-sed",
+     _flow("gas", [("grep", "줄 고르기 (행 필터)"),
+                   ("awk", "칸 자르기 (필드 추출)"),
+                   ("sed", "글자 바꾸기 (치환)")],
+           "랭킹 관용구: … | sort | uniq -c | sort -rn | head  ← 세어서 순위 만들기"))
+
+_add("curl-stages", "curl -v가 보여주는 4단계",
+     "출력이 어느 단계에서 멈추는지가 곧 진단 결과입니다. refused와 timeout의 구분이 핵심.",
+     "curl-verbose",
+     _flow("cv", [("DNS", "resolved → 이름 해석"),
+                  ("TCP", "Connected → 연결"),
+                  ("TLS", "certificate ok → 악수"),
+                  ("HTTP", "&gt; 요청 / &lt; 응답")],
+           "refused = 도착했는데 아무도 없음 · timeout = 패킷이 증발 (방화벽 계열)"))
+
+_add("kubectl-five", "kubectl 디버깅 다섯 개의 창",
+     "앱의 말 → 쿠버의 말 → 현장 → 설계도 → 직통. 대개 이 순서로 꺼냅니다.",
+     "kubectl-five",
+     _flow("kf", [("logs", "앱의 말·유언"),
+                  ("describe", "쿠버의 말·Events"),
+                  ("exec", "현장 진입"),
+                  ("get -o yaml", "설계도 원본"),
+                  ("port-forward", "직통 전화")],
+           "CrashLoop이면 logs --previous 부터 · 연결 문제면 port-forward로 구간 이분탐색"))
+
+_add("healthcheck-gates", "헬스체크가 통과해야 하는 3개의 관문",
+     "노크가 닿고(방화벽), 문이 맞고(포트), 대답이 200이어야(경로) 살아있음 도장이 찍힙니다.",
+     "lb-healthcheck",
+     _flow("hg", [("① 방화벽", "ACG·NACL 통과"),
+                  ("② 포트", "앱이 그 포트 리스닝"),
+                  ("③ 경로+200", "/health 가 200 반환")],
+           "진단: tcpdump(노크 도착?) → ss(포트 맞나?) → curl 127.0.0.1(200 주나?)"))
+
+_add("static-hosting", "정적 호스팅 3단 구성",
+     "버킷은 원본 창고, CDN이 HTTPS·도메인·캐시를 담당합니다. 버킷 단독으로는 HTTPS가 안 돼요.",
+     "object-storage-hosting",
+     _flow("sh", [("사용자", "브라우저 요청"),
+                  ("CDN", "HTTPS·도메인·캐시"),
+                  ("버킷", "정적 파일 원본")],
+           "공개 버킷은 사이트 파일만 · SPA는 에러문서를 index.html 로 · 캐시는 해시 파일명으로"))
+
+_add("agent-loop", "에이전트의 실행 루프",
+     "모델은 실행 '요청서'를 쓸 뿐이고, 방아쇠는 항상 우리 코드가 당깁니다. 그 사이가 안전장치의 자리죠.",
+     "agents-tool-use",
+     _flow("al", [("① 도구 명세", "모델에 목록 전달"),
+                  ("② 도구 요청", "모델이 이름+인자 지정"),
+                  ("③ 우리가 실행", "권한·승인 게이트"),
+                  ("④ 결과 회신", "대화에 붙여 재질의")],
+           "④ 다음 다시 ②로 — 도구 요청이 안 나올 때까지 반복하는 while 루프가 에이전트의 정체"))
+
+_add("mcp-mxn", "M×N 어댑터 지옥 → M+N",
+     "도구마다 클라이언트마다 어댑터를 짜던 걸, 표준 콘센트 하나로 수렴시키는 게 MCP의 가치입니다.",
+     "what-is-mcp",
+     _two("mx", "MCP 없이 — M×N", [
+         ("no", "도구 10개 × 클라이언트 4개 = 통합 40번"),
+         ("no", "클라이언트마다 연동 방식이 다름"),
+         ("no", "도구 하나 고치면 어댑터 전부 손봄"),
+         ("dot", "USB 이전의 충전 단자 난립 상태"),
+     ], "MCP로 — M+N", [
+         ("ok", "도구는 MCP 서버로 1번만 구현"),
+         ("ok", "클라이언트는 MCP 지원 1번만"),
+         ("ok", "10 + 4 = 14 로 감소"),
+         ("dot", "규격 콘센트에 꽂기만"),
+     ], "서버가 내놓는 것: Tools(실행) · Resources(읽을 데이터) · Prompts(작업 템플릿)"))
+
+_add("quantization-size", "양자화별 모델 무게 (14B 기준)",
+     "파라미터 개수 × 숫자 하나의 크기. 4bit면 1/4이 되어 16GB 카드에 들어갑니다.",
+     "quantization",
+     _bars("qz", [("FP16 (16bit)", 28, "28 GB 초과"),
+                  ("INT8 (8bit)", 14, "14 GB 아슬"),
+                  ("INT4 (4bit)", 7, "7 GB 여유")],
+           32, "여기에 KV 캐시·오버헤드가 얹힙니다. 같은 VRAM이면 '큰 모델 4bit'가 대개 이깁니다",
+           thr=16, thr_label="16GB 카드 한계"))
+
+_add("finetune-vs-rag", "파인튜닝 vs RAG — 무엇을 넣는가",
+     "아는 것(지식)은 RAG, 하는 것(행동)은 파인튜닝. 대부분의 '우리 문서 학습'은 RAG가 답입니다.",
+     "finetuning-vs-rag",
+     _two("fr", "RAG — 찾아보게 하기", [
+         ("ok", "자주 바뀌는 내용 (문서만 교체)"),
+         ("ok", "출처·근거 제시 가능"),
+         ("ok", "갱신 비용 거의 0"),
+         ("no", "말투·형식 일관성은 못 잡음"),
+     ], "파인튜닝 — 몸에 배게 하기", [
+         ("ok", "말투·페르소나·출력 형식"),
+         ("ok", "도메인 방언, 좁은 작업 특화"),
+         ("no", "갱신마다 데이터셋+학습 반복"),
+         ("no", "지식 주입 수단으로는 신뢰도 낮음"),
+     ], "순서 원칙: 프롬프트 엔지니어링 → RAG → 파인튜닝 (싸고 되돌리기 쉬운 것부터)"))
+
+_add("managed-db-line", "관리형 DB — 책임 경계선",
+     "서버 관리는 벤더가, DB 관리는 여전히 우리 몫입니다. 이 선을 모르면 '관리형인데 왜 터지죠'가 됩니다.",
+     "managed-db-migration",
+     _two("md", "벤더가 해주는 것", [
+         ("ok", "설치·패치·하드웨어"),
+         ("ok", "자동 백업 실행"),
+         ("ok", "장애조치 기능 제공"),
+         ("dot", "= 서버 관리"),
+     ], "여전히 내 몫", [
+         ("no", "파라미터 그룹 (max_connections 등)"),
+         ("no", "백업 보존기간 + 복구 리허설"),
+         ("no", "다중화 옵션 선택 · 앱의 재연결"),
+         ("no", "네트워크 접근 통제 재설계"),
+     ], "이관 체크리스트 1번: 기존 SHOW VARIABLES 결과와 새 파라미터 그룹 대조"))
+
+
+# ══════════════════════════════════════════════════════════════
+#  개별 제작 다이어그램
+# ══════════════════════════════════════════════════════════════
+_add("unicode-nfc-nfd", "같은 '한', 다른 바이트",
+     "화면엔 똑같이 보이지만 저장 방식이 다릅니다. 맥은 자모를 분해(NFD), 윈도우는 합쳐서(NFC) 저장하죠.",
+     "onedrive-unicode",
+     '<svg viewBox="0 0 640 200" role="img"><style>' + _COMMON + """
+.un-p{animation:un-p 3s ease-in-out infinite;}
+@keyframes un-p{0%,100%{opacity:.35}50%{opacity:1}}
+</style>
+<text x="14" y="24" class="dg-tl">윈도우 · 웹 표준 — NFC (합쳐서 1개)</text>
+<rect x="14" y="36" width="290" height="58" rx="10" class="dg-box"/>
+<rect x="30" y="48" width="46" height="34" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="42" y="72" class="dg-t">한</text>
+<text x="92" y="62" class="dg-ts">코드포인트 1개</text>
+<text x="92" y="80" class="dg-ts">len("한") == 1</text>
+<text x="336" y="24" class="dg-tl">맥 (APFS/HFS+) — NFD (자모 3개)</text>
+<rect x="336" y="36" width="290" height="58" rx="10" class="dg-box"/>
+<rect x="352" y="48" width="34" height="34" rx="6" fill="none" stroke="var(--muted)" stroke-width="1.3"/>
+<text x="362" y="72" class="dg-t">ㅎ</text>
+<rect x="392" y="48" width="34" height="34" rx="6" fill="none" stroke="var(--muted)" stroke-width="1.3"/>
+<text x="402" y="72" class="dg-t">ㅏ</text>
+<rect x="432" y="48" width="34" height="34" rx="6" fill="none" stroke="var(--muted)" stroke-width="1.3"/>
+<text x="442" y="72" class="dg-t">ㄴ</text>
+<text x="480" y="62" class="dg-ts">코드포인트 3개</text>
+<text x="480" y="80" class="dg-ts">len("한") == 3</text>
+<rect x="14" y="112" width="612" height="52" rx="10" class="dg-box"/>
+<text x="30" y="134" class="dg-t">OneDrive 입장 — 이름이 "다른" 두 파일</text>
+<text x="30" y="153" class="dg-ts">제안서.pptx (NFC)  ≠  제안서.pptx (NFD)  → 둘 다 성실하게 보관 → 복제본 발생</text>
+<g class="dg-anim un-p"><circle cx="600" cy="138" r="8" class="dg-no"/></g>
+<text x="14" y="186" class="dg-ts">해법: 업로드 전 파일명을 NFC로 정규화 (unicodedata.normalize) 또는 영문 파일명 규칙</text>
+</svg>""")
+
+_add("cosine-angle", "의미의 닮음은 '각도'로 잰다",
+     "벡터의 길이(문장 길이·강도)는 무시하고 방향만 봅니다. 같은 쪽을 가리키면 뜻이 비슷한 거죠.",
+     "cosine-similarity",
+     '<svg viewBox="0 0 640 240" role="img"><style>' + _COMMON + """
+.cs-arc{animation:cs-a 3.2s ease-in-out infinite;}
+@keyframes cs-a{0%,100%{opacity:.25}50%{opacity:.9}}
+</style>
+<line x1="60" y1="200" x2="380" y2="200" class="dg-arrow"/>
+<line x1="60" y1="200" x2="60" y2="30" class="dg-arrow"/>
+<line x1="60" y1="200" x2="290" y2="70" stroke="var(--accent)" stroke-width="2.4"/>
+<circle cx="290" cy="70" r="4" class="dg-ok"/><text x="298" y="66" class="dg-ts">"강아지가 뛴다"</text>
+<line x1="60" y1="200" x2="216" y2="76" stroke="var(--accent)" stroke-width="2.4" opacity=".7"/>
+<circle cx="216" cy="76" r="4" class="dg-ok"/><text x="150" y="58" class="dg-ts">"반려견이 산책"</text>
+<line x1="60" y1="200" x2="330" y2="176" stroke="#E5484D" stroke-width="2.2"/>
+<circle cx="330" cy="176" r="4" class="dg-no"/><text x="292" y="196" class="dg-ts">"환율 급등"</text>
+<path d="M120 172 A 66 66 0 0 1 128 152" fill="none" stroke="var(--accent)" stroke-width="2" class="dg-anim cs-arc"/>
+<text x="132" y="140" class="dg-ts" fill="var(--accent)">작은 각 = 비슷</text>
+<path d="M148 196 A 92 92 0 0 0 134 158" fill="none" stroke="#E5484D" stroke-width="2" class="dg-anim cs-arc"/>
+<text x="152" y="176" class="dg-ts" fill="#E5484D">큰 각 = 무관</text>
+<rect x="410" y="40" width="216" height="150" rx="12" class="dg-box"/>
+<text x="428" y="66" class="dg-tl">cos(θ) 값</text>
+<text x="428" y="94" class="dg-ts">1 에 가까움 → 같은 방향 (비슷)</text>
+<text x="428" y="116" class="dg-ts">0 → 직각 (무관)</text>
+<text x="428" y="138" class="dg-ts">-1 → 정반대</text>
+<text x="428" y="168" class="dg-ts">길이로 나누는 과정이</text>
+<text x="428" y="182" class="dg-ts">곧 '크기 무시'</text>
+<text x="14" y="228" class="dg-ts">팁: 정규화된(길이 1) 임베딩이면 내적만 계산해도 코사인과 같아 검색이 더 빠릅니다</text>
+</svg>""")
+
+_add("token-split", "토큰은 글자도 단어도 아니다",
+     "자주 나오는 덩어리는 큰 블록 하나로, 드문 것은 잘게 쪼개집니다. 한국어가 영어보다 블록을 더 먹는 이유죠.",
+     "what-is-token",
+     '<svg viewBox="0 0 640 190" role="img"><style>' + _COMMON + """
+.tk c{opacity:0;animation:tk-in .5s ease-out forwards;}
+@keyframes tk-in{to{opacity:1}}
+</style>
+<text x="14" y="24" class="dg-tl">영어 — 큰 블록이 풍부</text>
+<rect x="14" y="34" width="612" height="46" rx="10" class="dg-box"/>
+<text x="28" y="62" class="dg-t">"hello world"</text>
+<rect x="180" y="44" width="66" height="26" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.3"/>
+<text x="196" y="62" class="dg-ts">hello</text>
+<rect x="252" y="44" width="66" height="26" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.3"/>
+<text x="266" y="62" class="dg-ts">&#32;world</text>
+<text x="340" y="62" class="dg-ts">→ 2 토큰</text>
+<text x="14" y="110" class="dg-tl">한국어 — 잘게 쪼개짐</text>
+<rect x="14" y="120" width="612" height="46" rx="10" class="dg-box"/>
+<text x="28" y="148" class="dg-t">"안녕하세요"</text>
+<rect x="180" y="130" width="34" height="26" rx="5" fill="#FCE9EA" stroke="#E5484D" stroke-width="1.2"/><text x="192" y="148" class="dg-ts">안</text>
+<rect x="220" y="130" width="34" height="26" rx="5" fill="#FCE9EA" stroke="#E5484D" stroke-width="1.2"/><text x="232" y="148" class="dg-ts">녕</text>
+<rect x="260" y="130" width="34" height="26" rx="5" fill="#FCE9EA" stroke="#E5484D" stroke-width="1.2"/><text x="272" y="148" class="dg-ts">하</text>
+<rect x="300" y="130" width="34" height="26" rx="5" fill="#FCE9EA" stroke="#E5484D" stroke-width="1.2"/><text x="312" y="148" class="dg-ts">세</text>
+<rect x="340" y="130" width="34" height="26" rx="5" fill="#FCE9EA" stroke="#E5484D" stroke-width="1.2"/><text x="352" y="148" class="dg-ts">요</text>
+<text x="392" y="148" class="dg-ts">→ 더 많은 토큰 (모델·토크나이저마다 다름)</text>
+<text x="14" y="184" class="dg-ts">토큰 개수가 곧 요금 · 컨텍스트 한도 · 생성 속도를 결정합니다</text>
+</svg>""")
+
+_add("context-desk", "컨텍스트 윈도우 = 책상 크기",
+     "기억력이 아니라 한 번에 펼칠 수 있는 면적입니다. 넘치면 오래된 서류부터 조용히 밀려나고, 가운데는 흐릿해져요.",
+     "context-window",
+     '<svg viewBox="0 0 640 230" role="img"><style>' + _COMMON + """
+.cd-out{animation:cd-out 4s ease-in-out infinite;}
+.cd-new{animation:cd-new 4s ease-in-out infinite;}
+@keyframes cd-out{0%,40%{transform:translateX(0);opacity:1}75%,100%{transform:translateX(-90px);opacity:0}}
+@keyframes cd-new{0%,40%{transform:translateX(90px);opacity:0}75%,100%{transform:translateX(0);opacity:1}}
+</style>
+<rect x="60" y="40" width="520" height="96" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="70" y="32" class="dg-ts" fill="var(--accent)">책상 = 컨텍스트 윈도우 (질문 + 문서 + 대화이력 + 답변 전부 포함)</text>
+<g class="dg-anim cd-out"><rect x="76" y="58" width="70" height="60" rx="6" class="dg-box"/>
+<text x="86" y="84" class="dg-ts">초반</text><text x="86" y="100" class="dg-ts">대화</text></g>
+<rect x="158" y="58" width="70" height="60" rx="6" class="dg-box"/><text x="168" y="92" class="dg-ts">지시문</text>
+<rect x="240" y="58" width="70" height="60" rx="6" class="dg-box" opacity=".45"/>
+<text x="250" y="84" class="dg-ts" opacity=".7">가운데</text><text x="250" y="100" class="dg-ts" opacity=".7">흐릿</text>
+<rect x="322" y="58" width="70" height="60" rx="6" class="dg-box" opacity=".45"/>
+<rect x="404" y="58" width="70" height="60" rx="6" class="dg-box"/><text x="414" y="92" class="dg-ts">근거문서</text>
+<g class="dg-anim cd-new"><rect x="486" y="58" width="70" height="60" rx="6" fill="var(--raise)" stroke="var(--accent)" stroke-width="1.6"/>
+<text x="496" y="84" class="dg-ts">새</text><text x="496" y="100" class="dg-ts">질문</text></g>
+<text x="14" y="88" font-size="17" class="dg-no" font-weight="700">✕</text>
+<text x="6" y="112" class="dg-ts">밀려남</text>
+<text x="14" y="166" class="dg-ts">밀려난 것은 모델에게 '처음부터 없던 것' — 에러 없이 조용히 잘리는 게 진짜 위험</text>
+<text x="14" y="188" class="dg-ts">양 끝(맨 앞·맨 뒤)은 잘 쓰고 한가운데는 놓치는 경향 → 중요한 지시는 앞이나 뒤에</text>
+<text x="14" y="210" class="dg-ts">대처: 토큰 세기 · 긴 대화는 요약으로 접기 · 문서는 골라서 올리기(RAG)</text>
+</svg>""")
+
+_add("temperature-dial", "temperature가 실제로 돌리는 것",
+     "확률 분포의 뾰족함을 조절합니다. 낮으면 1등 독식, 높으면 하위 후보도 뽑히죠. top-p는 후보를 잘라냅니다.",
+     "temperature-top-p",
+     '<svg viewBox="0 0 640 220" role="img"><style>' + _COMMON + """
+.tp-b{animation:tp-g 2.8s ease-out infinite;transform-origin:center bottom;}
+@keyframes tp-g{0%{transform:scaleY(.2)}40%,100%{transform:scaleY(1)}}
+</style>
+<text x="14" y="22" class="dg-tl">temperature 낮음 — 뾰족 (1등 독식)</text>
+<rect x="14" y="32" width="300" height="130" rx="10" class="dg-box"/>
+<g class="dg-anim tp-b">
+<rect x="40" y="52" width="42" height="92" rx="4" fill="var(--accent)" opacity=".85"/>
+<rect x="98" y="132" width="42" height="12" rx="3" fill="var(--accent)" opacity=".5"/>
+<rect x="156" y="137" width="42" height="7" rx="3" fill="var(--accent)" opacity=".4"/>
+<rect x="214" y="140" width="42" height="4" rx="2" fill="var(--accent)" opacity=".3"/>
+</g>
+<line x1="30" y1="144" x2="300" y2="144" class="dg-arrow"/>
+<text x="40" y="158" class="dg-ts">서울 92%</text><text x="150" y="158" class="dg-ts">그 외 후보들</text>
+<text x="326" y="22" class="dg-tl">temperature 높음 — 평평 (다양성↑)</text>
+<rect x="326" y="32" width="300" height="130" rx="10" class="dg-box"/>
+<g class="dg-anim tp-b">
+<rect x="352" y="84" width="42" height="60" rx="4" fill="var(--accent)" opacity=".85"/>
+<rect x="410" y="98" width="42" height="46" rx="4" fill="var(--accent)" opacity=".7"/>
+<rect x="468" y="108" width="42" height="36" rx="4" fill="var(--accent)" opacity=".6"/>
+<rect x="526" y="116" width="42" height="28" rx="4" fill="var(--accent)" opacity=".5"/>
+</g>
+<line x1="342" y1="144" x2="612" y2="144" class="dg-arrow"/>
+<line x1="462" y1="40" x2="462" y2="152" class="dg-wall"/>
+<text x="468" y="52" class="dg-ts" fill="var(--accent)">top-p 컷</text>
+<text x="352" y="158" class="dg-ts">누적 확률 p 까지만 뽑기통에</text>
+<text x="14" y="186" class="dg-ts">정답이 정해진 일(코드·추출·분류) 낮게 · 발상이 필요한 일 높게 — 다이얼은 한 번에 하나만</text>
+<text x="14" y="208" class="dg-ts">상한은 제공자별로 다름 (Anthropic 0~1, OpenAI 0~2) · 높여도 '똑똑해지는' 건 아님</text>
+</svg>""")
+
+_add("docker-cache-order", "Dockerfile 순서가 캐시를 살린다",
+     "빌드는 바뀐 층부터 위로 다시 만듭니다. 안 바뀌는 의존성을 아래, 자주 바뀌는 코드를 위에 두세요.",
+     "docker-layer-cache",
+     '<svg viewBox="0 0 640 250" role="img"><style>' + _COMMON + """
+.dc-x{animation:dc-p 3s ease-in-out infinite;}
+@keyframes dc-p{0%,100%{opacity:.4}50%{opacity:1}}
+</style>
+<text x="14" y="22" class="dg-tl">나쁜 순서 — 코드 한 줄 고치면 전부 재빌드</text>
+<rect x="14" y="32" width="300" height="150" rx="10" class="dg-box"/>
+<rect x="34" y="130" width="260" height="30" rx="5" fill="var(--line-2)" stroke="var(--line)"/><text x="46" y="150" class="dg-ts">FROM python:3.12  (캐시 유지)</text>
+<rect x="34" y="94" width="260" height="30" rx="5" fill="#FCE9EA" stroke="#E5484D"/><text x="46" y="114" class="dg-ts">COPY . .  ← 코드 변경으로 무효화</text>
+<rect x="34" y="58" width="260" height="30" rx="5" fill="#FCE9EA" stroke="#E5484D"/><text x="46" y="78" class="dg-ts">RUN pip install  ← 같이 무효화 (느림)</text>
+<g class="dg-anim dc-x"><text x="298" y="80" font-size="15" class="dg-no" font-weight="700">✕</text></g>
+<text x="326" y="22" class="dg-tl">좋은 순서 — 의존성 층이 캐시로 남음</text>
+<rect x="326" y="32" width="300" height="150" rx="10" class="dg-box"/>
+<rect x="346" y="148" width="260" height="26" rx="5" fill="var(--line-2)" stroke="var(--line)"/><text x="358" y="165" class="dg-ts">FROM python:3.12</text>
+<rect x="346" y="116" width="260" height="26" rx="5" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="358" y="133" class="dg-ts">COPY requirements.txt .   CACHED</text>
+<rect x="346" y="84" width="260" height="26" rx="5" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="358" y="101" class="dg-ts">RUN pip install           CACHED ✓</text>
+<rect x="346" y="52" width="260" height="26" rx="5" fill="#FFF4E6" stroke="#E8842C"/><text x="358" y="69" class="dg-ts">COPY . .  ← 이 층만 다시</text>
+<text x="14" y="206" class="dg-ts">이미지는 겹겹의 투명 필름 — 바뀐 필름과 '그 위의 모든 필름'만 다시 그립니다</text>
+<text x="14" y="228" class="dg-ts">확인: 빌드 로그의 CACHED 표시 · docker history 로 층별 크기 점검</text>
+</svg>""")
+
+_add("scalein-deadzone", "오토스케일링의 사각지대",
+     "확장 70%, 축소 30%로 잡으면 그 사이는 아무 일도 안 일어납니다. 한번 늘어난 서버가 눌러앉는 이유죠.",
+     "autoscaling-scalein",
+     '<svg viewBox="0 0 640 190" role="img"><style>' + _COMMON + """
+.sd-n{animation:sd-n 3.4s ease-in-out infinite;}
+@keyframes sd-n{0%,100%{transform:translateX(0)}50%{transform:translateX(120px)}}
+</style>
+<rect x="60" y="52" width="520" height="34" rx="8" fill="var(--line-2)"/>
+<rect x="216" y="52" width="208" height="34" fill="#FFF4E6"/>
+<line x1="216" y1="42" x2="216" y2="96" class="dg-wall"/>
+<line x1="424" y1="42" x2="424" y2="96" class="dg-wall"/>
+<text x="60" y="42" class="dg-ts">평균 CPU 0%</text>
+<text x="540" y="42" class="dg-ts">100%</text>
+<text x="180" y="112" class="dg-ts" fill="var(--accent)">축소 30%</text>
+<text x="392" y="112" class="dg-ts" fill="var(--accent)">확장 70%</text>
+<text x="256" y="74" class="dg-t">사각지대 — 아무 일도 안 일어남</text>
+<g class="dg-anim sd-n"><circle cx="250" cy="69" r="7" fill="#E8842C"/></g>
+<text x="14" y="146" class="dg-ts">10대로 늘어난 뒤 트래픽이 절반 되어도 대당 CPU 35% → 축소 임계값(30%)에 안 닿음 → 그대로 유지</text>
+<text x="14" y="168" class="dg-ts">해법: 사각지대 좁히기 · '평균 50% 유지' 타겟 트래킹으로 전환 · 축소 정책 존재 여부부터 확인</text>
+</svg>""")
+
+_add("cutoff-timeline", "지식 컷오프 — 동결된 시점",
+     "학습 데이터를 모은 날 이후의 세상은 모델에게 없습니다. 문제는 모른다고 안 하고 아는 척한다는 것.",
+     "knowledge-cutoff",
+     '<svg viewBox="0 0 640 180" role="img"><style>' + _COMMON + """
+.ct-q{animation:ct-q 2.6s ease-in-out infinite;}
+@keyframes ct-q{0%,100%{opacity:.4}50%{opacity:1}}
+</style>
+<line x1="20" y1="76" x2="330" y2="76" stroke="var(--accent)" stroke-width="7" stroke-linecap="round"/>
+<line x1="336" y1="76" x2="620" y2="76" stroke="var(--faint)" stroke-width="7" stroke-dasharray="7 7" stroke-linecap="round"/>
+<line x1="333" y1="46" x2="333" y2="106" class="dg-wall"/>
+<text x="290" y="38" class="dg-ts" fill="var(--accent)">컷오프</text>
+<text x="20" y="112" class="dg-t">학습된 세상 — 잘 안다</text>
+<text x="400" y="112" class="dg-t">모르는 구간</text>
+<rect x="216" y="56" width="112" height="40" rx="6" fill="var(--accent-soft)" opacity=".55"/>
+<text x="222" y="80" class="dg-ts">직전 몇 달: 어설프게 아는 회색지대</text>
+<g class="dg-anim ct-q"><text x="470" y="82" font-size="22" class="dg-no" font-weight="700">?</text></g>
+<text x="400" y="132" class="dg-ts">버전 · 가격 · 현직 · 일정</text>
+<text x="14" y="162" class="dg-ts">"현재·최신·요즘"이 들어간 질문은 위험군 → 검색·RAG·문서 첨부로 현재를 주입하고 교차 확인</text>
+</svg>""")
+
+_add("envelope-keys", "봉투암호화 — DEK와 KEK",
+     "데이터는 일회용 열쇠로 잠그고, 그 열쇠를 마스터키로 봉인해 데이터 옆에 붙여둡니다. 마스터키는 금고 밖으로 안 나가죠.",
+     "envelope-encryption",
+     '<svg viewBox="0 0 640 230" role="img"><style>' + _COMMON + """
+.ev-k{animation:ev-k 3.6s ease-in-out infinite;}
+@keyframes ev-k{0%,100%{opacity:.35}50%{opacity:1}}
+</style>
+<rect x="392" y="24" width="234" height="182" rx="12" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="6 4"/>
+<text x="404" y="44" class="dg-ts" fill="var(--accent)">KMS — 마스터키는 밖으로 안 나감</text>
+<rect x="424" y="60" width="170" height="52" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="442" y="82" class="dg-t">마스터키 (KEK)</text>
+<text x="442" y="100" class="dg-ts">봉투를 봉인·개봉만</text>
+<rect x="14" y="40" width="180" height="70" rx="10" class="dg-box"/>
+<text x="30" y="66" class="dg-t">데이터 (1GB)</text>
+<text x="30" y="86" class="dg-ts">DEK로 로컬에서 암호화</text>
+<text x="30" y="102" class="dg-ts">→ 빠름, 네트워크 불필요</text>
+<rect x="14" y="126" width="180" height="62" rx="10" fill="var(--raise)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="30" y="150" class="dg-t">봉인된 봉투</text>
+<text x="30" y="170" class="dg-ts">암호화된 DEK — 데이터와 함께 보관</text>
+<path d="M194 158 H 392 V 96" class="dg-arrow"/>
+<g class="dg-anim ev-k"><circle cx="300" cy="158" r="7" class="dg-ok"/></g>
+<text x="214" y="148" class="dg-ts">봉투만 왕복 (수십 바이트)</text>
+<text x="214" y="182" class="dg-ts">평문 DEK는 즉시 파기</text>
+<text x="14" y="216" class="dg-ts">이점: 큰 데이터도 빠르게 · 키 회전은 봉투만 재봉인 · 모든 복호화가 KMS를 거쳐 감사 로그 남음</text>
+</svg>""")
+
+_add("docker-localhost-3", "컨테이너의 주소 체계 3가지",
+     "컨테이너 안의 localhost는 자기 자신입니다. 목적지마다 불러야 하는 주소가 다릅니다.",
+     "docker-localhost",
+     '<svg viewBox="0 0 640 200" role="img"><style>' + _COMMON + """
+.dl-x{animation:dl-p 2.8s ease-in-out infinite;}
+@keyframes dl-p{0%,100%{opacity:.45}50%{opacity:1}}
+</style>
+<rect x="14" y="16" width="612" height="46" rx="10" class="dg-box"/>
+<text x="28" y="38" class="dg-t">① 컨테이너 → 호스트의 서비스</text>
+<g class="dg-anim dl-x"><text x="300" y="38" class="dg-ts" fill="#E5484D">✕ localhost</text></g>
+<text x="404" y="38" class="dg-ts" fill="var(--accent)">✓ host.docker.internal</text>
+<text x="28" y="55" class="dg-ts">Linux는 --add-host=host.docker.internal:host-gateway 필요 · 호스트는 0.0.0.0 바인딩</text>
+<rect x="14" y="72" width="612" height="46" rx="10" class="dg-box"/>
+<text x="28" y="94" class="dg-t">② 컨테이너 → 옆 컨테이너</text>
+<g class="dg-anim dl-x"><text x="300" y="94" class="dg-ts" fill="#E5484D">✕ localhost</text></g>
+<text x="404" y="94" class="dg-ts" fill="var(--accent)">✓ 컨테이너 이름 (예: db)</text>
+<text x="28" y="111" class="dg-ts">같은 사용자 정의 네트워크에 있어야 이름 해석됨 (compose는 자동)</text>
+<rect x="14" y="128" width="612" height="46" rx="10" class="dg-box"/>
+<text x="28" y="150" class="dg-t">③ 호스트 → 컨테이너</text>
+<text x="404" y="150" class="dg-ts" fill="var(--accent)">✓ -p 8080:80 로 포트 공개</text>
+<text x="28" y="167" class="dg-ts">-p 없으면 호스트에서 접근 불가가 정상 (담장 안)</text>
+<text x="14" y="194" class="dg-ts">예외: --network host 는 컨테이너가 호스트 네트워크를 그대로 사용 (격리 상실, Linux 전용)</text>
+</svg>""")
+
+_add("inode-gauge", "용량은 남았는데 'No space left'",
+     "디스크에는 용량과 inode(파일 개수 한도), 두 개의 한계가 있습니다. df -h가 아니라 df -i를 봐야 잡히죠.",
+     "inode-exhaustion",
+     '<svg viewBox="0 0 640 170" role="img"><style>' + _COMMON + """
+.ig-b{animation:ig-g 2.6s ease-out infinite;transform-origin:left center;}
+@keyframes ig-g{0%{transform:scaleX(0)}45%,100%{transform:scaleX(1)}}
+</style>
+<text x="14" y="26" class="dg-t">df -h  (용량)</text>
+<rect x="160" y="12" width="420" height="22" rx="5" fill="var(--line-2)"/>
+<g class="dg-anim ig-b"><rect x="160" y="12" width="126" height="22" rx="5" fill="var(--accent)" opacity=".85"/></g>
+<text x="590" y="28" class="dg-ts">30%</text>
+<text x="14" y="76" class="dg-t">df -i  (inode)</text>
+<rect x="160" y="62" width="420" height="22" rx="5" fill="var(--line-2)"/>
+<g class="dg-anim ig-b" style="animation-delay:.2s"><rect x="160" y="62" width="420" height="22" rx="5" fill="#E5484D" opacity=".85"/></g>
+<text x="590" y="78" class="dg-ts" fill="#E5484D">100%</text>
+<text x="160" y="106" class="dg-ts">주차장 비유: 바닥 면적(용량)은 남았는데 발급할 주차권(inode)이 동난 상태</text>
+<text x="14" y="132" class="dg-ts">파일 1개 = inode 1개 (크기 무관) → 0바이트 파일 수백만 개도 고갈을 일으킵니다</text>
+<text x="14" y="154" class="dg-ts">범인 찾기: for d in /var/*; do echo -n "$d: "; find "$d" -xdev -type f | wc -l; done</text>
+</svg>""")
+
+_add("ann-search", "전수조사 vs ANN (고속도로망)",
+     "모든 문서와 거리를 재는 대신, 미리 깔아둔 링크를 타고 몇 번의 점프로 목적지 근처에 도착합니다.",
+     "vector-db-ann",
+     '<svg viewBox="0 0 640 210" role="img"><style>' + _COMMON + """
+.an-s circle{animation:an-b 2.4s ease-in-out infinite;}
+@keyframes an-b{0%,100%{opacity:.25}50%{opacity:.8}}
+.an-p{stroke-dasharray:200;animation:an-p 3s ease-in-out infinite;}
+@keyframes an-p{0%{stroke-dashoffset:200}55%,100%{stroke-dashoffset:0}}
+</style>
+<text x="14" y="22" class="dg-tl">전수조사 — 1천만 번 계산</text>
+<rect x="14" y="32" width="300" height="130" rx="10" class="dg-box"/>
+<g class="an-s">""" + "".join(
+    f'<circle cx="{40 + (i % 10) * 27}" cy="{56 + (i // 10) * 24}" r="5" fill="var(--muted)" style="animation-delay:{i * 0.02:.2f}s"/>'
+    for i in range(40)) + """</g>
+<text x="40" y="152" class="dg-ts">전부 다 재본다 → 정확하지만 실시간 불가</text>
+<text x="326" y="22" class="dg-tl">HNSW — 점프로 몇십 번</text>
+<rect x="326" y="32" width="300" height="130" rx="10" class="dg-box"/>
+<g opacity=".3">""" + "".join(
+    f'<circle cx="{352 + (i % 10) * 27}" cy="{56 + (i // 10) * 24}" r="5" fill="var(--muted)"/>'
+    for i in range(40)) + """</g>
+<path d="M356 60 L 500 84 L 572 108 L 545 128 L 520 130" fill="none" stroke="var(--accent)"
+      stroke-width="2.4" class="dg-anim an-p"/>
+<circle cx="356" cy="60" r="6" class="dg-ok"/><circle cx="520" cy="130" r="6" class="dg-ok"/>
+<text x="352" y="152" class="dg-ts">위층 장거리 링크 → 아래층 세밀 탐색</text>
+<text x="14" y="186" class="dg-ts">정확도 1~2%를 내주고 속도 수백 배를 사는 거래 — 뒤에 리랭커가 있으니 후보군이 살짝 달라도 무해</text>
+<text x="14" y="204" class="dg-ts">"분명 있는 문서가 안 나올 때"는 탐색 폭(ef 등) 다이얼부터 올려보세요</text>
+</svg>""")
+
+_add("volume-vs-bind", "볼륨 vs 바인드 마운트",
+     "컨테이너는 언제든 버려질 수 있는 호텔 방입니다. 살아남을 데이터는 방 밖(볼륨)에 둬야 합니다.",
+     "docker-volumes",
+     _two("vb", "볼륨 — 운영 데이터", [
+         ("ok", "-v pgdata:/var/lib/postgresql/data"),
+         ("ok", "도커가 관리, 컨테이너보다 오래 산다"),
+         ("ok", "DB·업로드 파일에 사용"),
+         ("no", "compose down -v 는 볼륨까지 삭제!"),
+     ], "바인드 마운트 — 개발 편의", [
+         ("ok", "-v /home/me/src:/app/src (경로로 시작)"),
+         ("ok", "에디터 수정이 즉시 반영"),
+         ("no", "호스트 경로에 종속 · UID 권한 문제"),
+         ("no", "운영 데이터 보관용으로는 부적합"),
+     ], "점검: docker inspect 컨테이너 --format '{{json .Mounts}}' — 비어 있으면 데이터가 사라질 위험"))
+
+_add("keyscope", "마스터키 vs 카드키 — 토큰 범위",
+     "유출은 언제든 일어납니다. 그때 피해 크기를 정하는 건 토큰에 부여한 범위예요.",
+     "least-privilege-tokens",
+     _two("ks", "넓은 토큰 (마스터키)", [
+         ("no", "계정 전체 저장소 접근"),
+         ("no", "읽기+쓰기+삭제+설정 변경"),
+         ("no", "만료 없음 / 무기한"),
+         ("no", "유출 시 = 계정 전체 사고"),
+     ], "fine-grained (카드키)", [
+         ("ok", "그 저장소 하나만 선택"),
+         ("ok", "Contents: Read and write 만"),
+         ("ok", "만료 7일 등 짧게"),
+         ("ok", "유출 시 = 그 저장소만, 곧 만료"),
+     ], "노출되면 고민 말고 즉시 폐기(revoke) 후 재발급 · CI에서는 값이 아니라 Secret 이름만 참조"))
+
+
+# ── 2차 배치 ──────────────────────────────────────────────────
+_add("cron-utc-axis", "cron 5칸과 UTC 시차",
+     "표현식은 맞는데 시각이 어긋나면, 대개 그 시스템이 UTC로 해석하기 때문입니다.",
+     "cron-utc",
+     '<svg viewBox="0 0 640 190" role="img"><style>' + _COMMON + """
+.cu-m{animation:cu-m 3s ease-in-out infinite;}
+@keyframes cu-m{0%,100%{opacity:.4}50%{opacity:1}}
+</style>
+<rect x="14" y="14" width="612" height="52" rx="10" class="dg-box"/>
+<text x="30" y="36" class="dg-t">*  *  *  *  *</text>
+<text x="140" y="36" class="dg-ts">분(0-59) · 시(0-23) · 일(1-31) · 월(1-12) · 요일(0-6, 0=일)</text>
+<text x="30" y="56" class="dg-ts">0 18 * * *  → 매일 18:00 · */15 * * * * → 15분마다 · 0 9 * * 1 → 월요일 09:00</text>
+<line x1="40" y1="112" x2="600" y2="112" class="dg-arrow"/>
+<line x1="200" y1="98" x2="200" y2="126" stroke="var(--accent)" stroke-width="2.4"/>
+<text x="168" y="92" class="dg-ts" fill="var(--accent)">UTC 18:00</text>
+<line x1="440" y1="98" x2="440" y2="126" stroke="#E8842C" stroke-width="2.4"/>
+<text x="404" y="92" class="dg-ts" fill="#E8842C">KST 03:00</text>
+<path d="M200 132 H 440" stroke="var(--faint)" stroke-width="1.4" stroke-dasharray="4 4" fill="none"/>
+<g class="dg-anim cu-m"><text x="286" y="148" class="dg-ts">+9 시간</text></g>
+<text x="14" y="172" class="dg-ts">한국 새벽 3시에 돌리려면 3 − 9 = −6 → 전날 18:00 UTC 로 적어야 합니다 (0 18 * * *)</text>
+</svg>""")
+
+_add("chunk-overlap", "청크 크기와 오버랩",
+     "너무 크면 잡음이 섞이고, 너무 작으면 문맥이 끊깁니다. 겹치는 구간이 경계에 걸린 문장을 구해주죠.",
+     "chunking",
+     '<svg viewBox="0 0 640 220" role="img"><style>' + _COMMON + """
+.co-h{animation:co-h 3s ease-in-out infinite;}
+@keyframes co-h{0%,100%{opacity:.35}50%{opacity:.85}}
+</style>
+<text x="14" y="22" class="dg-t">너무 크게 — 한 조각에 여러 주제(잡음)</text>
+<rect x="300" y="8" width="326" height="20" rx="4" fill="var(--line-2)" stroke="var(--line)"/>
+<text x="312" y="23" class="dg-ts">환불 + 배송 + 교환 + 회원가입 …</text>
+<text x="14" y="60" class="dg-t">너무 작게 — 문맥 끊김</text>
+<rect x="300" y="46" width="60" height="20" rx="4" fill="var(--line-2)" stroke="var(--line)"/><text x="308" y="61" class="dg-ts">단, 예외</text>
+<rect x="366" y="46" width="60" height="20" rx="4" fill="var(--line-2)" stroke="var(--line)"/>
+<rect x="432" y="46" width="60" height="20" rx="4" fill="var(--line-2)" stroke="var(--line)"/>
+<text x="500" y="61" class="dg-ts">뭐의 예외인지 모름</text>
+<text x="14" y="100" class="dg-t">적당히 + 오버랩</text>
+<rect x="300" y="86" width="150" height="22" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+<rect x="410" y="112" width="150" height="22" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+<rect x="410" y="86" width="40" height="48" rx="3" fill="var(--accent)" opacity=".22" class="dg-anim co-h"/>
+<text x="392" y="152" class="dg-ts" fill="var(--accent)">겹침 10~20%</text>
+<text x="306" y="101" class="dg-ts">청크 1</text><text x="470" y="127" class="dg-ts">청크 2</text>
+<text x="14" y="182" class="dg-ts">기준: "한 조각 = 하나의 완결된 생각" · 300~800토큰에서 시작해 평가로 조정</text>
+<text x="14" y="204" class="dg-ts">글자 수로 뚝 자르지 말고 문단 → 문장 경계를 존중 · 청크에 출처 메타데이터를 붙이기</text>
+</svg>""")
+
+_add("syn-patterns", "tcpdump로 읽는 SYN 3패턴",
+     "서버에서 캡처를 켜고 접속을 시도하면, 세 가지 중 하나가 보입니다. 그게 곧 책임 구간입니다.",
+     "tcpdump-basics",
+     _ladder("sp", [
+         ("① 아무것도 안 보임", "(정적)", "앞단 방화벽·NACL·라우팅"),
+         ("② SYN → RST 응답", "Flags [S] → Flags [R.]", "포트에 앱 없음 (ss로 확인)"),
+         ("③ SYN 반복, 응답 없음", "Flags [S] × 3회 재전송", "응답 경로 차단 (임시포트·DROP)"),
+     ], "sudo tcpdump -ni any port 8080 -c 30  ← 내가 curl로 재현하며 그 파문만 관찰하는 게 요령"))
+
+_add("load-per-core", "load average는 코어 수로 나눠 읽는다",
+     "같은 4.2라도 서버에 따라 의미가 정반대입니다. load ÷ 코어 ≈ 1.0이 만석 기준선이에요.",
+     "load-average",
+     _bars("lc", [("2코어 · load 4.2", 2.1, "2.1배 과부하"),
+                  ("4코어 · load 4.2", 1.05, "1.05배 만석"),
+                  ("16코어 · load 4.2", 0.26, "0.26배 한산")],
+           2.4, "숫자 3개는 1분/5분/15분 평균 — 1분<15분이면 가라앉는 중, 1분>15분이면 차오르는 중",
+           thr=1.0, thr_label="기준선 1.0"))
+
+_add("l7-vs-l4", "ALB(L7) vs NLB(L4)",
+     "편지를 뜯어 내용을 읽으면 ALB, 겉면만 보고 던지면 NLB. 여기서 기능·성능·클라이언트IP가 갈립니다.",
+     "alb-vs-nlb",
+     _two("ln", "ALB — 뜯어 읽는다 (L7)", [
+         ("ok", "경로/호스트/헤더 라우팅"),
+         ("ok", "TLS 종료 · 리다이렉트 · HTTP 헬스체크"),
+         ("no", "HTTP(S)만 · 상대적으로 느림"),
+         ("no", "클라이언트 IP가 ALB로 바뀜 → X-Forwarded-For 복원 필요"),
+     ], "NLB — 겉면만 본다 (L4)", [
+         ("ok", "TCP/UDP 뭐든 (DB·MQTT·게임)"),
+         ("ok", "초고성능 저지연 · 고정 IP(EIP) 부착"),
+         ("ok", "클라이언트 IP 보존"),
+         ("no", "그래서 방화벽을 클라이언트 IP 기준으로 열어야 함"),
+     ], "둘 다 필요하면 NLB(고정IP) → ALB(L7 라우팅) → 서버 체인 구성이 흔합니다"))
+
+_add("route-table-diff", "public / private을 정하는 한 줄",
+     "서브넷에 붙은 딱지가 아니라 라우팅 테이블의 기본 경로가 정체를 결정합니다.",
+     "public-private-subnet",
+     _two("rt", "public 서브넷", [
+         ("dot", "10.0.0.0/16 → local"),
+         ("ok", "0.0.0.0/0 → igw (인터넷 게이트웨이)"),
+         ("dot", "= 양방향 문"),
+         ("dot", "LB · 배스천 · NAT GW 가 사는 곳"),
+     ], "private 서브넷", [
+         ("dot", "10.0.0.0/16 → local"),
+         ("no", "0.0.0.0/0 → 없음 (인터넷 직통 불가)"),
+         ("ok", "0.0.0.0/0 → nat (나가기 전용 문)"),
+         ("dot", "WAS · DB 가 사는 곳"),
+     ], "공인 IP를 붙여도 IGW 경로가 없으면 통신 불가 — IP보다 경로가 먼저입니다"))
+
+_add("secret-spread", "코드에 박은 비밀은 복제된다",
+     "한 번 커밋되면 히스토리·노트북·백업으로 퍼지고 교체가 불가능해집니다. 금고에 두고 실행 시점에 꺼내 쓰세요.",
+     "secret-manager",
+     _two("ss", "코드에 박기", [
+         ("no", "git push → 클론한 모든 노트북에 사본"),
+         ("no", "지워도 히스토리에 영원히 남음"),
+         ("no", "교체하려면 전 서비스 재배포 → 미룸"),
+         ("no", ".env도 결국 평문 파일 (장소만 이동)"),
+     ], "Secret Manager", [
+         ("ok", "값은 금고에만, 코드엔 '이름'만"),
+         ("ok", "누가 언제 꺼냈는지 감사 로그"),
+         ("ok", "교체는 금고 값만 갱신 (재배포 불필요)"),
+         ("ok", "IAM으로 접근 권한 즉시 회수"),
+     ], "이미 커밋했다면 히스토리 청소보다 '즉시 교체'가 1순위 · gitleaks로 재발 차단"))
+
+_add("backoff-growth", "CrashLoopBackOff의 재시도 간격",
+     "죽을 때마다 대기 시간이 늘어납니다. 상태명은 '재시도 중'이라는 뜻일 뿐, 원인은 따로 찾아야 하죠.",
+     "crashloopbackoff",
+     '<svg viewBox="0 0 640 180" role="img"><style>' + _COMMON + """
+.bg-b{animation:bg-g 2.8s ease-out infinite;transform-origin:left center;}
+@keyframes bg-g{0%{transform:scaleX(0)}50%,100%{transform:scaleX(1)}}
+</style>""" + "".join(
+    f'<text x="14" y="{30+i*26}" class="dg-ts">재시도 {i+1}</text>'
+    f'<g class="dg-anim bg-b" style="animation-delay:{i*.16:.2f}s">'
+    f'<rect x="86" y="{18+i*26}" width="{min(24*2**i,470)}" height="16" rx="4" fill="var(--accent)" opacity=".8"/></g>'
+    f'<text x="{min(24*2**i,470)+94}" y="{31+i*26}" class="dg-ts">{10*2**i}s 대기</text>'
+    for i in range(5)) + """
+<text x="14" y="164" class="dg-ts">순서: logs --previous (유언) → describe (Exit Code·Events) → 톱4 (설정 · OOM 137 · 프로브 · 의존성)</text>
+</svg>""")
+
+_add("oom-selection", "OOM Killer의 피해자 선정",
+     "메모리가 바닥나면 커널이 oom_score 최고점을 즉살합니다. 로그가 없는 게 오히려 단서예요.",
+     "oom-killer",
+     _flow("oo", [("메모리 고갈", "overcommit 지급 불능"),
+                  ("oom_score 계산", "많이 쓰는 놈이 고점"),
+                  ("최고점 즉살", "SIGKILL — 유언 없음"),
+                  ("dmesg에 기록", "Out of memory: Killed")],
+           "확인: dmesg -T | grep -i 'out of memory' · 보호는 OOMScoreAdjust (단, 폭탄 돌리기)"))
+
+_add("cache-bust", "CDN 캐시 — 회수보다 새 이름",
+     "무효화는 응급처치고, 근본은 해시 파일명입니다. HTML만 짧게, 해시 붙은 자원은 1년으로.",
+     "cdn-cache",
+     _two("cb", "무효화 (응급처치)", [
+         ("dot", "전 지점에 '그 물건 회수' 공문"),
+         ("no", "전파에 시간 · 횟수 제한/비용"),
+         ("no", "매 배포마다 /* 는 임시방편"),
+     ], "해시 파일명 (근본)", [
+         ("ok", "app.3f9c2a.js — 내용 바뀌면 이름도 바뀜"),
+         ("ok", "정적 자원 max-age=31536000, immutable"),
+         ("ok", "index.html 만 no-cache → 무효화 거의 불필요"),
+     ], "안 바뀌는 미스터리는 캐시 키 확인 (쿼리스트링 포함 여부) · 검증은 시크릿 창으로"))
+
+_add("cost-leaks", "클라우드 비용이 새는 다섯 군데",
+     "범인은 화려한 서비스가 아니라 잊혀진 것들입니다. 월 1회 30분 점검이면 고지서가 달라져요.",
+     "cloud-cost-leaks",
+     _ladder("cl", [
+         ("고아 자원", "미사용 공인 IP · 볼륨", "서버 삭제 시 세트로 삭제"),
+         ("무한 스냅샷", "백업 개수 세보기", "보존 정책 필수 (일7+주4+월3)"),
+         ("밤샘 개발서버", "24h 가동 여부", "저녁 정지 / 아침 시작 스케줄"),
+         ("안 줄는 스케일링", "스케일링 이력 확인", "축소 정책 · 사각지대 · min 값"),
+         ("보이지 않는 전송량", "NAT·CDN 없는 오리진", "엔드포인트 / CDN 으로 우회"),
+     ], "습관: 태그 규칙(owner/project/expire) · 예산 알람 50·80·100% · 월 1회 정기 점검"))
+
+_add("closed-open-book", "클로즈드북 → 오픈북 (RAG)",
+     "모델을 더 똑똑하게 만드는 게 아니라, 답하기 직전에 정답 페이지를 쥐여주는 겁니다.",
+     "what-is-rag",
+     _two("ob", "그냥 LLM — 클로즈드북", [
+         ("no", "학습 때 외운 것만 답한다"),
+         ("no", "사내 문서·최신 정보를 모른다"),
+         ("no", "모르면 그럴듯하게 지어낸다"),
+         ("no", "출처를 댈 수 없다"),
+     ], "RAG — 오픈북", [
+         ("ok", "질문과 관련된 조각을 찾아 프롬프트에 넣음"),
+         ("ok", "문서만 갱신하면 지식도 갱신"),
+         ("ok", "'근거에 없으면 모른다'로 통제 가능"),
+         ("ok", "근거 문서로 검증·인용 가능"),
+     ], "4단계: 자르기(chunk) → 임베딩 → 검색(top-k) → 근거와 함께 질문"))
+
+_add("static-vs-dynamic", "정적 사이트 vs 동적 사이트",
+     "매번 조립할 게 없는 블로그는 미리 인쇄한 전단지면 충분합니다. 그래서 서버가 필요 없죠.",
+     "github-pages",
+     _two("sv", "동적 — 주문 요리", [
+         ("dot", "요청마다 서버가 DB 뒤져 페이지 조립"),
+         ("no", "서버·OS·nginx·인증서 관리 필요"),
+         ("no", "트래픽 몰리면 느려지고 죽는다"),
+     ], "정적 — 미리 인쇄한 전단지", [
+         ("ok", "완성된 HTML을 그대로 전달"),
+         ("ok", "서버 0원, 사실상 안 죽는다"),
+         ("ok", "빠르고 보안 표면도 작다"),
+     ], "필수 3종: 완성된 HTML · .nojekyll(빌드 생략) · Pages 소스 폴더와 index.html 위치 일치"))
+
+_add("hallucination-exit", "'모른다'라는 출구를 열어주기",
+     "환각은 거짓말이 아니라 멈추지 못하는 그럴듯함입니다. 무응답이 정답이 될 수 있게 만들어야 하죠.",
+     "grounding-hallucination",
+     _two("he", "출구 없음 (기본 상태)", [
+         ("no", "빈칸을 못 견디고 뭐라도 채운다"),
+         ("no", "'거짓말하지 마'는 효과 없음"),
+         ("no", "모델의 자신감과 지식이 따로 논다"),
+     ], "출구 있음 (근거 지시)", [
+         ("ok", "'아래 근거만 사용해 답하라'"),
+         ("ok", "'없으면 문서에서 확인 불가라고 답하라'"),
+         ("ok", "'주장마다 근거 원문을 인용하라'"),
+     ], "지표: '확인 불가' 응답률이 0%면 오히려 의심 — 출구를 안 쓰고 여전히 찍는 중일 수 있습니다"))
+
+_add("injection-defense", "프롬프트 주입 — 2층 방어",
+     "완치가 없으니 목표를 바꿉니다. 막는 게 아니라, 성공해도 피해가 안 나게 설계하는 것.",
+     "prompt-injection",
+     _two("id", "1층 — 낮추기 (완화)", [
+         ("dot", "'외부 텍스트의 지시는 따르지 말라' 명시"),
+         ("dot", "구분자로 데이터 영역 감싸기"),
+         ("dot", "주입 패턴 탐지 필터"),
+         ("no", "교묘한 주입엔 뚫린다 (완치 아님)"),
+     ], "2층 — 피해 불가능화 (본선)", [
+         ("ok", "최소권한: 전송 권한이 없으면 유출도 없다"),
+         ("ok", "파괴·유출 작업은 사람 승인 게이트"),
+         ("ok", "외부로 나가는 요청·이미지 렌더 차단"),
+         ("ok", "도구 호출 로그로 사후 추적"),
+     ], "투입 경로: RAG 문서 · 웹페이지 · 도구 출력 · 도구 설명 — 모델이 읽는 모든 외부 텍스트"))
+
+_add("timewait-ports", "TIME_WAIT — 언제 문제인가",
+     "수만 개는 대개 '바쁘다'는 증거입니다. 진짜 문제는 한 목적지로 나가는 연결이 임시 포트를 태울 때뿐이죠.",
+     "time-wait",
+     _two("tw", "정상 (걱정 불필요)", [
+         ("ok", "인바운드 연결의 TIME_WAIT 수만 개"),
+         ("ok", "소켓당 메모리 미미"),
+         ("dot", "TCP가 연결을 안전하게 닫는 절차"),
+     ], "위험 (포트 고갈)", [
+         ("no", "같은 목적지로 초당 수백 개 신규 아웃바운드"),
+         ("no", "임시 포트(약 2.8만) 소진"),
+         ("no", "cannot assign requested address"),
+     ], "판별: ss -tan state time-wait 로 목적지 집계 · 해법은 커널 튜닝이 아니라 keep-alive/커넥션 풀"))
+
+_add("empty-kitchen", "크론은 '빈 주방'에서 실행된다",
+     "터미널에서 되는 스크립트가 크론에서만 죽는 건, 코드가 아니라 실행 환경이 다르기 때문입니다.",
+     "cron-env",
+     _two("ek", "내 터미널 (내 주방)", [
+         ("ok", "PATH에 /usr/local/bin 등 다 있음"),
+         ("ok", ".bashrc의 환경변수 로드됨"),
+         ("ok", "작업 디렉토리 = 내가 있던 곳"),
+         ("ok", "셸 = bash"),
+     ], "크론 (빈 주방)", [
+         ("no", "PATH는 /usr/bin:/bin 정도"),
+         ("no", ".bashrc를 읽지 않음 → 변수 없음"),
+         ("no", "작업 디렉토리 = 홈"),
+         ("no", "셸 = sh (dash일 수도)"),
+     ], "재현: env -i /bin/sh -c 스크립트 · 처방: PATH 명시 · env 로드 · cd 스크립트위치 · 로그 리다이렉트"))
+
+
+_add("journal-order", "죽는 서비스, 보는 순서",
+     "status는 요약본, journalctl이 전문입니다. 원인은 대개 넷 중 하나예요.",
+     "journalctl-debug",
+     _flow("jo", [("systemctl status", "Result · 종료코드"),
+                  ("journalctl -u", "유언 전문 확인"),
+                  ("원인 톱4 대조", "앱·OOM·의존성·한도"),
+                  ("-f 로 재현", "죽는 순간 목격")],
+           "종료코드가 힌트: 203/EXEC 경로·권한 · 217/USER 계정 없음 · signal=KILL 이면 dmesg로 OOM 확인"))
+
+_add("iam-routine", "최소권한, 네 가지 습관",
+     "완벽한 설계가 아니라 루틴입니다. 읽기전용에서 시작해 그룹으로 주고, 앱엔 역할을, 분기마다 회수.",
+     "iam-least-privilege",
+     _ladder("ir", [
+         ("① 읽기전용에서 시작", "ReadOnly 부여", "막히는 것만 추가"),
+         ("② 그룹·역할에만 부여", "사람 → 그룹 → 정책", "입퇴사 = 멤버십 변경"),
+         ("③ 앱엔 키 대신 역할", "인스턴스 역할", "영구 액세스키 제거"),
+         ("④ 분기마다 회수", "admin 명단·미사용 키", "90일 미사용 비활성화"),
+     ], "비상구를 설계에 포함: 봉인된 break-glass admin (MFA+알림) — 새벽 장애가 원칙을 무너뜨리지 않게"))

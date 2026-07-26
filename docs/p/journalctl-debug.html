@@ -36,6 +36,24 @@
 <article><div class="post-meta"><span>2026-07-13</span><a class="chip" href="../c/linux.html">--linux</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>systemd 서비스가 자꾸 죽을 때 — journalctl로 원인 찾는 순서</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 서비스가 죽으면 <strong><code>systemctl status</code>로 사망 요약 → <code>journalctl -u 서비스명</code>으로 유언 전문</strong> 순서로 봅니다. 죽는 이유의 대부분은 <strong>앱 에러 / OOM / 의존성·권한 / 재시작 한도 초과</strong> 넷 중 하나예요.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">죽는 서비스, 보는 순서</div><svg viewBox="0 0 640 116" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.jo-0{animation:jo-h 4.6s ease-in-out infinite;animation-delay:0.0s;}
+.jo-1{animation:jo-h 4.6s ease-in-out infinite;animation-delay:1.15s;}
+.jo-2{animation:jo-h 4.6s ease-in-out infinite;animation-delay:2.3s;}
+.jo-3{animation:jo-h 4.6s ease-in-out infinite;animation-delay:3.45s;}
+@keyframes jo-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim jo-0" x="12" y="18" width="145" height="58" rx="10"/><text x="23" y="42" class="dg-t">systemctl status</text><text x="23" y="62" class="dg-ts">Result · 종료코드</text><line x1="157" y1="47" x2="169" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim jo-1" x="169" y="18" width="145" height="58" rx="10"/><text x="180" y="42" class="dg-t">journalctl -u</text><text x="180" y="62" class="dg-ts">유언 전문 확인</text><line x1="314" y1="47" x2="326" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim jo-2" x="326" y="18" width="145" height="58" rx="10"/><text x="337" y="42" class="dg-t">원인 톱4 대조</text><text x="337" y="62" class="dg-ts">앱·OOM·의존성·한도</text><line x1="471" y1="47" x2="483" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim jo-3" x="483" y="18" width="145" height="58" rx="10"/><text x="494" y="42" class="dg-t">-f 로 재현</text><text x="494" y="62" class="dg-ts">죽는 순간 목격</text><text x="12" y="102" class="dg-ts">종료코드가 힌트: 203/EXEC 경로·권한 · 217/USER 계정 없음 · signal=KILL 이면 dmesg로 OOM 확인</text></svg><figcaption>status는 요약본, journalctl이 전문입니다. 원인은 대개 넷 중 하나예요.</figcaption></figure>
 <h2 id="_1">상황</h2>
 <div class="highlight"><pre data-lang="bash"><span></span><code>systemctl<span class="w"> </span>status<span class="w"> </span>myapp
 <span class="c1"># ● myapp.service - My Application</span>

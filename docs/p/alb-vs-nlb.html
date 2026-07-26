@@ -36,6 +36,19 @@
 <article><div class="post-meta"><span>2026-07-19</span><a class="chip" href="../c/cloud.html">--cloud</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>ALB냐 NLB냐 — L7과 L4, 로드밸런서 고르는 기준</h1><blockquote>
 <p><strong>한 줄 요약:</strong> <strong>ALB는 편지를 뜯어 내용(URL, 헤더)을 읽고</strong> 분배하는 L7 장비, <strong>NLB는 봉투 겉면(IP:포트)만 보고</strong> 초고속 분배하는 L4 장비입니다. HTTP 서비스의 똑똑한 라우팅은 ALB, 비HTTP·초고성능·고정IP가 필요하면 NLB — 기준은 이게 전부예요.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">ALB(L7) vs NLB(L4)</div><svg viewBox="0 0 640 178" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="144" rx="12"/><text x="28" y="36" class="dg-tl">ALB — 뜯어 읽는다 (L7)</text><text x="28" y="62" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="44" y="62" class="dg-ts">경로/호스트/헤더 라우팅</text><text x="28" y="86" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="44" y="86" class="dg-ts">TLS 종료 · 리다이렉트 · HTTP 헬스체크</text><text x="28" y="110" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="44" y="110" class="dg-ts">HTTP(S)만 · 상대적으로 느림</text><text x="28" y="134" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="44" y="134" class="dg-ts">클라이언트 IP가 ALB로 바뀜 → X-Forwarded-For 복원 필요</text><rect class="dg-box" x="326" y="10" width="302" height="144" rx="12"/><text x="342" y="36" class="dg-tl">NLB — 겉면만 본다 (L4)</text><text x="342" y="62" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="62" class="dg-ts">TCP/UDP 뭐든 (DB·MQTT·게임)</text><text x="342" y="86" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="86" class="dg-ts">초고성능 저지연 · 고정 IP(EIP) 부착</text><text x="342" y="110" font-size="12" font-weight="700" fill="var(--accent)">✓</text><text x="358" y="110" class="dg-ts">클라이언트 IP 보존</text><text x="342" y="134" font-size="12" font-weight="700" fill="#E5484D">✕</text><text x="358" y="134" class="dg-ts">그래서 방화벽을 클라이언트 IP 기준으로 열어야 함</text><text x="12" y="170" class="dg-ts">둘 다 필요하면 NLB(고정IP) → ALB(L7 라우팅) → 서버 체인 구성이 흔합니다</text></svg><figcaption>편지를 뜯어 내용을 읽으면 ALB, 겉면만 보고 던지면 NLB. 여기서 기능·성능·클라이언트IP가 갈립니다.</figcaption></figure>
 <h2 id="_1">같은 "로드밸런서"인데 층이 다르다</h2>
 <p>우편 분류소로 비유하면 —</p>
 <ul>

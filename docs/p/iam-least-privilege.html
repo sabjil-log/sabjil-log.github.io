@@ -36,6 +36,24 @@
 <article><div class="post-meta"><span>2026-07-17</span><a class="chip" href="../c/security.html">--security</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>일단 관리자 권한 주세요 — 클라우드 IAM 최소권한, 현실적으로 시작하기</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 최소권한은 "필요한 것만 준다"는 원칙인데, 현실에선 "뭐가 필요한지 몰라서" admin을 줍니다. 답은 완벽한 설계가 아니라 <strong>루틴</strong>이에요 — <strong>읽기전용에서 시작, 그룹/역할로 부여, 사람 말고 역할에 키, 주기적 회수.</strong></p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">최소권한, 네 가지 습관</div><svg viewBox="0 0 640 206" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.ir-0{animation:ir-h 4.0s ease-in-out infinite;animation-delay:0.0s;}
+.ir-1{animation:ir-h 4.0s ease-in-out infinite;animation-delay:1.0s;}
+.ir-2{animation:ir-h 4.0s ease-in-out infinite;animation-delay:2.0s;}
+.ir-3{animation:ir-h 4.0s ease-in-out infinite;animation-delay:3.0s;}
+@keyframes ir-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim ir-0" x="12" y="12" width="616" height="32" rx="8"/><circle cx="32" cy="28" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="33" class="dg-ts" fill="var(--accent)">1</text><text x="50" y="33" class="dg-t">① 읽기전용에서 시작</text><text x="210" y="33" class="dg-ts">ReadOnly 부여</text><text x="392" y="33" class="dg-ts">막히는 것만 추가</text><rect class="dg-box dg-anim ir-1" x="12" y="52" width="616" height="32" rx="8"/><circle cx="32" cy="68" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="73" class="dg-ts" fill="var(--accent)">2</text><text x="50" y="73" class="dg-t">② 그룹·역할에만 부여</text><text x="210" y="73" class="dg-ts">사람 → 그룹 → 정책</text><text x="392" y="73" class="dg-ts">입퇴사 = 멤버십 변경</text><rect class="dg-box dg-anim ir-2" x="12" y="92" width="616" height="32" rx="8"/><circle cx="32" cy="108" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="113" class="dg-ts" fill="var(--accent)">3</text><text x="50" y="113" class="dg-t">③ 앱엔 키 대신 역할</text><text x="210" y="113" class="dg-ts">인스턴스 역할</text><text x="392" y="113" class="dg-ts">영구 액세스키 제거</text><rect class="dg-box dg-anim ir-3" x="12" y="132" width="616" height="32" rx="8"/><circle cx="32" cy="148" r="9" fill="var(--accent)" opacity=".18"/><text x="28" y="153" class="dg-ts" fill="var(--accent)">4</text><text x="50" y="153" class="dg-t">④ 분기마다 회수</text><text x="210" y="153" class="dg-ts">admin 명단·미사용 키</text><text x="392" y="153" class="dg-ts">90일 미사용 비활성화</text><text x="12" y="198" class="dg-ts">비상구를 설계에 포함: 봉인된 break-glass admin (MFA+알림) — 새벽 장애가 원칙을 무너뜨리지 않게</text></svg><figcaption>완벽한 설계가 아니라 루틴입니다. 읽기전용에서 시작해 그룹으로 주고, 앱엔 역할을, 분기마다 회수.</figcaption></figure>
 <h2 id="admin">왜 자꾸 admin을 주게 되나</h2>
 <p>신규 입사자, 급한 장애, 외주 개발사 — "권한이 없어서 안 돼요"라는 말이 제일 무섭습니다. 그래서 일단 admin. <strong>작동은 하니까요.</strong> 문제는 클라우드 계정 하나가 갖는 폭발력입니다. 그 계정의 키가 유출되면(코드에 박힌 액세스키, 피싱), 공격자는 서버 생성(코인 채굴), 데이터 유출, 백업 삭제까지 <strong>계정이 할 수 있는 전부</strong>를 합니다. 예전에 다룬 PAT 최소권한과 같은 원리인데, 클라우드 계정은 폭발 반경이 <strong>회사 인프라 전체</strong>라는 게 다르죠.</p>
 <p>마스터키를 나눠주는 조직은 "편해서"가 아니라 <strong>"카드키 시스템을 안 만들어서"</strong> 그렇게 됩니다. 그 시스템을 만드는 최소한의 루틴이 이 글입니다.</p>

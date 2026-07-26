@@ -36,6 +36,35 @@
 <article><div class="post-meta"><span>2026-07-13</span><a class="chip" href="../c/cloud.html">--cloud</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>오토스케일링이 늘어나기만 하고 줄지 않는 이유 — 쿨다운과 지표의 함정</h1><blockquote>
 <p><strong>한 줄 요약:</strong> 스케일아웃(늘리기)은 공격적으로, 스케일인(줄이기)은 보수적으로 설계돼 있습니다. 여기에 <strong>평균의 착시, 쿨다운, 축소 정책 부재</strong>가 겹치면 "늘기만 하는" 오토스케일링이 됩니다. 요금 고지서가 그 증거고요.</p>
 </blockquote>
+<figure class="diagram"><div class="dg-cap">오토스케일링의 사각지대</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.sd-n{animation:sd-n 3.4s ease-in-out infinite;}
+@keyframes sd-n{0%,100%{transform:translateX(0)}50%{transform:translateX(120px)}}
+</style>
+<rect x="60" y="52" width="520" height="34" rx="8" fill="var(--line-2)"/>
+<rect x="216" y="52" width="208" height="34" fill="#FFF4E6"/>
+<line x1="216" y1="42" x2="216" y2="96" class="dg-wall"/>
+<line x1="424" y1="42" x2="424" y2="96" class="dg-wall"/>
+<text x="60" y="42" class="dg-ts">평균 CPU 0%</text>
+<text x="540" y="42" class="dg-ts">100%</text>
+<text x="180" y="112" class="dg-ts" fill="var(--accent)">축소 30%</text>
+<text x="392" y="112" class="dg-ts" fill="var(--accent)">확장 70%</text>
+<text x="256" y="74" class="dg-t">사각지대 — 아무 일도 안 일어남</text>
+<g class="dg-anim sd-n"><circle cx="250" cy="69" r="7" fill="#E8842C"/></g>
+<text x="14" y="146" class="dg-ts">10대로 늘어난 뒤 트래픽이 절반 되어도 대당 CPU 35% → 축소 임계값(30%)에 안 닿음 → 그대로 유지</text>
+<text x="14" y="168" class="dg-ts">해법: 사각지대 좁히기 · '평균 50% 유지' 타겟 트래킹으로 전환 · 축소 정책 존재 여부부터 확인</text>
+</svg><figcaption>확장 70%, 축소 30%로 잡으면 그 사이는 아무 일도 안 일어납니다. 한번 늘어난 서버가 눌러앉는 이유죠.</figcaption></figure>
 <h2 id="_1">증상</h2>
 <p>트래픽 몰릴 때 서버가 4대 → 10대로 늘어난 것까진 좋았습니다. 그런데 새벽 2시, 트래픽은 바닥인데 여전히 10대. 다음 달 고지서를 보고서야 알아차리죠. "왜 안 줄었지?"</p>
 <h2 id="_2">비유: 식당 알바 뽑기와 내보내기</h2>
