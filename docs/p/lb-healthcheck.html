@@ -44,6 +44,11 @@
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
 .dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
 @media (prefers-reduced-motion: reduce){
   .dg-anim{animation:none !important;}
@@ -52,7 +57,7 @@
 .hg-0{animation:hg-h 3.45s ease-in-out infinite;animation-delay:0.0s;}
 .hg-1{animation:hg-h 3.45s ease-in-out infinite;animation-delay:1.15s;}
 .hg-2{animation:hg-h 3.45s ease-in-out infinite;animation-delay:2.3s;}
-@keyframes hg-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,20.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim hg-0" x="12" y="18" width="197" height="58" rx="10"/><text x="23" y="42" class="dg-t">① 방화벽</text><text x="23" y="62" class="dg-ts">ACG·NACL 통과</text><line x1="209" y1="47" x2="221" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim hg-1" x="221" y="18" width="197" height="58" rx="10"/><text x="232" y="42" class="dg-t">② 포트</text><text x="232" y="62" class="dg-ts">앱이 그 포트 리스닝</text><line x1="419" y1="47" x2="431" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim hg-2" x="431" y="18" width="197" height="58" rx="10"/><text x="442" y="42" class="dg-t">③ 경로+200</text><text x="442" y="62" class="dg-ts">/health 가 200 반환</text><text x="12" y="102" class="dg-ts">진단: tcpdump(노크 도착?) → ss(포트 맞나?) → curl 127.0.0.1(200 주나?)</text></svg><figcaption>노크가 닿고(방화벽), 문이 맞고(포트), 대답이 200이어야(경로) 살아있음 도장이 찍힙니다.</figcaption></figure>
+@keyframes hg-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,20.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim hg-0" x="12" y="18" width="197" height="58" rx="10"/><text x="23" y="42" class="dg-key">① 방화벽</text><text x="23" y="62" class="dg-lab2">ACG·NACL 통과</text><line x1="209" y1="47" x2="221" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim hg-1" x="221" y="18" width="197" height="58" rx="10"/><text x="232" y="42" class="dg-key">② 포트</text><text x="232" y="62" class="dg-lab2">앱이 그 포트 리스닝</text><line x1="419" y1="47" x2="431" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim hg-2" x="431" y="18" width="197" height="58" rx="10"/><text x="442" y="42" class="dg-key">③ 경로+200</text><text x="442" y="62" class="dg-lab2">/health 가 200 반환</text><text x="12" y="102" class="dg-ts">진단: tcpdump(노크 도착?) → ss(포트 맞나?) → curl 127.0.0.1(200 주나?)</text></svg><figcaption>노크가 닿고(방화벽), 문이 맞고(포트), 대답이 200이어야(경로) 살아있음 도장이 찍힙니다.</figcaption></figure>
 <h2 id="_1">증상</h2>
 <p>배포는 성공했고 서버에 SSH로 들어가 <code>curl localhost</code> 하면 잘 나옵니다. 그런데 LB 콘솔엔 타겟이 계속 <strong>UNHEALTHY</strong>, 트래픽은 안 들어오죠. "서버 멀쩡한데 왜?"의 전형적인 상황입니다.</p>
 <h2 id="_2">비유: 경비원의 노크</h2>

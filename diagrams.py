@@ -14,6 +14,11 @@ _COMMON = """
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
 .dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
 @media (prefers-reduced-motion: reduce){
   .dg-anim{animation:none !important;}
@@ -22,12 +27,103 @@ _COMMON = """
 
 DIAGRAMS = {}
 
+# ══════════════════════════════════════════════════════════════
+#  아이콘 라이브러리 — 32×32 기준, (cx, cy) 중심에 배치
+# ══════════════════════════════════════════════════════════════
+_ICONS = {
+ "laptop": """
+<rect x="4" y="4" width="24" height="16" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="6.5" y="6.5" width="19" height="11" rx="1" fill="var(--dg-screen)"/>
+<path d="M1.5 22 h29 l-2.5 3.5 H4 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.3" stroke-linejoin="round"/>""",
+ "server": """
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/>""",
+ "cloud": """
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.4" stroke-linejoin="round"/>""",
+ "router": """
+<rect x="3" y="17" width="26" height="10" rx="3" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<path d="M10 17 L 7 6" stroke="var(--dg-metal-d)" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M22 17 L 25 6" stroke="var(--dg-metal-d)" stroke-width="1.6" stroke-linecap="round"/>
+<circle cx="9" cy="22" r="1.2" fill="var(--dg-green)"/>
+<circle cx="13.5" cy="22" r="1.2" fill="var(--dg-green)"/>
+<circle cx="18" cy="22" r="1.2" fill="var(--dg-amber)"/>""",
+ "switch": """
+<rect x="2" y="11" width="28" height="11" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="5" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width=".8"/>
+<rect x="10" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width=".8"/>
+<rect x="15" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width=".8"/>
+<rect x="20" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width=".8"/>
+<circle cx="26.5" cy="16.5" r="1.2" fill="var(--dg-green)"/>""",
+ "firewall": """
+<rect x="3" y="6" width="26" height="20" rx="2" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M3 12.6 h26 M3 19.3 h26" stroke="var(--dg-red)" stroke-width="1"/>
+<path d="M11 6 v6.6 M20 6 v6.6 M7 12.6 v6.7 M16 12.6 v6.7 M24.5 12.6 v6.7 M11 19.3 v6.7 M20 19.3 v6.7"
+      stroke="var(--dg-red)" stroke-width="1"/>
+<path d="M16 13 c2.6 2.4 3.4 4.2 3.4 6 a3.4 3.4 0 0 1 -6.8 0 c0 -1.8 0.8 -3.6 3.4 -6 z"
+      fill="var(--dg-amber)" stroke="var(--dg-red)" stroke-width="1"/>""",
+ "globe": """
+<circle cx="16" cy="16" r="13" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.4"/>
+<ellipse cx="16" cy="16" rx="5.5" ry="13" fill="none" stroke="var(--dg-blue)" stroke-width="1.1"/>
+<path d="M3 16 h26 M5.2 9.5 h21.6 M5.2 22.5 h21.6" stroke="var(--dg-blue)" stroke-width="1.1"/>""",
+ "database": """
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.3"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.3"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.1"/>""",
+ "lock": """
+<path d="M10 14 v-3.5 a6 6 0 0 1 12 0 V14" fill="none" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<rect x="6.5" y="14" width="19" height="14" rx="2.5" fill="var(--dg-amber-s)" stroke="var(--dg-amber)" stroke-width="1.4"/>
+<circle cx="16" cy="20" r="2" fill="var(--dg-amber)"/>
+<path d="M16 21.5 v3" stroke="var(--dg-amber)" stroke-width="1.6" stroke-linecap="round"/>""",
+ "shield": """
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.4" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.2"
+      stroke-linecap="round" stroke-linejoin="round"/>""",
+ "user": """
+<circle cx="16" cy="10" r="6" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.4"/>
+<path d="M4.5 29 c0 -6.6 5.2 -11 11.5 -11 s11.5 4.4 11.5 11" fill="var(--dg-blue-s)"
+      stroke="var(--dg-blue)" stroke-width="1.4" stroke-linecap="round"/>""",
+ "gateway": """
+<path d="M5 29 V13 a11 11 0 0 1 22 0 v16 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.4"/>
+<path d="M11 29 V15 a5 5 0 0 1 10 0 v14 z" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.3"/>
+<circle cx="19" cy="22" r="1.2" fill="var(--dg-blue)"/>""",
+ "box": """
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.4" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.2"/>""",
+ "doc": """
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.3" stroke-linecap="round"/>""",
+ "brain": """
+<path d="M16 5 a6 6 0 0 0 -6 6 a5 5 0 0 0 -2 9 a5.5 5.5 0 0 0 8 6 a5.5 5.5 0 0 0 8 -6 a5 5 0 0 0 -2 -9 a6 6 0 0 0 -6 -6 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.4"/>
+<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.1" stroke-linecap="round"/>""",
+}
+
+
+def _icon(name, cx, cy, s=1.0):
+    """아이콘을 (cx, cy) 중심에 배치. s=1 → 32px."""
+    body = _ICONS.get(name)
+    if not body:
+        return ""
+    return (f'<g transform="translate({cx - 16 * s:.1f},{cy - 16 * s:.1f}) scale({s:.3f})">'
+            f'{body}</g>')
+
+
 # ─────────────────────────────────────────────────────────────
 DIAGRAMS["stateful-vs-stateless"] = {
     "title": "스테이트풀 vs 스테이트리스 방화벽",
     "caption": "ACG는 나간 요청을 기억해 응답을 자동 통과시키고, NACL은 기억이 없어 응답용 임시 포트를 따로 열어야 합니다.",
     "post": "acg-vs-nacl",
-    "svg": """<svg viewBox="0 0 640 320" role="img" aria-label="스테이트풀과 스테이트리스 방화벽 비교">
+    "svg": """<svg viewBox="0 0 640 330" role="img" aria-label="스테이트풀과 스테이트리스 방화벽 비교">
 <style>
 """ + _COMMON + """
 .d1-pkt{animation:d1-out 3.4s ease-in-out infinite;}
@@ -35,39 +131,39 @@ DIAGRAMS["stateful-vs-stateless"] = {
 .d1-ret2{animation:d1-in2 3.4s ease-in-out infinite;}
 .d1-x{opacity:0;animation:d1-x 3.4s ease-in-out infinite;}
 @keyframes d1-out{0%,8%{transform:translateX(0);opacity:0}
- 12%{opacity:1}45%{transform:translateX(190px);opacity:1}52%{opacity:0}100%{opacity:0}}
+ 12%{opacity:1}45%{transform:translateX(210px);opacity:1}52%{opacity:0}100%{opacity:0}}
 @keyframes d1-in{0%,50%{transform:translateX(0);opacity:0}
- 56%{opacity:1}92%{transform:translateX(-190px);opacity:1}100%{opacity:0}}
+ 56%{opacity:1}92%{transform:translateX(-210px);opacity:1}100%{opacity:0}}
 @keyframes d1-in2{0%,50%{transform:translateX(0);opacity:0}
- 56%{opacity:1}78%{transform:translateX(-105px);opacity:1}86%{transform:translateX(-105px);opacity:0}100%{opacity:0}}
+ 56%{opacity:1}78%{transform:translateX(-118px);opacity:1}86%{transform:translateX(-118px);opacity:0}100%{opacity:0}}
 @keyframes d1-x{0%,76%{opacity:0}80%,92%{opacity:1}100%{opacity:0}}
 </style>
-<text x="16" y="22" class="dg-tl">ACG / 보안그룹 — 스테이트풀</text>
-<rect x="16" y="36" width="608" height="106" rx="12" class="dg-box"/>
-<rect x="34" y="66" width="74" height="46" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
-<text x="52" y="94" class="dg-t">서버</text>
-<line x1="200" y1="48" x2="200" y2="130" class="dg-wall"/>
-<text x="176" y="136" class="dg-ts">ACG</text>
-<rect x="532" y="66" width="74" height="46" rx="8" class="dg-box"/>
-<text x="556" y="94" class="dg-t">외부</text>
-<text x="250" y="66" class="dg-ts">요청 나감</text>
-<g class="dg-anim d1-pkt"><circle cx="330" cy="78" r="7" class="dg-ok"/></g>
-<text x="250" y="126" class="dg-ts">응답 — 규칙 없이 자동 통과 ✓</text>
-<g class="dg-anim d1-ret"><circle cx="520" cy="104" r="7" class="dg-ok"/></g>
+<text x="16" y="24" class="dg-key" font-size="14">ACG / 보안그룹 &#8212; 스테이트풀 (대화를 기억)</text>
+<rect x="16" y="34" width="608" height="112" rx="12" class="dg-box"/>
+""" + _icon("server", 66, 90, 1.15) + """
+<text x="44" y="132" class="dg-lab2">서버</text>
+""" + _icon("shield", 210, 90, 1.05) + """
+<text x="188" y="132" class="dg-lab2">ACG</text>
+""" + _icon("globe", 566, 90, 1.15) + """
+<text x="546" y="132" class="dg-lab2">외부</text>
+<text x="268" y="66" class="dg-lab">요청 나감</text>
+<g class="dg-anim d1-pkt"><circle cx="300" cy="78" r="7" fill="var(--dg-green)"/></g>
+<text x="268" y="122" class="dg-lab">응답 &#8212; 규칙 없이 자동 통과 <tspan class="dg-chk">&#10003;</tspan></text>
+<g class="dg-anim d1-ret"><circle cx="510" cy="104" r="7" fill="var(--dg-green)"/></g>
 
-<text x="16" y="192" class="dg-tl">NACL — 스테이트리스</text>
-<rect x="16" y="206" width="608" height="106" rx="12" class="dg-box"/>
-<rect x="34" y="236" width="74" height="46" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
-<text x="52" y="264" class="dg-t">서버</text>
-<line x1="200" y1="218" x2="200" y2="300" class="dg-wall"/>
-<text x="170" y="306" class="dg-ts">NACL</text>
-<rect x="532" y="236" width="74" height="46" rx="8" class="dg-box"/>
-<text x="556" y="264" class="dg-t">외부</text>
-<text x="250" y="236" class="dg-ts">인바운드 443 허용 → 요청 OK</text>
-<g class="dg-anim d1-pkt"><circle cx="330" cy="248" r="7" class="dg-ok"/></g>
-<g class="dg-anim d1-ret2"><circle cx="520" cy="274" r="7" class="dg-no"/></g>
-<g class="dg-anim d1-x"><text x="196" y="280" font-size="17" class="dg-no" font-weight="700">✕</text></g>
-<text x="250" y="296" class="dg-ts">응답은 임시포트(1024-65535) 미허용 → 차단</text>
+<text x="16" y="196" class="dg-key" font-size="14">NACL &#8212; 스테이트리스 (기억 없음)</text>
+<rect x="16" y="206" width="608" height="112" rx="12" class="dg-box"/>
+""" + _icon("server", 66, 262, 1.15) + """
+<text x="44" y="304" class="dg-lab2">서버</text>
+""" + _icon("firewall", 210, 262, 1.05) + """
+<text x="186" y="304" class="dg-lab2">NACL</text>
+""" + _icon("globe", 566, 262, 1.15) + """
+<text x="546" y="304" class="dg-lab2">외부</text>
+<text x="268" y="238" class="dg-lab">인바운드 443 허용 &#8594; 요청 OK</text>
+<g class="dg-anim d1-pkt"><circle cx="300" cy="250" r="7" fill="var(--dg-green)"/></g>
+<g class="dg-anim d1-ret2"><circle cx="510" cy="276" r="7" fill="var(--dg-red)"/></g>
+<g class="dg-anim d1-x"><text x="238" y="284" font-size="18" fill="var(--dg-red)" font-weight="700">&#10007;</text></g>
+<text x="268" y="296" class="dg-warn">응답은 임시포트(1024-65535) 미허용 &#8594; 차단</text>
 </svg>""",
 }
 
@@ -193,12 +289,18 @@ def _flow(uid, steps, note=""):
                f"2%,{win}%{{fill:var(--accent-soft);stroke:var(--accent)}}}}")
     h = 116 if note else 96
     o = [f'<svg viewBox="0 0 {w} {h}" role="img"><style>' + "\n".join(css) + "</style>"]
-    for i, (t, sub) in enumerate(steps):
+    for i, step in enumerate(steps):
+        t, sub = step[0], step[1]
+        ic = step[2] if len(step) > 2 else None
         x = pad + i * (bw + gap)
         o.append(f'<rect class="dg-box dg-anim {uid}-{i}" x="{x:.0f}" y="18" '
                  f'width="{bw:.0f}" height="58" rx="10"/>')
-        o.append(f'<text x="{x + 11:.0f}" y="42" class="dg-t">{t}</text>')
-        o.append(f'<text x="{x + 11:.0f}" y="62" class="dg-ts">{sub}</text>')
+        tx = x + 11
+        if ic:
+            o.append(_icon(ic, x + 26, 47, 0.82))
+            tx = x + 46
+        o.append(f'<text x="{tx:.0f}" y="42" class="dg-key">{t}</text>')
+        o.append(f'<text x="{tx:.0f}" y="62" class="dg-lab2">{sub}</text>')
         if i < n - 1:
             o.append(f'<line x1="{x + bw:.0f}" y1="47" x2="{x + bw + gap:.0f}" y2="47" class="dg-arrow"/>')
     if note:
@@ -303,10 +405,10 @@ _add("grep-awk-sed", "grep · awk · sed 역할 분담",
 _add("curl-stages", "curl -v가 보여주는 4단계",
      "출력이 어느 단계에서 멈추는지가 곧 진단 결과입니다. refused와 timeout의 구분이 핵심.",
      "curl-verbose",
-     _flow("cv", [("DNS", "resolved → 이름 해석"),
-                  ("TCP", "Connected → 연결"),
-                  ("TLS", "certificate ok → 악수"),
-                  ("HTTP", "&gt; 요청 / &lt; 응답")],
+     _flow("cv", [("DNS", "이름 → IP", "globe"),
+                  ("TCP", "Connected", "router"),
+                  ("TLS", "인증서 검증", "lock"),
+                  ("HTTP", "요청 / 응답", "doc")],
            "refused = 도착했는데 아무도 없음 · timeout = 패킷이 증발 (방화벽 계열)"))
 
 _add("kubectl-five", "kubectl 디버깅 다섯 개의 창",
@@ -1120,3 +1222,5 @@ _add("eval-loop", "LLM 앱 평가 루프",
 <text x="34" y="132" class="dg-ts">고쳐서 다시</text>
 <text x="18" y="238" class="dg-ts">지표: 정답률 · 검색 재현율(RAG) · 근거 충실도 · '모른다' 응답률 — 0%면 오히려 의심</text>
 </svg>""")
+
+

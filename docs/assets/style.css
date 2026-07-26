@@ -322,3 +322,19 @@ article pre[data-lang]:hover::after{opacity:0;}   /* hover 시 copy 버튼에 �
 @media (max-width:560px){ .viz{padding:12px 8px 10px;border-radius:12px;} }
 .dg-card .dg-cap-out{font-family:var(--mono);font-size:11.5px;color:var(--accent);
   text-transform:uppercase;letter-spacing:.03em;margin:0 0 -8px 4px;}
+
+/* ---- 다이어그램 시맨틱 팔레트 (아이콘·강조용) ---- */
+:root{
+  --dg-red:#C0392B; --dg-blue:#2B5FA8; --dg-green:#2E8B62;
+  --dg-amber:#D98324; --dg-violet:#6B4E9B; --dg-teal:#1F8A8A;
+  --dg-red-s:#FBEAE7; --dg-blue-s:#E9F1FC; --dg-green-s:#E6F4EE;
+  --dg-amber-s:#FDF3E4; --dg-violet-s:#F0EAF8;
+  --dg-metal:#DCE1E7; --dg-metal-d:#8A949F; --dg-screen:#BFD8F5;
+}
+[data-theme="dark"]{
+  --dg-red:#F0857C; --dg-blue:#8FB6EE; --dg-green:#6FD6A8;
+  --dg-amber:#EDB161; --dg-violet:#B69BE0; --dg-teal:#67C9C9;
+  --dg-red-s:#2B1A18; --dg-blue-s:#17202E; --dg-green-s:#152A22;
+  --dg-amber-s:#2A2116; --dg-violet-s:#211B2E;
+  --dg-metal:#39424C; --dg-metal-d:#6E7883; --dg-screen:#2A3E5C;
+}

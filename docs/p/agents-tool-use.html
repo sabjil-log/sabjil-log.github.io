@@ -44,6 +44,11 @@
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
 .dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
 @media (prefers-reduced-motion: reduce){
   .dg-anim{animation:none !important;}
@@ -53,7 +58,7 @@
 .al-1{animation:al-h 4.6s ease-in-out infinite;animation-delay:1.15s;}
 .al-2{animation:al-h 4.6s ease-in-out infinite;animation-delay:2.3s;}
 .al-3{animation:al-h 4.6s ease-in-out infinite;animation-delay:3.45s;}
-@keyframes al-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim al-0" x="12" y="18" width="145" height="58" rx="10"/><text x="23" y="42" class="dg-t">① 도구 명세</text><text x="23" y="62" class="dg-ts">모델에 목록 전달</text><line x1="157" y1="47" x2="169" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim al-1" x="169" y="18" width="145" height="58" rx="10"/><text x="180" y="42" class="dg-t">② 도구 요청</text><text x="180" y="62" class="dg-ts">모델이 이름+인자 지정</text><line x1="314" y1="47" x2="326" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim al-2" x="326" y="18" width="145" height="58" rx="10"/><text x="337" y="42" class="dg-t">③ 우리가 실행</text><text x="337" y="62" class="dg-ts">권한·승인 게이트</text><line x1="471" y1="47" x2="483" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim al-3" x="483" y="18" width="145" height="58" rx="10"/><text x="494" y="42" class="dg-t">④ 결과 회신</text><text x="494" y="62" class="dg-ts">대화에 붙여 재질의</text><text x="12" y="102" class="dg-ts">④ 다음 다시 ②로 — 도구 요청이 안 나올 때까지 반복하는 while 루프가 에이전트의 정체</text></svg><figcaption>모델은 실행 '요청서'를 쓸 뿐이고, 방아쇠는 항상 우리 코드가 당깁니다. 그 사이가 안전장치의 자리죠.</figcaption></figure>
+@keyframes al-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim al-0" x="12" y="18" width="145" height="58" rx="10"/><text x="23" y="42" class="dg-key">① 도구 명세</text><text x="23" y="62" class="dg-lab2">모델에 목록 전달</text><line x1="157" y1="47" x2="169" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim al-1" x="169" y="18" width="145" height="58" rx="10"/><text x="180" y="42" class="dg-key">② 도구 요청</text><text x="180" y="62" class="dg-lab2">모델이 이름+인자 지정</text><line x1="314" y1="47" x2="326" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim al-2" x="326" y="18" width="145" height="58" rx="10"/><text x="337" y="42" class="dg-key">③ 우리가 실행</text><text x="337" y="62" class="dg-lab2">권한·승인 게이트</text><line x1="471" y1="47" x2="483" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim al-3" x="483" y="18" width="145" height="58" rx="10"/><text x="494" y="42" class="dg-key">④ 결과 회신</text><text x="494" y="62" class="dg-lab2">대화에 붙여 재질의</text><text x="12" y="102" class="dg-ts">④ 다음 다시 ②로 — 도구 요청이 안 나올 때까지 반복하는 while 루프가 에이전트의 정체</text></svg><figcaption>모델은 실행 '요청서'를 쓸 뿐이고, 방아쇠는 항상 우리 코드가 당깁니다. 그 사이가 안전장치의 자리죠.</figcaption></figure>
 <h2 id="_1">챗봇과 에이전트의 경계선</h2>
 <p>"서버 상태 확인해줘"에 대한 두 가지 응답:</p>
 <ul>

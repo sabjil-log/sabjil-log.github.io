@@ -44,6 +44,11 @@
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
 .dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
 @media (prefers-reduced-motion: reduce){
   .dg-anim{animation:none !important;}
@@ -53,7 +58,7 @@
 .jo-1{animation:jo-h 4.6s ease-in-out infinite;animation-delay:1.15s;}
 .jo-2{animation:jo-h 4.6s ease-in-out infinite;animation-delay:2.3s;}
 .jo-3{animation:jo-h 4.6s ease-in-out infinite;animation-delay:3.45s;}
-@keyframes jo-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim jo-0" x="12" y="18" width="145" height="58" rx="10"/><text x="23" y="42" class="dg-t">systemctl status</text><text x="23" y="62" class="dg-ts">Result · 종료코드</text><line x1="157" y1="47" x2="169" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim jo-1" x="169" y="18" width="145" height="58" rx="10"/><text x="180" y="42" class="dg-t">journalctl -u</text><text x="180" y="62" class="dg-ts">유언 전문 확인</text><line x1="314" y1="47" x2="326" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim jo-2" x="326" y="18" width="145" height="58" rx="10"/><text x="337" y="42" class="dg-t">원인 톱4 대조</text><text x="337" y="62" class="dg-ts">앱·OOM·의존성·한도</text><line x1="471" y1="47" x2="483" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim jo-3" x="483" y="18" width="145" height="58" rx="10"/><text x="494" y="42" class="dg-t">-f 로 재현</text><text x="494" y="62" class="dg-ts">죽는 순간 목격</text><text x="12" y="102" class="dg-ts">종료코드가 힌트: 203/EXEC 경로·권한 · 217/USER 계정 없음 · signal=KILL 이면 dmesg로 OOM 확인</text></svg><figcaption>status는 요약본, journalctl이 전문입니다. 원인은 대개 넷 중 하나예요.</figcaption></figure>
+@keyframes jo-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim jo-0" x="12" y="18" width="145" height="58" rx="10"/><text x="23" y="42" class="dg-key">systemctl status</text><text x="23" y="62" class="dg-lab2">Result · 종료코드</text><line x1="157" y1="47" x2="169" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim jo-1" x="169" y="18" width="145" height="58" rx="10"/><text x="180" y="42" class="dg-key">journalctl -u</text><text x="180" y="62" class="dg-lab2">유언 전문 확인</text><line x1="314" y1="47" x2="326" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim jo-2" x="326" y="18" width="145" height="58" rx="10"/><text x="337" y="42" class="dg-key">원인 톱4 대조</text><text x="337" y="62" class="dg-lab2">앱·OOM·의존성·한도</text><line x1="471" y1="47" x2="483" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim jo-3" x="483" y="18" width="145" height="58" rx="10"/><text x="494" y="42" class="dg-key">-f 로 재현</text><text x="494" y="62" class="dg-lab2">죽는 순간 목격</text><text x="12" y="102" class="dg-ts">종료코드가 힌트: 203/EXEC 경로·권한 · 217/USER 계정 없음 · signal=KILL 이면 dmesg로 OOM 확인</text></svg><figcaption>status는 요약본, journalctl이 전문입니다. 원인은 대개 넷 중 하나예요.</figcaption></figure>
 <h2 id="_1">상황</h2>
 <div class="highlight"><pre data-lang="bash"><span></span><code>systemctl<span class="w"> </span>status<span class="w"> </span>myapp
 <span class="c1"># ● myapp.service - My Application</span>

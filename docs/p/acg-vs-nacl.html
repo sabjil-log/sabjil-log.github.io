@@ -46,7 +46,7 @@
 <li><strong>ACG/보안그룹</strong> = 방문마다 붙은 경비. <strong>그 방(인스턴스)</strong>에만 적용.</li>
 </ul>
 <p>패킷은 둘 다 통과해야 합니다. 그래서 "방화벽 열었는데요?"라는 말은 항상 <strong>"둘 중 어느 걸요?"</strong>를 되물어야 해요.</p>
-<figure class="diagram"><div class="dg-cap">스테이트풀 vs 스테이트리스 방화벽</div><svg viewBox="0 0 640 320" role="img" aria-label="스테이트풀과 스테이트리스 방화벽 비교">
+<figure class="diagram"><div class="dg-cap">스테이트풀 vs 스테이트리스 방화벽</div><svg viewBox="0 0 640 330" role="img" aria-label="스테이트풀과 스테이트리스 방화벽 비교">
 <style>
 
 .dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
@@ -56,6 +56,11 @@
 .dg-ok{fill:var(--accent);}
 .dg-no{fill:#E5484D;}
 .dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
 .dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
 @media (prefers-reduced-motion: reduce){
   .dg-anim{animation:none !important;}
@@ -66,39 +71,69 @@
 .d1-ret2{animation:d1-in2 3.4s ease-in-out infinite;}
 .d1-x{opacity:0;animation:d1-x 3.4s ease-in-out infinite;}
 @keyframes d1-out{0%,8%{transform:translateX(0);opacity:0}
- 12%{opacity:1}45%{transform:translateX(190px);opacity:1}52%{opacity:0}100%{opacity:0}}
+ 12%{opacity:1}45%{transform:translateX(210px);opacity:1}52%{opacity:0}100%{opacity:0}}
 @keyframes d1-in{0%,50%{transform:translateX(0);opacity:0}
- 56%{opacity:1}92%{transform:translateX(-190px);opacity:1}100%{opacity:0}}
+ 56%{opacity:1}92%{transform:translateX(-210px);opacity:1}100%{opacity:0}}
 @keyframes d1-in2{0%,50%{transform:translateX(0);opacity:0}
- 56%{opacity:1}78%{transform:translateX(-105px);opacity:1}86%{transform:translateX(-105px);opacity:0}100%{opacity:0}}
+ 56%{opacity:1}78%{transform:translateX(-118px);opacity:1}86%{transform:translateX(-118px);opacity:0}100%{opacity:0}}
 @keyframes d1-x{0%,76%{opacity:0}80%,92%{opacity:1}100%{opacity:0}}
 </style>
-<text x="16" y="22" class="dg-tl">ACG / 보안그룹 — 스테이트풀</text>
-<rect x="16" y="36" width="608" height="106" rx="12" class="dg-box"/>
-<rect x="34" y="66" width="74" height="46" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
-<text x="52" y="94" class="dg-t">서버</text>
-<line x1="200" y1="48" x2="200" y2="130" class="dg-wall"/>
-<text x="176" y="136" class="dg-ts">ACG</text>
-<rect x="532" y="66" width="74" height="46" rx="8" class="dg-box"/>
-<text x="556" y="94" class="dg-t">외부</text>
-<text x="250" y="66" class="dg-ts">요청 나감</text>
-<g class="dg-anim d1-pkt"><circle cx="330" cy="78" r="7" class="dg-ok"/></g>
-<text x="250" y="126" class="dg-ts">응답 — 규칙 없이 자동 통과 ✓</text>
-<g class="dg-anim d1-ret"><circle cx="520" cy="104" r="7" class="dg-ok"/></g>
+<text x="16" y="24" class="dg-key" font-size="14">ACG / 보안그룹 &#8212; 스테이트풀 (대화를 기억)</text>
+<rect x="16" y="34" width="608" height="112" rx="12" class="dg-box"/>
+<g transform="translate(47.6,71.6) scale(1.150)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g>
+<text x="44" y="132" class="dg-lab2">서버</text>
+<g transform="translate(193.2,73.2) scale(1.050)">
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.4" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.2"
+      stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="188" y="132" class="dg-lab2">ACG</text>
+<g transform="translate(547.6,71.6) scale(1.150)">
+<circle cx="16" cy="16" r="13" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.4"/>
+<ellipse cx="16" cy="16" rx="5.5" ry="13" fill="none" stroke="var(--dg-blue)" stroke-width="1.1"/>
+<path d="M3 16 h26 M5.2 9.5 h21.6 M5.2 22.5 h21.6" stroke="var(--dg-blue)" stroke-width="1.1"/></g>
+<text x="546" y="132" class="dg-lab2">외부</text>
+<text x="268" y="66" class="dg-lab">요청 나감</text>
+<g class="dg-anim d1-pkt"><circle cx="300" cy="78" r="7" fill="var(--dg-green)"/></g>
+<text x="268" y="122" class="dg-lab">응답 &#8212; 규칙 없이 자동 통과 <tspan class="dg-chk">&#10003;</tspan></text>
+<g class="dg-anim d1-ret"><circle cx="510" cy="104" r="7" fill="var(--dg-green)"/></g>
 
-<text x="16" y="192" class="dg-tl">NACL — 스테이트리스</text>
-<rect x="16" y="206" width="608" height="106" rx="12" class="dg-box"/>
-<rect x="34" y="236" width="74" height="46" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
-<text x="52" y="264" class="dg-t">서버</text>
-<line x1="200" y1="218" x2="200" y2="300" class="dg-wall"/>
-<text x="170" y="306" class="dg-ts">NACL</text>
-<rect x="532" y="236" width="74" height="46" rx="8" class="dg-box"/>
-<text x="556" y="264" class="dg-t">외부</text>
-<text x="250" y="236" class="dg-ts">인바운드 443 허용 → 요청 OK</text>
-<g class="dg-anim d1-pkt"><circle cx="330" cy="248" r="7" class="dg-ok"/></g>
-<g class="dg-anim d1-ret2"><circle cx="520" cy="274" r="7" class="dg-no"/></g>
-<g class="dg-anim d1-x"><text x="196" y="280" font-size="17" class="dg-no" font-weight="700">✕</text></g>
-<text x="250" y="296" class="dg-ts">응답은 임시포트(1024-65535) 미허용 → 차단</text>
+<text x="16" y="196" class="dg-key" font-size="14">NACL &#8212; 스테이트리스 (기억 없음)</text>
+<rect x="16" y="206" width="608" height="112" rx="12" class="dg-box"/>
+<g transform="translate(47.6,243.6) scale(1.150)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g>
+<text x="44" y="304" class="dg-lab2">서버</text>
+<g transform="translate(193.2,245.2) scale(1.050)">
+<rect x="3" y="6" width="26" height="20" rx="2" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M3 12.6 h26 M3 19.3 h26" stroke="var(--dg-red)" stroke-width="1"/>
+<path d="M11 6 v6.6 M20 6 v6.6 M7 12.6 v6.7 M16 12.6 v6.7 M24.5 12.6 v6.7 M11 19.3 v6.7 M20 19.3 v6.7"
+      stroke="var(--dg-red)" stroke-width="1"/>
+<path d="M16 13 c2.6 2.4 3.4 4.2 3.4 6 a3.4 3.4 0 0 1 -6.8 0 c0 -1.8 0.8 -3.6 3.4 -6 z"
+      fill="var(--dg-amber)" stroke="var(--dg-red)" stroke-width="1"/></g>
+<text x="186" y="304" class="dg-lab2">NACL</text>
+<g transform="translate(547.6,243.6) scale(1.150)">
+<circle cx="16" cy="16" r="13" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.4"/>
+<ellipse cx="16" cy="16" rx="5.5" ry="13" fill="none" stroke="var(--dg-blue)" stroke-width="1.1"/>
+<path d="M3 16 h26 M5.2 9.5 h21.6 M5.2 22.5 h21.6" stroke="var(--dg-blue)" stroke-width="1.1"/></g>
+<text x="546" y="304" class="dg-lab2">외부</text>
+<text x="268" y="238" class="dg-lab">인바운드 443 허용 &#8594; 요청 OK</text>
+<g class="dg-anim d1-pkt"><circle cx="300" cy="250" r="7" fill="var(--dg-green)"/></g>
+<g class="dg-anim d1-ret2"><circle cx="510" cy="276" r="7" fill="var(--dg-red)"/></g>
+<g class="dg-anim d1-x"><text x="238" y="284" font-size="18" fill="var(--dg-red)" font-weight="700">&#10007;</text></g>
+<text x="268" y="296" class="dg-warn">응답은 임시포트(1024-65535) 미허용 &#8594; 차단</text>
 </svg><figcaption>ACG는 나간 요청을 기억해 응답을 자동 통과시키고, NACL은 기억이 없어 응답용 임시 포트를 따로 열어야 합니다.</figcaption></figure>
 <h2 id="_2">결정적 차이: 기억력</h2>
 <p><strong>ACG는 스테이트풀</strong> — 대화를 기억합니다. 방 안에서 "피자 주문 나갑니다" 하고 나간 걸 봤으면, 배달원이 돌아올 때 규칙을 안 따져도 들여보내줍니다. 그래서 ACG는 <strong>인바운드 규칙만</strong> 고민하면 되고, 아웃바운드는 대개 전체 허용으로 둡니다.</p>
