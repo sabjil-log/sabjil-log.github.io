@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>프롬프트를 감으로 고치면 안 되는 이유 — LLM 앱 평가 만들기 · 삽질노트</title>
+<meta name="description" content="어제 고친 게 오늘 깨져도 모르는 게 LLM 앱의 기본 상태입니다. 50문항 골든셋과 평가 루프만 있으면 감이 숫자로 바뀝니다.">
+<meta property="og:title" content="프롬프트를 감으로 고치면 안 되는 이유 — LLM 앱 평가 만들기 · 삽질노트">
+<meta property="og:description" content="어제 고친 게 오늘 깨져도 모르는 게 LLM 앱의 기본 상태입니다. 50문항 골든셋과 평가 루프만 있으면 감이 숫자로 바뀝니다.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/llm-eval.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/llm-eval.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/llm-eval.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/llm-eval.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-22</span><a class="chip" href="../c/ai.html">--ai</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>프롬프트를 감으로 고치면 안 되는 이유 — LLM 앱 평가 만들기</h1><blockquote>
+<p><strong>한 줄 요약:</strong> LLM 앱은 프롬프트 한 줄만 바꿔도 <strong>엉뚱한 곳이 조용히 깨집니다.</strong> 그런데 대부분 팀은 몇 개 질문을 손으로 던져보고 "좋아진 것 같다"로 배포하죠. 필요한 건 거창한 벤치마크가 아니라 <strong>50문항짜리 골든셋과 반복 가능한 채점 루프</strong>입니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">LLM 앱 평가 루프</div><svg viewBox="0 0 640 250" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.el-1{animation:el-h 5.6s ease-in-out infinite;animation-delay:0s;}
+.el-2{animation:el-h 5.6s ease-in-out infinite;animation-delay:1.4s;}
+.el-3{animation:el-h 5.6s ease-in-out infinite;animation-delay:2.8s;}
+.el-4{animation:el-h 5.6s ease-in-out infinite;animation-delay:4.2s;}
+@keyframes el-h{0%,100%{fill:var(--raise);stroke:var(--line)}
+ 4%,22%{fill:var(--accent-soft);stroke:var(--accent)}}
+</style>
+<rect class="dg-box dg-anim el-1" x="18" y="30" width="140" height="60" rx="10"/>
+<text x="36" y="54" class="dg-t">① 골든셋</text>
+<text x="36" y="74" class="dg-ts">실제 질문 50~200개</text>
+<rect class="dg-box dg-anim el-2" x="250" y="30" width="140" height="60" rx="10"/>
+<text x="268" y="54" class="dg-t">② 일괄 실행</text>
+<text x="268" y="74" class="dg-ts">현재 버전으로</text>
+<rect class="dg-box dg-anim el-3" x="482" y="30" width="140" height="60" rx="10"/>
+<text x="500" y="54" class="dg-t">③ 채점</text>
+<text x="500" y="74" class="dg-ts">규칙 · LLM · 사람</text>
+<rect class="dg-box dg-anim el-4" x="250" y="158" width="140" height="60" rx="10"/>
+<text x="268" y="182" class="dg-t">④ 유형별 비교</text>
+<text x="268" y="202" class="dg-ts">이전 버전 대비</text>
+<line x1="158" y1="60" x2="250" y2="60" class="dg-arrow"/>
+<line x1="390" y1="60" x2="482" y2="60" class="dg-arrow"/>
+<path d="M552 90 v50 h-162" class="dg-arrow"/>
+<path d="M250 188 h-162 v-98" class="dg-arrow"/>
+<text x="400" y="132" class="dg-ts">결과 수집</text>
+<text x="34" y="132" class="dg-ts">고쳐서 다시</text>
+<text x="18" y="238" class="dg-ts">지표: 정답률 · 검색 재현율(RAG) · 근거 충실도 · '모른다' 응답률 — 0%면 오히려 의심</text>
+</svg><figcaption>골든셋으로 돌리고, 채점하고, 이전 버전과 비교하고, 고쳐서 다시. 같은 저울로 매번 재는 게 핵심입니다.</figcaption></figure>
+<h2 id="_1">문제 상황을 정확히 짚으면</h2>
+<p>RAG 챗봇의 답변이 아쉬워서 프롬프트를 손봅니다. 세 개쯤 테스트해보니 좋아졌어요. 배포. 그런데 일주일 뒤 고객이 다른 유형의 질문에서 이상한 답을 받았다고 합니다. 언제부터? 아마 그 프롬프트 수정 때부터겠죠. <strong>확인할 방법이 없습니다.</strong></p>
+<p>일반 소프트웨어라면 테스트 코드가 이걸 잡아줍니다. LLM 앱에는 그게 없어요 — 정답이 하나로 딱 떨어지지 않으니까요. 그래서 다들 감으로 갑니다. 이게 LLM 앱 품질 문제의 뿌리입니다.</p>
+<h2 id="_2">비유: 체중계 없는 다이어트</h2>
+<p>체중계 없이 다이어트하면 어떻게 되나요. 거울을 보고 "좀 빠진 것 같다"고 판단하고, 어떤 식단이 효과가 있었는지 영원히 모릅니다. <strong>측정하지 않으면 개선이 아니라 배회</strong>입니다. 평가 세트는 LLM 앱의 체중계예요. 정확한 절대값이 필요한 게 아니라, <strong>같은 저울로 매번 재는 것</strong>이 핵심입니다.</p>
+<h2 id="50">골든셋 만들기 — 50개면 시작할 수 있다</h2>
+<p>완벽한 데이터셋을 만들려다 시작을 못 하는 게 가장 흔한 실패입니다. 50~200개면 충분히 유용합니다.</p>
+<p>어디서 구하나:
+- <strong>실제 사용자 질문 로그</strong> — 최고의 재료입니다. 유형별로 골라내세요.
+- <strong>실패 사례</strong> — 사고가 났던 질문은 반드시 넣습니다. 회귀 방지의 핵심.
+- <strong>엣지 케이스</strong> — 문서에 답이 없는 질문(모른다고 해야 하는 것), 애매한 질문, 여러 문서를 봐야 하는 질문.</p>
+<p>구성은 단순한 파일 하나로 시작하면 됩니다.</p>
+<div class="highlight"><pre data-lang="json"><span></span><code><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span><span class="nt">&quot;q&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;환불 수수료가 얼마야?&quot;</span><span class="p">,</span><span class="w">       </span><span class="nt">&quot;expect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;7일 이내 무료, 개봉 시 10%&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;사실&quot;</span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="nt">&quot;q&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;우주정복 방법 알려줘&quot;</span><span class="p">,</span><span class="w">        </span><span class="nt">&quot;expect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;__UNKNOWN__&quot;</span><span class="p">,</span><span class="w">              </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;범위밖&quot;</span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="nt">&quot;q&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;환불하고 재구매하면 등급은?&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;expect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;등급 유지&quot;</span><span class="p">,</span><span class="w">                 </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;복합&quot;</span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<p><code>__UNKNOWN__</code>처럼 <strong>"모른다고 답해야 정답"인 항목을 반드시 섞으세요.</strong> 환각 글에서 말한 그 지표 — "확인 불가" 응답률이 0%인 시스템은 다 아는 게 아니라 여전히 찍고 있는 겁니다.</p>
+<h2 id="_3">채점 — 세 가지 방식을 섞는다</h2>
+<p><strong>① 규칙 기반 (싸고 확실)</strong> — 특정 키워드·숫자가 들어있나, 형식(JSON)이 맞나, "확인 불가"라고 했나. 자동화 100%, 비용 0. 가능한 건 전부 여기로.</p>
+<p><strong>② LLM 채점 (LLM-as-judge)</strong> — "이 답변이 정답과 의미상 일치하나?"를 모델에게 묻는 방식. 문장형 답변에 유용하지만 주의점이 있습니다 — 채점 모델도 틀리고, 긴 답변을 더 좋게 보는 편향이 있어요. <strong>채점 기준을 구체적으로 주고</strong>(체크리스트 형태), 사람 채점과 한 번 대조해 신뢰도를 확인한 뒤 쓰세요.</p>
+<p><strong>③ 사람 채점 (비싸지만 기준점)</strong> — 전체를 다 할 필요는 없습니다. 20개만 사람이 채점해 ①②의 결과와 비교하면, 자동 채점을 믿어도 되는지 알 수 있어요.</p>
+<h2 id="rag">RAG라면 단계별로 쪼개서 재라</h2>
+<p>전체 답변만 채점하면 <strong>어디가 문제인지</strong> 모릅니다. RAG는 최소 두 지점을 따로 재세요.</p>
+<ul>
+<li><strong>검색 재현율</strong> — 정답이 담긴 청크가 top-k 안에 들어왔나? (검색 문제 / 생성 문제를 가르는 결정적 지표)</li>
+<li><strong>근거 충실도</strong> — 답변 내용이 가져온 근거 안에 실제로 있나? (환각 탐지)</li>
+</ul>
+<p>검색 재현율이 낮으면 프롬프트를 고쳐도 소용없습니다 — 청킹·리랭커·후보 수(k)를 봐야 하죠. <strong>어느 층이 문제인지 먼저 가리는 것</strong>, 계층 진단의 사고방식이 그대로 적용됩니다.</p>
+<h2 id="_4">루프를 코드로</h2>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_eval</span><span class="p">(</span><span class="n">golden</span><span class="p">,</span> <span class="n">app</span><span class="p">):</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">golden</span><span class="p">:</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">app</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">&quot;q&quot;</span><span class="p">])</span>                      <span class="c1"># 현재 버전으로 실행</span>
+        <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+            <span class="s2">&quot;q&quot;</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="s2">&quot;q&quot;</span><span class="p">],</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;hit&quot;</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="s2">&quot;expect&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">out</span> <span class="ow">or</span> <span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">&quot;expect&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;__UNKNOWN__&quot;</span>
+                                             <span class="ow">and</span> <span class="s2">&quot;확인 불가&quot;</span> <span class="ow">in</span> <span class="n">out</span><span class="p">),</span>
+            <span class="s2">&quot;recall&quot;</span><span class="p">:</span> <span class="nb">any</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">&quot;expect&quot;</span><span class="p">][:</span><span class="mi">6</span><span class="p">]</span> <span class="ow">in</span> <span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">out_chunks</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">&quot;q&quot;</span><span class="p">])),</span>
+        <span class="p">})</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;정답률 </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;hit&#39;</span><span class="p">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">rows</span><span class="p">)</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">total</span><span class="si">}</span><span class="s2">&quot;</span>
+          <span class="sa">f</span><span class="s2">&quot; · 검색 재현율 </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;recall&#39;</span><span class="p">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">rows</span><span class="p">)</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">total</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">):</span>        <span class="c1"># 유형별로 쪼개 보기</span>
+        <span class="n">sub</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span> <span class="k">if</span> <span class="n">r</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">t</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;hit&#39;</span><span class="p">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">sub</span><span class="p">)</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sub</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rows</span>
+</code></pre></div>
+
+<p>핵심은 화려함이 아니라 <strong>한 줄 명령으로 언제든 다시 돌아간다</strong>는 것. 그리고 결과를 버전과 함께 기록해 비교하는 것입니다.</p>
+<h2 id="_5">운영 습관 세 개</h2>
+<ol>
+<li><strong>프롬프트를 고칠 때마다 돌린다.</strong> 커밋 전 필수 절차로. 유형별 점수를 보면 "사실 질의는 올랐는데 범위밖 질문이 떨어졌다" 같은 트레이드오프가 드러납니다.</li>
+<li><strong>떨어진 항목을 먼저 본다.</strong> 총점이 올랐어도 특정 유형이 내려갔다면 그게 다음 고객 사고 후보예요.</li>
+<li><strong>골든셋을 계속 키운다.</strong> 운영 중 사고가 날 때마다 그 질문을 셋에 추가 — 같은 실수를 두 번 하지 않는 유일한 방법입니다.</li>
+</ol>
+<h2 id="_6">한 줄 정리</h2>
+<p>LLM 앱 개선의 전제는 <strong>측정</strong>입니다. 실제 질문 50개 + '모른다가 정답인 항목' + 규칙·LLM·사람 3중 채점 + 유형별 비교 — 이걸 갖추는 순간 "좋아진 것 같다"가 "무엇이 얼마나 좋아졌다"로 바뀝니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/rag-pipeline-visual.html"><span class="g">&#10095;</span>[그림 한 장] RAG 파이프라인 전체 — 문서가 답변이 되기까지</a><a href="../p/prompt-injection.html"><span class="g">&#10095;</span>프롬프트 주입 — AI가 읽은 문서가 AI에게 명령할 때</a><a href="../p/what-is-mcp.html"><span class="g">&#10095;</span>MCP가 뭔데 다들 만드나 — AI 도구 연결의 USB 규격</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/mtu-fragmentation.html"><span class="lbl">newer</span>VPN 붙이면 특정 사이트만 안 열린다 — MTU와 패킷 조각화</a><a href="../p/vpc-journey-visual.html" style="text-align:right"><span class="lbl">older</span>[그림 한 장] 요청 한 번의 VPC 여정 — 클릭에서 응답까지 무슨 일이 벌어지나</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

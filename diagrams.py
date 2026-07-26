@@ -1002,3 +1002,121 @@ _add("iam-routine", "최소권한, 네 가지 습관",
          ("③ 앱엔 키 대신 역할", "인스턴스 역할", "영구 액세스키 제거"),
          ("④ 분기마다 회수", "admin 명단·미사용 키", "90일 미사용 비활성화"),
      ], "비상구를 설계에 포함: 봉인된 break-glass admin (MFA+알림) — 새벽 장애가 원칙을 무너뜨리지 않게"))
+
+
+# ── 3차 배치 ──────────────────────────────────────────────────
+_add("mtu-fragmentation", "MTU 초과 — 쪼개지거나 버려진다",
+     "터널이 헤더를 덧붙여 봉투가 작아지면, 큰 패킷은 조각화되거나 DF 플래그 때문에 통째로 폐기됩니다.",
+     "mtu-fragmentation",
+     '<svg viewBox="0 0 640 290" role="img"><style>' + _COMMON + """
+.mf-a{animation:mf-a 4.2s ease-in-out infinite;}
+.mf-f1{opacity:0;animation:mf-f1 4.2s ease-in-out infinite;}
+.mf-f2{opacity:0;animation:mf-f2 4.2s ease-in-out infinite;}
+.mf-b{animation:mf-b 4.2s ease-in-out infinite;}
+.mf-x{opacity:0;animation:mf-x 4.2s ease-in-out infinite;}
+@keyframes mf-a{0%{transform:translateX(0);opacity:1}32%{transform:translateX(190px);opacity:1}
+ 38%{opacity:0}100%{opacity:0}}
+@keyframes mf-f1{0%,36%{opacity:0;transform:translateX(0)}42%{opacity:1}
+ 82%{opacity:1;transform:translateX(200px)}100%{opacity:0}}
+@keyframes mf-f2{0%,42%{opacity:0;transform:translateX(0)}48%{opacity:1}
+ 88%{opacity:1;transform:translateX(200px)}100%{opacity:0}}
+@keyframes mf-b{0%{transform:translateX(0);opacity:1}36%{transform:translateX(190px);opacity:1}
+ 44%{transform:translateX(190px);opacity:.3}100%{opacity:.3}}
+@keyframes mf-x{0%,42%{opacity:0}48%,92%{opacity:1}100%{opacity:0}}
+</style>
+<text x="14" y="22" class="dg-tl">조각화 허용 — 쪼개서 통과 (느려짐)</text>
+<rect x="14" y="32" width="612" height="104" rx="12" class="dg-box"/>
+<rect x="300" y="40" width="30" height="88" rx="6" fill="none" stroke="var(--accent)" stroke-width="2"/>
+<rect x="304" y="66" width="22" height="36" rx="4" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.4"/>
+<text x="256" y="150" class="dg-ts">터널 입구 — 실효 MTU 1400</text>
+<g class="dg-anim mf-a"><rect x="40" y="66" width="120" height="36" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="56" y="89" class="dg-ts">패킷 1500</text></g>
+<g class="dg-anim mf-f1"><rect x="352" y="52" width="56" height="26" rx="4" fill="var(--accent)" opacity=".8"/></g>
+<g class="dg-anim mf-f2"><rect x="352" y="90" width="56" height="26" rx="4" fill="var(--accent)" opacity=".8"/></g>
+<text x="474" y="70" class="dg-ts">조각 1</text>
+<text x="474" y="108" class="dg-ts">조각 2</text>
+<text x="14" y="182" class="dg-tl">DF 플래그 있음 — 폐기 + ICMP 회신</text>
+<rect x="14" y="192" width="612" height="88" rx="12" class="dg-box"/>
+<rect x="300" y="200" width="30" height="72" rx="6" fill="none" stroke="var(--accent)" stroke-width="2"/>
+<rect x="304" y="222" width="22" height="30" rx="4" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.4"/>
+<g class="dg-anim mf-b"><rect x="40" y="220" width="120" height="34" rx="5" fill="#FCE9EA" stroke="#E5484D" stroke-width="1.5"/>
+<text x="52" y="242" class="dg-ts">1500 + DF</text></g>
+<g class="dg-anim mf-x"><text x="296" y="248" font-size="19" class="dg-no" font-weight="700">✕</text>
+<text x="352" y="228" class="dg-ts">ICMP "조각화 필요, 1400으로" 회신</text>
+<text x="352" y="250" class="dg-ts">방화벽이 그 ICMP를 막으면 → 무한 재전송</text></g>
+</svg>""")
+
+_add("blast-radius", "장애 반경 — 어디까지 죽으면 우리도 죽나",
+     "리전은 도시, AZ는 그 도시의 다른 건물. 서버만 흩뿌리고 NAT·DB가 한쪽에 있으면 이름만 멀티 AZ입니다.",
+     "region-az",
+     '<svg viewBox="0 0 640 270" role="img"><style>' + _COMMON + """
+.br-die{animation:br-die 5s ease-in-out infinite;}
+.br-x{opacity:0;animation:br-x 5s ease-in-out infinite;}
+.br-warn{opacity:0;animation:br-w 5s ease-in-out infinite;}
+.br-shift{animation:br-s 5s ease-in-out infinite;}
+@keyframes br-die{0%,34%{opacity:1}46%,88%{opacity:.22}100%{opacity:1}}
+@keyframes br-x{0%,40%{opacity:0}50%,88%{opacity:1}100%{opacity:0}}
+@keyframes br-w{0%,54%{opacity:0}64%,88%{opacity:1}100%{opacity:0}}
+@keyframes br-s{0%,40%{opacity:.25}54%,90%{opacity:1}100%{opacity:.25}}
+</style>
+<rect x="14" y="26" width="612" height="164" rx="14" fill="none" stroke="var(--faint)"
+      stroke-dasharray="6 4" stroke-width="1.3"/>
+<text x="26" y="44" class="dg-ts">리전 (서울) — 도시</text>
+<g class="dg-anim br-die">
+<rect x="34" y="56" width="270" height="118" rx="10" class="dg-box"/>
+<text x="48" y="78" class="dg-t">가용영역 A — 건물 1</text>
+<rect x="48" y="90" width="72" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+<text x="62" y="111" class="dg-ts">서버</text>
+<rect x="130" y="90" width="72" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+<text x="144" y="111" class="dg-ts">서버</text>
+<rect x="48" y="132" width="154" height="30" rx="6" fill="#FFF4E6" stroke="#E8842C" stroke-width="1.4"/>
+<text x="62" y="152" class="dg-ts">NAT GW (한쪽에만!)</text>
+</g>
+<g class="dg-anim br-x"><text x="200" y="122" font-size="26" class="dg-no" font-weight="700">✕</text>
+<text x="196" y="146" class="dg-ts" fill="#E5484D">정전</text></g>
+<rect x="332" y="56" width="270" height="118" rx="10" class="dg-box"/>
+<text x="346" y="78" class="dg-t">가용영역 B — 건물 2</text>
+<g class="dg-anim br-shift">
+<rect x="346" y="90" width="72" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+<text x="360" y="111" class="dg-ts">서버</text>
+<rect x="428" y="90" width="72" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+<text x="442" y="111" class="dg-ts">서버</text>
+</g>
+<g class="dg-anim br-warn"><text x="346" y="152" class="dg-ts" fill="#E8842C">살아있지만 외부 통신 불가</text>
+<text x="346" y="166" class="dg-ts" fill="#E8842C">→ NAT이 죽은 AZ에 있었다</text></g>
+<text x="14" y="214" class="dg-ts">서버 1대 죽음 → LB+2대 / AZ 죽음 → 존 분산 / 리전 죽음 → 타 리전 (비용·복잡도 급증)</text>
+<text x="14" y="236" class="dg-ts">멀티 AZ가 못 막는 것: 한쪽에만 있는 NAT · 단일 DB · failover를 못 견디는 앱 · 로컬 디스크에 둔 상태</text>
+<text x="14" y="258" class="dg-ts">AZ 간은 1~2ms(동기 복제 가능), 리전 간은 수십~수백ms(비동기가 현실) — 이 물리가 설계를 정합니다</text>
+</svg>""")
+
+_add("eval-loop", "LLM 앱 평가 루프",
+     "골든셋으로 돌리고, 채점하고, 이전 버전과 비교하고, 고쳐서 다시. 같은 저울로 매번 재는 게 핵심입니다.",
+     "llm-eval",
+     '<svg viewBox="0 0 640 250" role="img"><style>' + _COMMON + """
+.el-1{animation:el-h 5.6s ease-in-out infinite;animation-delay:0s;}
+.el-2{animation:el-h 5.6s ease-in-out infinite;animation-delay:1.4s;}
+.el-3{animation:el-h 5.6s ease-in-out infinite;animation-delay:2.8s;}
+.el-4{animation:el-h 5.6s ease-in-out infinite;animation-delay:4.2s;}
+@keyframes el-h{0%,100%{fill:var(--raise);stroke:var(--line)}
+ 4%,22%{fill:var(--accent-soft);stroke:var(--accent)}}
+</style>
+<rect class="dg-box dg-anim el-1" x="18" y="30" width="140" height="60" rx="10"/>
+<text x="36" y="54" class="dg-t">① 골든셋</text>
+<text x="36" y="74" class="dg-ts">실제 질문 50~200개</text>
+<rect class="dg-box dg-anim el-2" x="250" y="30" width="140" height="60" rx="10"/>
+<text x="268" y="54" class="dg-t">② 일괄 실행</text>
+<text x="268" y="74" class="dg-ts">현재 버전으로</text>
+<rect class="dg-box dg-anim el-3" x="482" y="30" width="140" height="60" rx="10"/>
+<text x="500" y="54" class="dg-t">③ 채점</text>
+<text x="500" y="74" class="dg-ts">규칙 · LLM · 사람</text>
+<rect class="dg-box dg-anim el-4" x="250" y="158" width="140" height="60" rx="10"/>
+<text x="268" y="182" class="dg-t">④ 유형별 비교</text>
+<text x="268" y="202" class="dg-ts">이전 버전 대비</text>
+<line x1="158" y1="60" x2="250" y2="60" class="dg-arrow"/>
+<line x1="390" y1="60" x2="482" y2="60" class="dg-arrow"/>
+<path d="M552 90 v50 h-162" class="dg-arrow"/>
+<path d="M250 188 h-162 v-98" class="dg-arrow"/>
+<text x="400" y="132" class="dg-ts">결과 수집</text>
+<text x="34" y="132" class="dg-ts">고쳐서 다시</text>
+<text x="18" y="238" class="dg-ts">지표: 정답률 · 검색 재현율(RAG) · 근거 충실도 · '모른다' 응답률 — 0%면 오히려 의심</text>
+</svg>""")

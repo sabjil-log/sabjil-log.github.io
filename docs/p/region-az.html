@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>리전과 가용영역 — '어디까지 죽으면 우리도 죽나'를 정하는 일 · 삽질노트</title>
+<meta name="description" content="멀티 AZ는 비용을 더 내고 사는 보험입니다. 무엇으로부터 우리를 지켜주고 무엇은 못 지켜주는지, 장애 반경으로 정리했어요.">
+<meta property="og:title" content="리전과 가용영역 — '어디까지 죽으면 우리도 죽나'를 정하는 일 · 삽질노트">
+<meta property="og:description" content="멀티 AZ는 비용을 더 내고 사는 보험입니다. 무엇으로부터 우리를 지켜주고 무엇은 못 지켜주는지, 장애 반경으로 정리했어요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/region-az.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/region-az.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/region-az.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/region-az.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-22</span><a class="chip" href="../c/cloud.html">--cloud</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>리전과 가용영역 — &#x27;어디까지 죽으면 우리도 죽나&#x27;를 정하는 일</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 리전은 <strong>도시</strong>, 가용영역(AZ)은 그 도시의 <strong>서로 다른 건물</strong>입니다. 멀티 AZ는 "건물 하나가 정전돼도 살아남기"를 사는 것이고, 멀티 리전은 "도시 하나가 잠겨도 살아남기"를 사는 것 — 각각 가격과 복잡도가 완전히 다릅니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">장애 반경 — 어디까지 죽으면 우리도 죽나</div><svg viewBox="0 0 640 270" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.br-die{animation:br-die 5s ease-in-out infinite;}
+.br-x{opacity:0;animation:br-x 5s ease-in-out infinite;}
+.br-warn{opacity:0;animation:br-w 5s ease-in-out infinite;}
+.br-shift{animation:br-s 5s ease-in-out infinite;}
+@keyframes br-die{0%,34%{opacity:1}46%,88%{opacity:.22}100%{opacity:1}}
+@keyframes br-x{0%,40%{opacity:0}50%,88%{opacity:1}100%{opacity:0}}
+@keyframes br-w{0%,54%{opacity:0}64%,88%{opacity:1}100%{opacity:0}}
+@keyframes br-s{0%,40%{opacity:.25}54%,90%{opacity:1}100%{opacity:.25}}
+</style>
+<rect x="14" y="26" width="612" height="164" rx="14" fill="none" stroke="var(--faint)"
+      stroke-dasharray="6 4" stroke-width="1.3"/>
+<text x="26" y="44" class="dg-ts">리전 (서울) — 도시</text>
+<g class="dg-anim br-die">
+<rect x="34" y="56" width="270" height="118" rx="10" class="dg-box"/>
+<text x="48" y="78" class="dg-t">가용영역 A — 건물 1</text>
+<rect x="48" y="90" width="72" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+<text x="62" y="111" class="dg-ts">서버</text>
+<rect x="130" y="90" width="72" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+<text x="144" y="111" class="dg-ts">서버</text>
+<rect x="48" y="132" width="154" height="30" rx="6" fill="#FFF4E6" stroke="#E8842C" stroke-width="1.4"/>
+<text x="62" y="152" class="dg-ts">NAT GW (한쪽에만!)</text>
+</g>
+<g class="dg-anim br-x"><text x="200" y="122" font-size="26" class="dg-no" font-weight="700">✕</text>
+<text x="196" y="146" class="dg-ts" fill="#E5484D">정전</text></g>
+<rect x="332" y="56" width="270" height="118" rx="10" class="dg-box"/>
+<text x="346" y="78" class="dg-t">가용영역 B — 건물 2</text>
+<g class="dg-anim br-shift">
+<rect x="346" y="90" width="72" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+<text x="360" y="111" class="dg-ts">서버</text>
+<rect x="428" y="90" width="72" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+<text x="442" y="111" class="dg-ts">서버</text>
+</g>
+<g class="dg-anim br-warn"><text x="346" y="152" class="dg-ts" fill="#E8842C">살아있지만 외부 통신 불가</text>
+<text x="346" y="166" class="dg-ts" fill="#E8842C">→ NAT이 죽은 AZ에 있었다</text></g>
+<text x="14" y="214" class="dg-ts">서버 1대 죽음 → LB+2대 / AZ 죽음 → 존 분산 / 리전 죽음 → 타 리전 (비용·복잡도 급증)</text>
+<text x="14" y="236" class="dg-ts">멀티 AZ가 못 막는 것: 한쪽에만 있는 NAT · 단일 DB · failover를 못 견디는 앱 · 로컬 디스크에 둔 상태</text>
+<text x="14" y="258" class="dg-ts">AZ 간은 1~2ms(동기 복제 가능), 리전 간은 수십~수백ms(비동기가 현실) — 이 물리가 설계를 정합니다</text>
+</svg><figcaption>리전은 도시, AZ는 그 도시의 다른 건물. 서버만 흩뿌리고 NAT·DB가 한쪽에 있으면 이름만 멀티 AZ입니다.</figcaption></figure>
+<h2 id="_1">용어를 물리적으로 이해하기</h2>
+<ul>
+<li><strong>리전(Region)</strong> = 도시. 서울, 도쿄, 버지니아. 리전 간 거리는 수백~수천 km라 지연(latency)이 큽니다.</li>
+<li><strong>가용영역(AZ)</strong> = 같은 도시 안의 <strong>물리적으로 분리된 데이터센터</strong>. 전력·냉각·네트워크가 독립돼 있고, 서로는 초고속 전용선으로 붙어 있어 지연이 1~2ms 수준입니다.</li>
+</ul>
+<p>핵심은 <strong>AZ 간은 가깝고(동기 복제 가능), 리전 간은 멀다(비동기가 현실적)</strong>는 것. 이 물리적 사실이 모든 설계 결정을 좌우합니다.</p>
+<h2 id="3">장애 반경으로 보는 3단계</h2>
+<p><strong>① 서버 하나가 죽는다</strong> — 가장 흔합니다. 대응은 같은 AZ 안에 2대 이상 + 로드밸런서. 여기까진 대부분의 팀이 합니다.</p>
+<p><strong>② AZ 하나가 죽는다</strong> — 정전, 냉각 실패, 네트워크 장애. 드물지만 <strong>실제로 일어납니다.</strong> 서버를 한 AZ에 몰아뒀다면 2대든 10대든 동시에 사라집니다. 이게 멀티 AZ가 막아주는 지점이에요.</p>
+<p><strong>③ 리전 하나가 죽는다</strong> — 대규모 정전, 자연재해, 리전 단위 서비스 장애. 매우 드물지만 발생 시 파급이 큽니다. 대응은 다른 리전에 대기 환경 — 비용과 운영 복잡도가 급증합니다.</p>
+<p>대부분의 서비스에게 정답은 <strong>②까지 대비하고 ③은 백업으로 갈음</strong>하는 것입니다. ③까지 실시간 대비하는 건 금융·의료처럼 규제나 계약이 요구할 때죠.</p>
+<h2 id="az">멀티 AZ가 막아주지 못하는 것들</h2>
+<p>여기가 진짜 함정입니다. "멀티 AZ 켰으니 안심"이라고 생각하기 쉬운데 —</p>
+<ul>
+<li><strong>한 AZ에만 있는 부품.</strong> 서버는 두 AZ에 뿌렸는데 <strong>NAT Gateway가 한쪽에만</strong> 있으면? 그 AZ가 죽으면 반대편 서버들의 외부 통신도 함께 죽습니다. 존별 NAT + 존별 라우팅이 정석인 이유죠.</li>
+<li><strong>단일 지점으로 남은 DB.</strong> 앱은 이중화했는데 DB가 단일 인스턴스면 반경은 그대로입니다. 관리형 DB의 다중화는 <strong>옵션이고 유료</strong>라는 점을 이관 글에서 짚었죠.</li>
+<li><strong>앱이 못 견디는 전환.</strong> failover는 수십 초의 단절을 만듭니다. 커넥션 풀이 재연결하지 않거나 IP를 하드코딩했다면 인프라가 살아나도 서비스는 죽어 있어요.</li>
+<li><strong>잘못된 상태 저장.</strong> 세션이나 업로드 파일을 서버 로컬 디스크에 두면, 그 서버가 사라질 때 함께 사라집니다. 상태는 공유 스토리지·캐시로.</li>
+</ul>
+<p>즉 멀티 AZ는 스위치가 아니라 <strong>설계</strong>입니다.</p>
+<h2 id="_2">확인 명령</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># 내 인스턴스들이 정말 여러 AZ에 흩어져 있나 (AWS 예)</span>
+aws<span class="w"> </span>ec2<span class="w"> </span>describe-instances<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--query<span class="w"> </span><span class="s1">&#39;Reservations[].Instances[].[InstanceId,Placement.AvailabilityZone,State.Name]&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output<span class="w"> </span>table
+
+<span class="c1"># 서브넷이 어느 AZ에 속하는지 — 서브넷 = AZ 단위입니다</span>
+aws<span class="w"> </span>ec2<span class="w"> </span>describe-subnets<span class="w"> </span>--query<span class="w"> </span><span class="s1">&#39;Subnets[].[SubnetId,AvailabilityZone,CidrBlock]&#39;</span><span class="w"> </span>--output<span class="w"> </span>table
+</code></pre></div>
+
+<p>NCP도 동일한 구도 — 서브넷을 만들 때 Zone을 고르게 되므로, <strong>서브넷 목록의 Zone 분포가 곧 우리 장애 반경</strong>입니다. 콘솔에서 그 표만 봐도 취약점이 드러납니다.</p>
+<h2 id="_3">비용이라는 반대편</h2>
+<p>멀티 AZ는 공짜가 아닙니다.</p>
+<ul>
+<li>인스턴스 수가 늘고, 관리형 DB 다중화는 대략 배로 붙습니다</li>
+<li><strong>AZ를 건너는 트래픽에 전송 요금</strong>이 붙는 경우가 많습니다 — 수다스러운 마이크로서비스가 AZ를 왕복하면 조용한 비용이 쌓이죠(비용 누수 글의 그 화살표)</li>
+<li>존별 NAT을 두면 NAT 요금도 배가 됩니다</li>
+</ul>
+<p>그래서 실무의 균형점은 이렇습니다 — <strong>웹·앱 계층은 멀티 AZ로 넓게, 통신량이 많은 조합은 같은 AZ에 묶어 배치(AZ 어피니티), DB는 다중화하되 앱이 failover를 견디게.</strong></p>
+<h2 id="_4">한 줄 정리</h2>
+<p>리전은 도시, AZ는 건물. <strong>"어디까지 죽어도 버틸지"를 먼저 정하고</strong>, 그 반경 안의 모든 부품(NAT·DB·상태·앱의 재연결)을 같은 기준으로 맞추세요. 서버만 흩뿌린 멀티 AZ는 이름만 멀티 AZ입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --cloud</div><a href="../p/vpc-journey-visual.html"><span class="g">&#10095;</span>[그림 한 장] 요청 한 번의 VPC 여정 — 클릭에서 응답까지 무슨 일이 벌어지나</a><a href="../p/alb-vs-nlb.html"><span class="g">&#10095;</span>ALB냐 NLB냐 — L7과 L4, 로드밸런서 고르는 기준</a><a href="../p/managed-db-migration.html"><span class="g">&#10095;</span>관리형 DB로 옮기면 끝인 줄 알았다 — 이관할 때 놓치는 것들</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><span></span><a href="../p/mtu-fragmentation.html" style="text-align:right"><span class="lbl">older</span>VPN 붙이면 특정 사이트만 안 열린다 — MTU와 패킷 조각화</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

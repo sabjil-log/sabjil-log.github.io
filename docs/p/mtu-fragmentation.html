@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VPN 붙이면 특정 사이트만 안 열린다 — MTU와 패킷 조각화 · 삽질노트</title>
+<meta name="description" content="핑은 되고 작은 페이지는 열리는데 큰 페이지만 멈춘다면 MTU 문제입니다. 봉투 크기 비유로 원인과 처방을 정리했어요.">
+<meta property="og:title" content="VPN 붙이면 특정 사이트만 안 열린다 — MTU와 패킷 조각화 · 삽질노트">
+<meta property="og:description" content="핑은 되고 작은 페이지는 열리는데 큰 페이지만 멈춘다면 MTU 문제입니다. 봉투 크기 비유로 원인과 처방을 정리했어요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/mtu-fragmentation.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/mtu-fragmentation.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/mtu-fragmentation.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/mtu-fragmentation.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html" class="on">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-22</span><a class="chip" href="../c/network.html">--network</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>VPN 붙이면 특정 사이트만 안 열린다 — MTU와 패킷 조각화</h1><blockquote>
+<p><strong>한 줄 요약:</strong> MTU는 한 번에 보낼 수 있는 <strong>패킷의 최대 크기</strong>입니다. VPN·터널은 자기 헤더를 덧붙여 봉투를 작게 만드는데, 큰 패킷이 여기 걸리면 쪼개지거나(조각화) <strong>DF 플래그가 붙어 있으면 통째로 버려집니다.</strong> "일부만 안 되는" 증상의 단골 원인이에요.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">MTU 초과 — 쪼개지거나 버려진다</div><svg viewBox="0 0 640 290" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.mf-a{animation:mf-a 4.2s ease-in-out infinite;}
+.mf-f1{opacity:0;animation:mf-f1 4.2s ease-in-out infinite;}
+.mf-f2{opacity:0;animation:mf-f2 4.2s ease-in-out infinite;}
+.mf-b{animation:mf-b 4.2s ease-in-out infinite;}
+.mf-x{opacity:0;animation:mf-x 4.2s ease-in-out infinite;}
+@keyframes mf-a{0%{transform:translateX(0);opacity:1}32%{transform:translateX(190px);opacity:1}
+ 38%{opacity:0}100%{opacity:0}}
+@keyframes mf-f1{0%,36%{opacity:0;transform:translateX(0)}42%{opacity:1}
+ 82%{opacity:1;transform:translateX(200px)}100%{opacity:0}}
+@keyframes mf-f2{0%,42%{opacity:0;transform:translateX(0)}48%{opacity:1}
+ 88%{opacity:1;transform:translateX(200px)}100%{opacity:0}}
+@keyframes mf-b{0%{transform:translateX(0);opacity:1}36%{transform:translateX(190px);opacity:1}
+ 44%{transform:translateX(190px);opacity:.3}100%{opacity:.3}}
+@keyframes mf-x{0%,42%{opacity:0}48%,92%{opacity:1}100%{opacity:0}}
+</style>
+<text x="14" y="22" class="dg-tl">조각화 허용 — 쪼개서 통과 (느려짐)</text>
+<rect x="14" y="32" width="612" height="104" rx="12" class="dg-box"/>
+<rect x="300" y="40" width="30" height="88" rx="6" fill="none" stroke="var(--accent)" stroke-width="2"/>
+<rect x="304" y="66" width="22" height="36" rx="4" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.4"/>
+<text x="256" y="150" class="dg-ts">터널 입구 — 실효 MTU 1400</text>
+<g class="dg-anim mf-a"><rect x="40" y="66" width="120" height="36" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="56" y="89" class="dg-ts">패킷 1500</text></g>
+<g class="dg-anim mf-f1"><rect x="352" y="52" width="56" height="26" rx="4" fill="var(--accent)" opacity=".8"/></g>
+<g class="dg-anim mf-f2"><rect x="352" y="90" width="56" height="26" rx="4" fill="var(--accent)" opacity=".8"/></g>
+<text x="474" y="70" class="dg-ts">조각 1</text>
+<text x="474" y="108" class="dg-ts">조각 2</text>
+<text x="14" y="182" class="dg-tl">DF 플래그 있음 — 폐기 + ICMP 회신</text>
+<rect x="14" y="192" width="612" height="88" rx="12" class="dg-box"/>
+<rect x="300" y="200" width="30" height="72" rx="6" fill="none" stroke="var(--accent)" stroke-width="2"/>
+<rect x="304" y="222" width="22" height="30" rx="4" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.4"/>
+<g class="dg-anim mf-b"><rect x="40" y="220" width="120" height="34" rx="5" fill="#FCE9EA" stroke="#E5484D" stroke-width="1.5"/>
+<text x="52" y="242" class="dg-ts">1500 + DF</text></g>
+<g class="dg-anim mf-x"><text x="296" y="248" font-size="19" class="dg-no" font-weight="700">✕</text>
+<text x="352" y="228" class="dg-ts">ICMP "조각화 필요, 1400으로" 회신</text>
+<text x="352" y="250" class="dg-ts">방화벽이 그 ICMP를 막으면 → 무한 재전송</text></g>
+</svg><figcaption>터널이 헤더를 덧붙여 봉투가 작아지면, 큰 패킷은 조각화되거나 DF 플래그 때문에 통째로 폐기됩니다.</figcaption></figure>
+<h2 id="_1">증상이 유별나다</h2>
+<p>이 문제의 특징은 <strong>"반쯤 되는"</strong> 것입니다.</p>
+<ul>
+<li><code>ping</code>은 정상 (작은 패킷이니까)</li>
+<li>SSH 접속은 되는데 <code>ls -la</code> 출력이 긴 순간 멈춤</li>
+<li>로그인 페이지는 열리는데 이미지 많은 페이지에서 무한 로딩</li>
+<li>어떤 사이트는 되고 어떤 사이트는 안 됨</li>
+</ul>
+<p>방화벽 문제라면 아예 안 될 텐데 <strong>크기에 따라</strong> 갈리죠. 그게 MTU의 지문입니다.</p>
+<h2 id="_2">원리: 봉투 크기와 덧붙는 헤더</h2>
+<p>이더넷의 표준 MTU는 <strong>1500바이트</strong>입니다. 우체국이 받아주는 봉투 최대 크기라고 보면 돼요. 그런데 VPN·터널을 지나면 원래 패킷을 <strong>새 봉투에 넣어 다시 포장</strong>합니다(캡슐화). 겉봉투는 여전히 1500이니, 안에 들어갈 내용은 그만큼 줄어들죠.</p>
+<div class="highlight"><pre><span></span><code>일반 경로:   [ 데이터 1460 ][ TCP/IP 헤더 40 ]              = 1500 ✓
+VPN 경로:    [ 데이터 1460 ][ TCP/IP 40 ][ 터널 헤더 60 ]  = 1560 ✗ 초과!
+</code></pre></div>
+
+<p>그래서 터널 구간의 실효 MTU는 1400 근처로 떨어집니다. 이 사실을 모르는 양쪽 끝은 계속 1500짜리를 보내고요.</p>
+<h2 id="_3">초과했을 때 벌어지는 두 갈래</h2>
+<p><strong>① 조각화(fragmentation)</strong> — 라우터가 큰 패킷을 두 개로 쪼개 보냅니다. 느려지지만 통신은 됩니다.</p>
+<p><strong>② 폐기 + ICMP 회신</strong> — 요즘 TCP 패킷에는 대개 <strong>DF(Don't Fragment) 플래그</strong>가 붙어 있습니다. "쪼개지 말라"는 뜻이죠. 이때 라우터는 패킷을 버리고 <strong>"너무 커, 1400으로 줄여"라는 ICMP 메시지</strong>를 보냅니다. 발신자가 이걸 받으면 크기를 낮춰 재전송해요 — 이 자동 협상이 <strong>PMTUD(Path MTU Discovery)</strong>입니다.</p>
+<h2 id="icmp">진짜 범인: 막힌 ICMP</h2>
+<p>정상이라면 ②의 협상으로 스스로 해결됩니다. 문제는 많은 방화벽이 <strong>"ICMP는 보안상 다 막자"</strong>로 설정돼 있다는 것. 그러면 —</p>
+<div class="highlight"><pre><span></span><code>발신자: 1500 보냄 → 라우터가 버림 → ICMP 회신 → 방화벽이 ICMP 차단 → 발신자는 아무것도 못 들음
+발신자: (응답이 없네) 1500 재전송 → 또 버려짐 → 또 침묵 → 무한 반복
+</code></pre></div>
+
+<p>이것이 <strong>PMTUD 블랙홀</strong>입니다. 연결은 맺어졌는데(작은 패킷이라) 큰 데이터에서 영구 정지하는 그 기묘한 증상의 정체예요.</p>
+<h2 id="_4">확인하는 법</h2>
+<p>DF 플래그를 켠 채 크기를 바꿔가며 핑을 던져 경계를 찾습니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># Linux — -M do 가 DF 설정, -s 는 페이로드 크기(헤더 28 제외)</span>
+ping<span class="w"> </span>-M<span class="w"> </span><span class="k">do</span><span class="w"> </span>-s<span class="w"> </span><span class="m">1472</span><span class="w"> </span>example.com<span class="w">     </span><span class="c1"># 1472+28 = 1500 — 성공하면 MTU 1500 OK</span>
+ping<span class="w"> </span>-M<span class="w"> </span><span class="k">do</span><span class="w"> </span>-s<span class="w"> </span><span class="m">1372</span><span class="w"> </span>example.com<span class="w">     </span><span class="c1"># 1400 상당 — 이건 되고 위는 안 되면 MTU가 1400대</span>
+
+<span class="c1"># macOS</span>
+ping<span class="w"> </span>-D<span class="w"> </span>-s<span class="w"> </span><span class="m">1472</span><span class="w"> </span>example.com
+<span class="c1"># Windows</span>
+ping<span class="w"> </span>-f<span class="w"> </span>-l<span class="w"> </span><span class="m">1472</span><span class="w"> </span>example.com
+</code></pre></div>
+
+<p><code>Frag needed and DF set</code> 또는 "패킷을 조각화해야 합니다"가 뜨면 그 크기가 경로 MTU를 넘은 겁니다. 성공하는 최대 <code>-s</code> 값 + 28이 실제 경로 MTU예요.</p>
+<p>현재 인터페이스 설정과 실제 오가는 크기도 봅니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>ip<span class="w"> </span>link<span class="w"> </span>show<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">&quot;mtu&quot;</span><span class="w">          </span><span class="c1"># 인터페이스별 MTU (tun0/wg0 등 터널 확인)</span>
+sudo<span class="w"> </span>tcpdump<span class="w"> </span>-ni<span class="w"> </span>any<span class="w"> </span><span class="s1">&#39;icmp[icmptype] == 3&#39;</span><span class="w">   </span><span class="c1"># ICMP unreachable(조각화 필요) 수신 여부</span>
+</code></pre></div>
+
+<h2 id="_5">처방 — 위에서 아래로</h2>
+<p><strong>① ICMP type 3 code 4를 허용하라.</strong> 근본 처방입니다. 방화벽에서 ICMP를 전부 막지 말고 "조각화 필요" 메시지만은 통과시키세요. 이러면 PMTUD가 제 일을 합니다.</p>
+<p><strong>② 터널 인터페이스 MTU를 낮춘다.</strong></p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>sudo<span class="w"> </span>ip<span class="w"> </span>link<span class="w"> </span><span class="nb">set</span><span class="w"> </span>dev<span class="w"> </span>wg0<span class="w"> </span>mtu<span class="w"> </span><span class="m">1380</span><span class="w">     </span><span class="c1"># WireGuard 등 터널 장치</span>
+</code></pre></div>
+
+<p><strong>③ MSS 클램핑</strong> — 서버·라우터에서 TCP 협상 단계의 최대 세그먼트 크기를 경로에 맞게 깎아버리는 방식입니다. 양 끝단을 못 건드릴 때(고객사 네트워크 등) 게이트웨이에서 쓰는 실전 카드예요. VPN 게이트웨이·로드밸런서에 이 옵션이 있는지 확인하세요.</p>
+<p><strong>④ 클라우드라면 점보 프레임 확인.</strong> 일부 환경은 내부 통신에 9001 등 큰 MTU를 쓰는데, 그 트래픽이 1500 구간(인터넷, 일부 게이트웨이)으로 나가면 같은 문제가 생깁니다. 인스턴스 MTU와 경로를 대조해보세요.</p>
+<h2 id="_6">한 줄 정리</h2>
+<p><strong>"작은 건 되고 큰 건 안 된다"</strong> = MTU를 의심하세요. <code>ping -M do -s</code>로 경계를 찾고, 근본 처방은 <strong>ICMP(조각화 필요) 허용</strong>, 차선은 터널 MTU 하향이나 MSS 클램핑입니다. 보안이라며 ICMP를 통째로 막는 게 이 사고의 절반을 만듭니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --network</div><a href="../p/service-ingress-visual.html"><span class="g">&#10095;</span>[그림 한 장] 쿠버네티스 Service와 Ingress — 트래픽이 Pod까지 가는 길</a><a href="../p/curl-verbose.html"><span class="g">&#10095;</span>curl -v 출력, 한 줄씩 읽는 법 — 어디서 막혔는지 혼자 말해준다</a><a href="../p/acg-vs-nacl.html"><span class="g">&#10095;</span>ACG(보안그룹) vs NACL 총정리 — 스테이트풀과 스테이트리스, 한 번에 끝내기</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/region-az.html"><span class="lbl">newer</span>리전과 가용영역 — &#x27;어디까지 죽으면 우리도 죽나&#x27;를 정하는 일</a><a href="../p/llm-eval.html" style="text-align:right"><span class="lbl">older</span>프롬프트를 감으로 고치면 안 되는 이유 — LLM 앱 평가 만들기</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
