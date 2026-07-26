@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>[그림 한 장] 요청 한 번의 VPC 여정 — 클릭에서 응답까지 무슨 일이 벌어지나 · 삽질노트</title>
+<meta name="description" content="사용자가 버튼을 누른 순간부터 응답이 돌아오기까지 — DNS, LB, 방화벽, private 서브넷, DB, NAT이 각자 무슨 일을 하는지 움직이는 그림 하나에 담았습니다.">
+<meta property="og:title" content="[그림 한 장] 요청 한 번의 VPC 여정 — 클릭에서 응답까지 무슨 일이 벌어지나 · 삽질노트">
+<meta property="og:description" content="사용자가 버튼을 누른 순간부터 응답이 돌아오기까지 — DNS, LB, 방화벽, private 서브넷, DB, NAT이 각자 무슨 일을 하는지 움직이는 그림 하나에 담았습니다.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/vpc-journey-visual.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/vpc-journey-visual.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/vpc-journey-visual.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/vpc-journey-visual.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-21</span><a class="chip" href="../c/cloud.html">--cloud</a><span>6 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>[그림 한 장] 요청 한 번의 VPC 여정 — 클릭에서 응답까지 무슨 일이 벌어지나</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 버튼 클릭 한 번에 요청은 <strong>DNS → 로드밸런서(public) → 방화벽(ACG) → WAS(private) → DB</strong>를 지나 되돌아오고, 서버가 밖에 나갈 땐 <strong>NAT</strong>이라는 뒷문을 씁니다. 그동안 따로 다뤘던 부품들을 그림 한 장에 조립했어요 — 초록 점(요청/응답)과 주황 점(아웃바운드)을 따라가 보세요.</p>
+</blockquote>
+<h2 id="_1">전체 그림 — 움직이는 여정</h2>
+<div class="viz">
+<svg viewBox="0 0 660 300" xmlns="http://www.w3.org/2000/svg">
+  <text x="10" y="16" class="vz-cap">초록 점: 사용자 요청→응답 왕복 · 주황 점: 서버가 외부 API로 나가는 길(NAT)</text>
+
+  <!-- VPC boundary -->
+  <rect x="150" y="28" width="500" height="258" rx="14" fill="none" stroke="var(--faint)" stroke-dasharray="6 4" stroke-width="1.2"/>
+  <text x="160" y="44" class="vz-cap">VPC 10.0.0.0/16</text>
+
+  <!-- public subnet -->
+  <rect x="165" y="52" width="200" height="222" rx="10" fill="none" stroke="var(--line)" stroke-width="1.2"/>
+  <text x="175" y="67" class="vz-cap">public 서브넷 (IGW 경로 있음)</text>
+  <!-- private subnet -->
+  <rect x="385" y="52" width="250" height="222" rx="10" fill="none" stroke="var(--line)" stroke-width="1.2"/>
+  <text x="395" y="67" class="vz-cap">private 서브넷 (인터넷 직통 없음)</text>
+
+  <!-- user -->
+  <rect x="10" y="120" width="90" height="46" rx="10" class="vz-box"/>
+  <text x="55" y="139" text-anchor="middle" class="vz-label">사용자</text>
+  <text x="55" y="153" text-anchor="middle" class="vz-sub">shop.com 클릭</text>
+
+  <!-- LB -->
+  <rect x="185" y="112" width="120" height="52" rx="10" class="vz-box-hi"/>
+  <text x="245" y="132" text-anchor="middle" class="vz-label">Load Balancer</text>
+  <text x="245" y="147" text-anchor="middle" class="vz-sub">TLS 종료 · 헬스체크</text>
+
+  <!-- NAT -->
+  <rect x="195" y="205" width="100" height="46" rx="10" class="vz-box"/>
+  <text x="245" y="224" text-anchor="middle" class="vz-label">NAT GW</text>
+  <text x="245" y="238" text-anchor="middle" class="vz-sub">나가기 전용 문</text>
+
+  <!-- WAS -->
+  <rect x="405" y="112" width="105" height="52" rx="10" class="vz-box-hi"/>
+  <text x="457" y="132" text-anchor="middle" class="vz-label">WAS</text>
+  <text x="457" y="147" text-anchor="middle" class="vz-sub">ACG: LB에서만 8080</text>
+
+  <!-- DB -->
+  <rect x="530" y="112" width="95" height="52" rx="10" class="vz-box"/>
+  <text x="577" y="132" text-anchor="middle" class="vz-label">DB</text>
+  <text x="577" y="147" text-anchor="middle" class="vz-sub">ACG: WAS만 5432</text>
+
+  <!-- external API -->
+  <rect x="10" y="205" width="90" height="46" rx="10" class="vz-box"/>
+  <text x="55" y="224" text-anchor="middle" class="vz-label">외부 API</text>
+  <text x="55" y="238" text-anchor="middle" class="vz-sub">결제사 등</text>
+
+  <!-- edges: request path -->
+  <path d="M100,138 L185,138" class="vz-line-hi"/>
+  <path d="M305,138 L405,138" class="vz-line-hi"/>
+  <path d="M510,138 L530,138" class="vz-line-hi"/>
+  <!-- outbound path WAS→NAT→ext -->
+  <path d="M405,155 C 340,175 300,200 295,222" class="vz-line"/>
+  <path d="M195,228 L100,228" class="vz-line"/>
+
+  <!-- request dot: round trip -->
+  <circle r="4.5" class="vz-dot">
+    <animateMotion dur="6s" repeatCount="indefinite"
+      path="M100,138 L185,138 L305,138 L405,138 L510,138 L530,138 L510,138 L405,138 L305,138 L185,138 L100,138"/>
+  </circle>
+  <!-- outbound dot -->
+  <circle r="4" class="vz-dot2">
+    <animateMotion dur="5s" begin="1.2s" repeatCount="indefinite"
+      path="M420,158 C 350,180 300,205 295,225 L195,228 L100,228 L195,228 L295,225"/>
+  </circle>
+
+  <text x="330" y="296" text-anchor="middle" class="vz-cap">DB는 인터넷과 어떤 직선도 없다는 것 — 이 그림에서 가장 중요한 '없는 선'</text>
+</svg>
+</div>
+
+<h2 id="_2">여정을 단계별로 — 각 부품이 하는 일</h2>
+<p><strong>① DNS (그림 밖 0단계):</strong> <code>shop.com</code> → LB의 주소. 사용자는 서버가 아니라 <strong>항상 LB를</strong> 바라봅니다.</p>
+<p><strong>② LB (public 서브넷):</strong> 유일하게 인터넷을 정면으로 만나는 부품. TLS를 여기서 풀고(인증서 관리 일원화), 헬스체크로 살아있는 WAS만 골라 넘깁니다. L7 분기가 필요하면 ALB — 그 선택 기준은 ALB vs NLB 글에.</p>
+<p><strong>③ ACG 통과:</strong> WAS의 방문 경비는 "LB의 ACG에서 오는 8080만" 허용. IP가 아니라 <strong>역할(ACG 체이닝)</strong>로 열려 있어서 LB가 몇 대로 늘든 규칙은 그대로입니다.</p>
+<p><strong>④ WAS (private 서브넷):</strong> 인터넷으로 가는 라우팅 경로 자체가 없는 층. 공격자가 WAS 주소를 알아내도 <strong>직접 닿을 길이 없습니다.</strong></p>
+<p><strong>⑤ DB:</strong> 한 겹 더 깊이. "WAS의 ACG에서 오는 5432만". 그림에서 DB와 인터넷 사이에 <strong>선이 하나도 없다</strong>는 것 — 이 아키텍처의 존재 이유입니다.</p>
+<p><strong>⑥ 응답 왕복:</strong> 온 길을 그대로 되돌아갑니다. ACG는 스테이트풀이라 응답 규칙은 따로 필요 없죠(NACL을 조였다면 임시 포트 — 그 총정리 글).</p>
+<p><strong>⑦ 주황 점, 뒷문:</strong> WAS가 결제사 API를 부를 땐 NAT을 경유해 <strong>NAT의 공인 IP로</strong> 나갑니다. 나가는 건 되지만 밖에서 이 문으로 들어올 수는 없고(장부 구조), 지나가는 GB마다 요금이 붙는다는 것까지 — NAT 글의 그 얘기입니다.</p>
+<h2 id="_3">이 그림으로 장애를 읽는 법</h2>
+<p>이제 장애 증상을 그림 위의 "끊긴 화살표"로 번역할 수 있습니다.</p>
+<div class="highlight"><pre><span></span><code>사이트 전체 안 열림          → ①~② 구간: DNS(dig) / LB 상태
+간헐적 502·UNHEALTHY        → ②~③ 구간: 헬스체크 3대장 (포트·경로·방화벽)
+WAS는 뜨는데 기능 오류       → ④~⑤ 구간: WAS→DB (Pod의 눈으로 nc 5432)
+결제·외부 연동만 실패        → ⑦ 구간: NAT 라우팅, 외부사 허용목록에 NAT IP인지
+</code></pre></div>
+
+<p>진단 도구 배치도 그대로예요 — 구간을 반씩 자르는 이분탐색(curl --resolve, port-forward의 사고방식), 애매하면 그 지점에서 tcpdump.</p>
+<h2 id="_4">한 줄 정리</h2>
+<p>좋은 VPC 설계는 그림에 <strong>선이 적은</strong> 설계입니다 — 인터넷을 만나는 건 LB뿐, DB는 어떤 직선도 없음, 나가는 길은 NAT 하나. 이 그림을 머리에 넣어두면, 장애는 "어느 화살표가 끊겼나"라는 좌표 문제가 됩니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --cloud</div><a href="../p/alb-vs-nlb.html"><span class="g">&#10095;</span>ALB냐 NLB냐 — L7과 L4, 로드밸런서 고르는 기준</a><a href="../p/managed-db-migration.html"><span class="g">&#10095;</span>관리형 DB로 옮기면 끝인 줄 알았다 — 이관할 때 놓치는 것들</a><a href="../p/cloud-cost-leaks.html"><span class="g">&#10095;</span>클라우드 비용이 새는 곳 톱5 — 고지서가 놀라기 전에 잡는 법</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><span></span><a href="../p/service-ingress-visual.html" style="text-align:right"><span class="lbl">older</span>[그림 한 장] 쿠버네티스 Service와 Ingress — 트래픽이 Pod까지 가는 길</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

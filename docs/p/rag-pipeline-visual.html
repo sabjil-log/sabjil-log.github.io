@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>[그림 한 장] RAG 파이프라인 전체 — 문서가 답변이 되기까지 · 삽질노트</title>
+<meta name="description" content="청킹, 임베딩, 벡터검색, 리랭커, 근거 프롬프트 — 시리즈로 하나씩 다뤘던 부품을 움직이는 그림 한 장으로 조립했습니다. 이 그림이 곧 시리즈의 지도예요.">
+<meta property="og:title" content="[그림 한 장] RAG 파이프라인 전체 — 문서가 답변이 되기까지 · 삽질노트">
+<meta property="og:description" content="청킹, 임베딩, 벡터검색, 리랭커, 근거 프롬프트 — 시리즈로 하나씩 다뤘던 부품을 움직이는 그림 한 장으로 조립했습니다. 이 그림이 곧 시리즈의 지도예요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/rag-pipeline-visual.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/rag-pipeline-visual.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/rag-pipeline-visual.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/rag-pipeline-visual.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-21</span><a class="chip" href="../c/ai.html">--ai</a><span>6 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>[그림 한 장] RAG 파이프라인 전체 — 문서가 답변이 되기까지</h1><blockquote>
+<p><strong>한 줄 요약:</strong> RAG는 두 개의 흐름입니다 — 미리 해두는 <strong>적재(문서→조각→벡터→창고)</strong>와, 질문마다 도는 <strong>검색(질문→후보 50→정예 5→근거와 함께 LLM)</strong>. 아래 그림의 회색 점(적재)과 초록 점(질문)을 따라가면, 시리즈에서 다룬 모든 부품이 제자리에 보입니다.</p>
+</blockquote>
+<h2 id="_1">전체 그림 — 두 개의 흐름</h2>
+<div class="viz">
+<svg viewBox="0 0 660 320" xmlns="http://www.w3.org/2000/svg">
+  <text x="10" y="16" class="vz-cap">위 트랙(회색 점): 미리 적재 · 아래 트랙(초록 점): 질문마다 실행</text>
+
+  <!-- ingestion track -->
+  <rect x="10" y="40" width="90" height="46" rx="10" class="vz-box"/>
+  <text x="55" y="59" text-anchor="middle" class="vz-label">문서</text>
+  <text x="55" y="73" text-anchor="middle" class="vz-sub">위키·규정·매뉴얼</text>
+
+  <rect x="140" y="40" width="100" height="46" rx="10" class="vz-box"/>
+  <text x="190" y="59" text-anchor="middle" class="vz-label">청킹</text>
+  <text x="190" y="73" text-anchor="middle" class="vz-sub">완결된 생각 단위</text>
+
+  <rect x="280" y="40" width="100" height="46" rx="10" class="vz-box"/>
+  <text x="330" y="59" text-anchor="middle" class="vz-label">임베딩</text>
+  <text x="330" y="73" text-anchor="middle" class="vz-sub">뜻 → 벡터</text>
+
+  <rect x="420" y="40" width="120" height="46" rx="10" class="vz-box-hi"/>
+  <text x="480" y="59" text-anchor="middle" class="vz-label">벡터 DB</text>
+  <text x="480" y="73" text-anchor="middle" class="vz-sub">ANN 인덱스 창고</text>
+
+  <path d="M100,63 L140,63" class="vz-line"/>
+  <path d="M240,63 L280,63" class="vz-line"/>
+  <path d="M380,63 L420,63" class="vz-line"/>
+  <circle r="4" fill="var(--faint)">
+    <animateMotion dur="4.5s" repeatCount="indefinite" path="M100,63 L140,63 L240,63 L280,63 L380,63 L420,63"/>
+  </circle>
+
+  <!-- query track -->
+  <rect x="10" y="170" width="90" height="46" rx="10" class="vz-box"/>
+  <text x="55" y="189" text-anchor="middle" class="vz-label">질문</text>
+  <text x="55" y="203" text-anchor="middle" class="vz-sub">"환불 수수료는?"</text>
+
+  <rect x="140" y="170" width="100" height="46" rx="10" class="vz-box"/>
+  <text x="190" y="189" text-anchor="middle" class="vz-label">임베딩</text>
+  <text x="190" y="203" text-anchor="middle" class="vz-sub">같은 좌표계로</text>
+
+  <rect x="280" y="170" width="100" height="46" rx="10" class="vz-box"/>
+  <text x="330" y="189" text-anchor="middle" class="vz-label">1차 검색</text>
+  <text x="330" y="203" text-anchor="middle" class="vz-sub">서류전형 top-50</text>
+
+  <rect x="420" y="170" width="100" height="46" rx="10" class="vz-box"/>
+  <text x="470" y="189" text-anchor="middle" class="vz-label">리랭커</text>
+  <text x="470" y="203" text-anchor="middle" class="vz-sub">면접 → top-5</text>
+
+  <rect x="555" y="164" width="95" height="58" rx="10" class="vz-box-hi"/>
+  <text x="602" y="186" text-anchor="middle" class="vz-label">LLM</text>
+  <text x="602" y="200" text-anchor="middle" class="vz-sub">근거만 보고 답변</text>
+  <text x="602" y="212" text-anchor="middle" class="vz-sub">없으면 "모름"</text>
+
+  <path d="M100,193 L140,193" class="vz-line-hi"/>
+  <path d="M240,193 L280,193" class="vz-line-hi"/>
+  <path d="M380,193 L420,193" class="vz-line-hi"/>
+  <path d="M520,193 L555,193" class="vz-line-hi"/>
+  <!-- vector DB feeds search -->
+  <path d="M480,86 L480,150 C 480,162 460,166 430,170" class="vz-line" stroke-dasharray="4 3"/>
+  <path d="M460,86 C 420,120 370,145 335,170" class="vz-line" stroke-dasharray="4 3"/>
+
+  <circle r="4.5" class="vz-dot">
+    <animateMotion dur="5s" repeatCount="indefinite" path="M100,193 L140,193 L240,193 L280,193 L380,193 L420,193 L520,193 L555,193"/>
+  </circle>
+  <!-- candidates shrinking: many small dots at search, few at rerank -->
+  <circle r="3" class="vz-dot" opacity="0.35"><animateMotion dur="5s" begin="0.3s" repeatCount="indefinite" path="M280,208 L380,208 L420,208"/></circle>
+  <circle r="3" class="vz-dot" opacity="0.35"><animateMotion dur="5s" begin="0.6s" repeatCount="indefinite" path="M280,180 L380,180 L420,180"/></circle>
+
+  <text x="330" y="255" text-anchor="middle" class="vz-cap">점선: 창고(벡터 DB)가 1차 검색에 후보를 공급 · 후보 50 → 리랭커에서 5로 압축</text>
+  <text x="330" y="300" text-anchor="middle" class="vz-cap">품질 문제가 생기면 — 어느 상자에서 새는지부터 찾는 게 RAG 디버깅입니다 (아래 표)</text>
+</svg>
+</div>
+
+<h2 id="_2">각 상자 = 시리즈의 한 편</h2>
+<p>이 그림은 사실 지난 글들의 목차입니다. 상자마다 무슨 일이 벌어지고, 뭘 조심해야 하는지 —</p>
+<table>
+<thead>
+<tr>
+<th>상자</th>
+<th>하는 일</th>
+<th>실패하면 생기는 증상</th>
+<th>깊이 판 글</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>청킹</td>
+<td>완결된 생각 단위로 자르기</td>
+<td>잡음 섞임 / 문맥 끊김</td>
+<td>청크 크기와 오버랩</td>
+</tr>
+<tr>
+<td>임베딩</td>
+<td>뜻을 벡터 좌표로</td>
+<td>유사어를 못 묶음</td>
+<td>코사인 유사도</td>
+</tr>
+<tr>
+<td>벡터 DB</td>
+<td>ANN으로 초고속 후보 공급</td>
+<td>있는 문서가 후보에 안 듦</td>
+<td>벡터 DB와 ANN</td>
+</tr>
+<tr>
+<td>1차 검색</td>
+<td>넉넉하게 top-50</td>
+<td>k가 작으면 정답이 탈락</td>
+<td>리랭커 (1차의 한계)</td>
+</tr>
+<tr>
+<td>리랭커</td>
+<td>질문과 쌍으로 재채점</td>
+<td>비슷한 오답이 상위 점령</td>
+<td>리랭커</td>
+</tr>
+<tr>
+<td>LLM+근거</td>
+<td>근거만 보고, 없으면 모른다</td>
+<td>그럴듯한 지어내기</td>
+<td>근거 지시와 환각</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_3">이 그림으로 디버깅하는 법</h2>
+<p>"답이 이상해요"는 진단이 아닙니다. 그림 위에서 <strong>어느 상자가 새는지</strong>를 좁혀야죠.</p>
+<div class="highlight"><pre><span></span><code>1. 정답이 문서에 존재하는가?           → 없으면 RAG 문제가 아님 (문서 문제)
+2. 정답 청크가 top-50 안에 있는가?     → 없으면: 청킹 or 임베딩 or ANN 다이얼(k, ef)
+3. top-50엔 있는데 top-5엔 없는가?    → 리랭커 문제 (모델 교체·후보 수 조정)
+4. top-5엔 있는데 답이 틀리는가?      → 프롬프트 문제 (근거 지시·인용 강제)
+</code></pre></div>
+
+<p>포인트는 순서입니다 — 다들 4번(프롬프트)부터 만지는데, 실무 문제의 다수는 <strong>2번(검색 재현율)</strong>에 삽니다. 중간 산출물(top-50, top-5 목록)을 눈으로 볼 수 있게 로깅해두는 것, 그게 RAG 운영의 절반이에요.</p>
+<h2 id="_4">두 트랙의 온도 차이도 기억하세요</h2>
+<ul>
+<li><strong>위 트랙(적재)은 배치</strong>: 문서가 바뀔 때만 돌면 됩니다. 여기서 공들인 청킹 품질이 아래 트랙 전체의 상한선을 정해요.</li>
+<li><strong>아래 트랙(질문)은 실시간</strong>: 매 질문마다 도니 지연·비용이 여기 붙습니다. 1차는 넉넉히(빠르니까), 리랭커는 후보에만(느리니까) — 그 2단 구조의 이유죠.</li>
+</ul>
+<h2 id="_5">한 줄 정리</h2>
+<p>RAG는 <strong>적재 트랙(자르고→벡터로→창고에)</strong>과 <strong>질문 트랙(넓게 찾고→좁게 추리고→근거만 보고 답)</strong>의 조립품입니다. 이 그림을 지도로 — 품질 문제는 상자 단위로 좁히고, 프롬프트보다 검색 재현율부터 의심하세요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/prompt-injection.html"><span class="g">&#10095;</span>프롬프트 주입 — AI가 읽은 문서가 AI에게 명령할 때</a><a href="../p/what-is-mcp.html"><span class="g">&#10095;</span>MCP가 뭔데 다들 만드나 — AI 도구 연결의 USB 규격</a><a href="../p/agents-tool-use.html"><span class="g">&#10095;</span>AI 에이전트의 정체 — LLM에 손발을 달아주는 tool use</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/service-ingress-visual.html"><span class="lbl">newer</span>[그림 한 장] 쿠버네티스 Service와 Ingress — 트래픽이 Pod까지 가는 길</a><a href="../p/prompt-injection.html" style="text-align:right"><span class="lbl">older</span>프롬프트 주입 — AI가 읽은 문서가 AI에게 명령할 때</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

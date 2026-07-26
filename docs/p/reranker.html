@@ -30,7 +30,7 @@
     <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
   </div>
   <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
-  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../archive.html">--all</a></nav>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
 </div></header>
 <main class="wrap">
 <article><div class="post-meta"><span>2026-07-12</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>1차 검색은 왜 부족한가 — 리랭커가 RAG에서 하는 일</h1><blockquote>
@@ -44,6 +44,58 @@
 <h2 id="_2">리랭커는 뭘 다르게 하나</h2>
 <p>리랭커(cross-encoder)는 <strong>질문과 문서를 한 쌍으로 같이</strong> 모델에 넣고, "이 문서가 이 질문에 답이 되는가"를 직접 채점합니다.</p>
 <p>이건 <strong>면접</strong>입니다. 질문을 실제로 던져보고 반응을 보는 것. 정확하지만 한 쌍마다 모델을 한 번씩 돌려야 해서 느리죠. 그래서 전체 문서에는 못 쓰고, <strong>서류전형 통과자에게만</strong> 씁니다.</p>
+<figure class="diagram"><div class="dg-cap">RAG 2단 검색 파이프라인</div><svg viewBox="0 0 640 210" role="img" aria-label="RAG 파이프라인 단계">
+<style>
+
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.d3-s rect{transition:none;}
+.d3-1{animation:d3-h 5s ease-in-out infinite;animation-delay:0s;}
+.d3-2{animation:d3-h 5s ease-in-out infinite;animation-delay:1s;}
+.d3-3{animation:d3-h 5s ease-in-out infinite;animation-delay:2s;}
+.d3-4{animation:d3-h 5s ease-in-out infinite;animation-delay:3s;}
+.d3-dot{animation:d3-move 5s ease-in-out infinite;}
+@keyframes d3-h{0%,100%{fill:var(--raise);stroke:var(--line)}
+ 6%,18%{fill:var(--accent-soft);stroke:var(--accent)}}
+@keyframes d3-move{0%{transform:translateX(0)}
+ 18%{transform:translateX(0)}25%{transform:translateX(148px)}
+ 43%{transform:translateX(148px)}50%{transform:translateX(296px)}
+ 68%{transform:translateX(296px)}75%{transform:translateX(444px)}
+ 96%{transform:translateX(444px)}100%{transform:translateX(0);opacity:0}}
+</style>
+<text x="14" y="24" class="dg-ts">질문</text>
+<g class="d3-s">
+<rect class="dg-box dg-anim d3-1" x="14" y="34" width="126" height="62" rx="10"/>
+<rect class="dg-box dg-anim d3-2" x="162" y="34" width="126" height="62" rx="10"/>
+<rect class="dg-box dg-anim d3-3" x="310" y="34" width="126" height="62" rx="10"/>
+<rect class="dg-box dg-anim d3-4" x="458" y="34" width="126" height="62" rx="10"/>
+</g>
+<text x="34" y="60" class="dg-t">임베딩</text>
+<text x="34" y="80" class="dg-ts">벡터로 변환</text>
+<text x="182" y="60" class="dg-t">벡터 검색</text>
+<text x="182" y="80" class="dg-ts">top-50 (빠름·거침)</text>
+<text x="330" y="60" class="dg-t">리랭커</text>
+<text x="330" y="80" class="dg-ts">top-5 (느림·정확)</text>
+<text x="478" y="60" class="dg-t">LLM</text>
+<text x="478" y="80" class="dg-ts">근거로만 답변</text>
+<line x1="140" y1="65" x2="162" y2="65" class="dg-arrow"/>
+<line x1="288" y1="65" x2="310" y2="65" class="dg-arrow"/>
+<line x1="436" y1="65" x2="458" y2="65" class="dg-arrow"/>
+<g class="dg-anim d3-dot"><circle cx="77" cy="112" r="6" class="dg-ok"/></g>
+<text x="14" y="150" class="dg-ts">넉넉히 거르고(k=50) → 야박하게 좁힌다(top-5)</text>
+<text x="14" y="172" class="dg-ts">1차에서 정답이 후보에 들어오지 않으면 리랭커도 구제 불가</text>
+<text x="14" y="194" class="dg-ts">"근거에 없으면 모른다고 답하라" 지시가 마지막 안전망</text>
+</svg><figcaption>벡터 검색이 넉넉히 후보를 거르고(서류전형), 리랭커가 꼼꼼히 줄 세워(면접) LLM에는 정예만 넘깁니다.</figcaption></figure>
 <h2 id="2">2단 파이프라인</h2>
 <div class="highlight"><pre><span></span><code>질문 → [1차: 벡터 검색] 수만 개 중 top-50 후보   (빠름, 거침)
      → [2차: 리랭커]   50개를 재채점해 top-5     (느림, 정확)
@@ -75,7 +127,7 @@
 <li>리랭커를 넣었는데도 못 찾는다 → 후보군(k)을 늘리거나, 애초에 <strong>청킹</strong>이 문제일 가능성 (완결된 생각 단위로 잘렸는지부터 재점검)</li>
 </ul>
 <h2 id="_5">한 줄 정리</h2>
-<p>벡터 검색은 서류전형, 리랭커는 면접입니다. <strong>넉넉히 거르고(1차 k=50), 꼼꼼히 줄 세워(2차 top-5)</strong> LLM에는 정예만 넘기세요. RAG 답변 품질이 한 계단 다르게 올라갑니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/prompt-injection.html"><span class="g">&#10095;</span>프롬프트 주입 — AI가 읽은 문서가 AI에게 명령할 때</a><a href="../p/what-is-mcp.html"><span class="g">&#10095;</span>MCP가 뭔데 다들 만드나 — AI 도구 연결의 USB 규격</a><a href="../p/agents-tool-use.html"><span class="g">&#10095;</span>AI 에이전트의 정체 — LLM에 손발을 달아주는 tool use</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/secret-manager.html"><span class="lbl">newer</span>코드에 DB 비밀번호를 박으면 생기는 일 — Secret Manager를 쓰는 이유</a><a href="../p/load-average.html" style="text-align:right"><span class="lbl">older</span>load average 4.0은 위험한가 — top 숫자를 읽을 줄 안다는 것</a></nav></article>
+<p>벡터 검색은 서류전형, 리랭커는 면접입니다. <strong>넉넉히 거르고(1차 k=50), 꼼꼼히 줄 세워(2차 top-5)</strong> LLM에는 정예만 넘기세요. RAG 답변 품질이 한 계단 다르게 올라갑니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/rag-pipeline-visual.html"><span class="g">&#10095;</span>[그림 한 장] RAG 파이프라인 전체 — 문서가 답변이 되기까지</a><a href="../p/prompt-injection.html"><span class="g">&#10095;</span>프롬프트 주입 — AI가 읽은 문서가 AI에게 명령할 때</a><a href="../p/what-is-mcp.html"><span class="g">&#10095;</span>MCP가 뭔데 다들 만드나 — AI 도구 연결의 USB 규격</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/secret-manager.html"><span class="lbl">newer</span>코드에 DB 비밀번호를 박으면 생기는 일 — Secret Manager를 쓰는 이유</a><a href="../p/load-average.html" style="text-align:right"><span class="lbl">older</span>load average 4.0은 위험한가 — top 숫자를 읽을 줄 안다는 것</a></nav></article>
 </main>
 <footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
 <script src="../assets/app.js" defer></script>

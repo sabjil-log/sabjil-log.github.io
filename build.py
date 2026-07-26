@@ -10,6 +10,7 @@ import os, re, html, glob, datetime, shutil
 from string import Template
 import yaml
 import markdown as md
+import diagrams as DG
 from pygments.formatters import HtmlFormatter
 
 # ─────────────────────────── 설정 (여기만 고치면 됨) ───────────────────────────
@@ -101,6 +102,14 @@ def inject_langs(body_html, langs):
         out += f'<div class="highlight"><pre{attr}>' + part
     return out
 
+
+def inject_diagrams(body_html):
+    """[[diagram:이름]] 자리를 애니메이션 SVG로 교체."""
+    def sub(m):
+        return DG.render(m.group(1))
+    body_html = re.sub(r"<p>\s*\[\[diagram:([a-z0-9\-]+)\]\]\s*</p>", sub, body_html)
+    return re.sub(r"\[\[diagram:([a-z0-9\-]+)\]\]", sub, body_html)
+
 # ─── 템플릿 ───
 BASE = Template("""<!DOCTYPE html>
 <html lang="ko">
@@ -154,6 +163,8 @@ def build_nav(root, active=""):
     for name, slug in CATEGORIES.items():
         on = ' class="on"' if active == slug else ""
         items.append(f'<a href="{root}c/{slug}.html"{on}>--{slug}</a>')
+    on = ' class="on"' if active == "visual" else ""
+    items.append(f'<a href="{root}visual.html"{on}>--visual</a>')
     on = ' class="on"' if active == "archive" else ""
     items.append(f'<a href="{root}archive.html"{on}>--all</a>')
     return "".join(items)
@@ -251,10 +262,14 @@ def main():
     posts.sort(key=lambda x: (x["date"], x["slug"]), reverse=True)
 
     # 개별 글
+    viz_gallery = []          # (제목, slug, viz HTML) — 갤러리용
     for i, p in enumerate(posts):
         newer = posts[i - 1] if i > 0 else None      # 정렬이 최신순이라 i-1 이 더 최신
         older = posts[i + 1] if i + 1 < len(posts) else None
-        body_html = inject_langs(render_md(p["body_md"]), fence_langs(p["body_md"]))
+        body_html = inject_diagrams(inject_langs(render_md(p["body_md"]), fence_langs(p["body_md"])))
+        m = re.search(r'<div class="viz">.*?</div>', body_html, re.S)
+        if m:
+            viz_gallery.append((p["title"], p["slug"], m.group(0)))
         cslug = cat_slug(p["category"])
         tags = f'<a class="chip" href="../c/{cslug}.html">--{cslug}</a>'
         meta = f'<div class="post-meta"><span>{p["date"]}</span>{tags}<span>{p["read_min"]} min read</span></div>'
@@ -336,6 +351,26 @@ def main():
         page(os.path.join(DOCS, "c", slug + ".html"),
              f'--{slug} · {SITE["title"]}', f'{name} 관련 글', body, root="../", nav_active=slug)
 
+    # ─── 한눈에 보기 (다이어그램 갤러리) ───
+    slug_set = set(p["slug"] for p in posts)
+    cards = ['<section class="list">',
+             '<div class="list-head">한눈에 보기 · 개념 다이어그램</div>',
+             '<p class="sum" style="margin:0 0 6px;color:var(--muted)">'
+             '움직이는 그림으로 개념을 한 장에 담았습니다. 각 카드의 링크에서 자세한 설명을 읽을 수 있어요.</p>']
+    for name, d in DG.DIAGRAMS.items():
+        link = (f'<a href="p/{d["post"]}.html">자세히 읽기 &#10095;</a>'
+                if d.get("post") in slug_set else "")
+        cards.append(f'<div class="dg-card">{DG.render(name)}'
+                     f'<div class="dg-more">{link}</div></div>')
+    for title, slug, viz in viz_gallery:
+        cards.append(
+            f'<div class="dg-card"><div class="dg-cap-out">{html.escape(title)}</div>'
+            f'{viz}<div class="dg-more"><a href="p/{slug}.html">자세히 읽기 &#10095;</a></div></div>')
+    cards.append("</section>")
+    page(os.path.join(DOCS, "visual.html"), f'한눈에 보기 · {SITE["title"]}',
+         "개념을 한 장으로 정리한 애니메이션 다이어그램 모음",
+         "".join(cards), root="", nav_active="visual")
+
     # ─── 아카이브 (월별 전체 글) ───
     months = {}
     for p in posts:
@@ -360,7 +395,7 @@ def main():
 
     make_og_images(posts)
 
-    urls = [(base + "/", today), (base + "/archive.html", today)]
+    urls = [(base + "/", today), (base + "/archive.html", today), (base + "/visual.html", today)]
     urls += [(f'{base}/p/{p["slug"]}.html', p["date"]) for p in posts]
     for name, slug in CATEGORIES.items():
         if any(cat_slug(p["category"]) == slug for p in posts):

@@ -264,3 +264,61 @@ article pre[data-lang]:hover::after{opacity:0;}   /* hover 시 copy 버튼에 �
 @media (prefers-reduced-motion:reduce){
   .fac-body .cur{animation:none;}
 }
+
+/* ---- 개념 시각화 (인라인 SVG 다이어그램) ---- */
+.viz{
+  background:var(--raise);border:1px solid var(--line);border-radius:16px;
+  padding:18px 14px;margin:20px 0;overflow-x:auto;
+}
+.viz svg{display:block;width:100%;height:auto;max-width:660px;margin:0 auto;
+  font-family:var(--mono);}
+.viz .vz-box{fill:var(--paper);stroke:var(--line);stroke-width:1.5;}
+.viz .vz-box-hi{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5;}
+.viz .vz-label{fill:var(--ink);font-size:11px;font-weight:700;}
+.viz .vz-sub{fill:var(--muted);font-size:8.5px;}
+.viz .vz-line{stroke:var(--faint);stroke-width:1.5;fill:none;}
+.viz .vz-line-hi{stroke:var(--accent);stroke-width:1.5;fill:none;}
+.viz .vz-dot{fill:var(--accent);}
+.viz .vz-dot2{fill:#E8A87C;}
+.viz .vz-cap{fill:var(--faint);font-size:8.5px;}
+@media (prefers-reduced-motion:reduce){ .viz .vz-dot,.viz .vz-dot2{display:none;} }
+
+/* ---- 개념 다이어그램 ---- */
+.diagram{
+  margin:26px 0;padding:16px 16px 12px;background:var(--raise);
+  border:1px solid var(--line);border-radius:16px;
+}
+.diagram svg{display:block;width:100%;height:auto;}
+.diagram .dg-cap{
+  font-family:var(--mono);font-size:11.5px;color:var(--accent);
+  text-transform:uppercase;letter-spacing:.03em;margin-bottom:10px;
+}
+.diagram figcaption{
+  margin-top:12px;padding-top:10px;border-top:1px solid var(--line-2);
+  font-size:13.5px;line-height:1.6;color:var(--muted);
+}
+.dg-card{margin:0 0 26px;}
+.dg-card .dg-more{margin-top:-14px;text-align:right;font-family:var(--mono);font-size:12.5px;}
+@media (max-width:560px){
+  .diagram{padding:12px 10px 10px;border-radius:12px;}
+  .diagram figcaption{font-size:12.5px;}
+}
+
+/* ---- 인라인 시각화 (.viz) ---- */
+.viz{
+  margin:26px 0;padding:16px 14px 12px;background:var(--raise);
+  border:1px solid var(--line);border-radius:16px;overflow:hidden;
+}
+.viz svg{display:block;width:100%;height:auto;overflow:visible;}
+.vz-cap{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.vz-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.vz-box-hi{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5;}
+.vz-label{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--ink);}
+.vz-sub{font-family:var(--mono);font-size:10px;fill:var(--muted);}
+.vz-line{stroke:var(--line);stroke-width:1.5;fill:none;}
+.vz-line-hi{stroke:var(--accent);stroke-width:1.8;fill:none;}
+.vz-dot{fill:var(--accent);}
+.vz-dot2{fill:#E8842C;}
+@media (max-width:560px){ .viz{padding:12px 8px 10px;border-radius:12px;} }
+.dg-card .dg-cap-out{font-family:var(--mono);font-size:11.5px;color:var(--accent);
+  text-transform:uppercase;letter-spacing:.03em;margin:0 0 -8px 4px;}

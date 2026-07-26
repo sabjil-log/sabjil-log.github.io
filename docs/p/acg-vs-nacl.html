@@ -30,7 +30,7 @@
     <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
   </div>
   <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
-  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html" class="on">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../archive.html">--all</a></nav>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html" class="on">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
 </div></header>
 <main class="wrap">
 <article><div class="post-meta"><span>2026-07-20</span><a class="chip" href="../c/network.html">--network</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>ACG(보안그룹) vs NACL 총정리 — 스테이트풀과 스테이트리스, 한 번에 끝내기</h1><blockquote>
@@ -46,6 +46,60 @@
 <li><strong>ACG/보안그룹</strong> = 방문마다 붙은 경비. <strong>그 방(인스턴스)</strong>에만 적용.</li>
 </ul>
 <p>패킷은 둘 다 통과해야 합니다. 그래서 "방화벽 열었는데요?"라는 말은 항상 <strong>"둘 중 어느 걸요?"</strong>를 되물어야 해요.</p>
+<figure class="diagram"><div class="dg-cap">스테이트풀 vs 스테이트리스 방화벽</div><svg viewBox="0 0 640 320" role="img" aria-label="스테이트풀과 스테이트리스 방화벽 비교">
+<style>
+
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;fill:var(--ink);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--ink);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.d1-pkt{animation:d1-out 3.4s ease-in-out infinite;}
+.d1-ret{animation:d1-in 3.4s ease-in-out infinite;}
+.d1-ret2{animation:d1-in2 3.4s ease-in-out infinite;}
+.d1-x{opacity:0;animation:d1-x 3.4s ease-in-out infinite;}
+@keyframes d1-out{0%,8%{transform:translateX(0);opacity:0}
+ 12%{opacity:1}45%{transform:translateX(190px);opacity:1}52%{opacity:0}100%{opacity:0}}
+@keyframes d1-in{0%,50%{transform:translateX(0);opacity:0}
+ 56%{opacity:1}92%{transform:translateX(-190px);opacity:1}100%{opacity:0}}
+@keyframes d1-in2{0%,50%{transform:translateX(0);opacity:0}
+ 56%{opacity:1}78%{transform:translateX(-105px);opacity:1}86%{transform:translateX(-105px);opacity:0}100%{opacity:0}}
+@keyframes d1-x{0%,76%{opacity:0}80%,92%{opacity:1}100%{opacity:0}}
+</style>
+<text x="16" y="22" class="dg-tl">ACG / 보안그룹 — 스테이트풀</text>
+<rect x="16" y="36" width="608" height="106" rx="12" class="dg-box"/>
+<rect x="34" y="66" width="74" height="46" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="52" y="94" class="dg-t">서버</text>
+<line x1="200" y1="48" x2="200" y2="130" class="dg-wall"/>
+<text x="176" y="136" class="dg-ts">ACG</text>
+<rect x="532" y="66" width="74" height="46" rx="8" class="dg-box"/>
+<text x="556" y="94" class="dg-t">외부</text>
+<text x="250" y="66" class="dg-ts">요청 나감</text>
+<g class="dg-anim d1-pkt"><circle cx="330" cy="78" r="7" class="dg-ok"/></g>
+<text x="250" y="126" class="dg-ts">응답 — 규칙 없이 자동 통과 ✓</text>
+<g class="dg-anim d1-ret"><circle cx="520" cy="104" r="7" class="dg-ok"/></g>
+
+<text x="16" y="192" class="dg-tl">NACL — 스테이트리스</text>
+<rect x="16" y="206" width="608" height="106" rx="12" class="dg-box"/>
+<rect x="34" y="236" width="74" height="46" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="52" y="264" class="dg-t">서버</text>
+<line x1="200" y1="218" x2="200" y2="300" class="dg-wall"/>
+<text x="170" y="306" class="dg-ts">NACL</text>
+<rect x="532" y="236" width="74" height="46" rx="8" class="dg-box"/>
+<text x="556" y="264" class="dg-t">외부</text>
+<text x="250" y="236" class="dg-ts">인바운드 443 허용 → 요청 OK</text>
+<g class="dg-anim d1-pkt"><circle cx="330" cy="248" r="7" class="dg-ok"/></g>
+<g class="dg-anim d1-ret2"><circle cx="520" cy="274" r="7" class="dg-no"/></g>
+<g class="dg-anim d1-x"><text x="196" y="280" font-size="17" class="dg-no" font-weight="700">✕</text></g>
+<text x="250" y="296" class="dg-ts">응답은 임시포트(1024-65535) 미허용 → 차단</text>
+</svg><figcaption>ACG는 나간 요청을 기억해 응답을 자동 통과시키고, NACL은 기억이 없어 응답용 임시 포트를 따로 열어야 합니다.</figcaption></figure>
 <h2 id="_2">결정적 차이: 기억력</h2>
 <p><strong>ACG는 스테이트풀</strong> — 대화를 기억합니다. 방 안에서 "피자 주문 나갑니다" 하고 나간 걸 봤으면, 배달원이 돌아올 때 규칙을 안 따져도 들여보내줍니다. 그래서 ACG는 <strong>인바운드 규칙만</strong> 고민하면 되고, 아웃바운드는 대개 전체 허용으로 둡니다.</p>
 <p><strong>NACL은 스테이트리스</strong> — 기억이 없습니다. 나가는 배달 주문을 봤어도 잊어버려요. 돌아오는 배달원도 <strong>명시적 허용 규칙</strong>이 있어야 통과합니다. 여기서 그 유명한 함정이 나옵니다 —</p>
@@ -109,7 +163,7 @@
 <h2 id="_6">디버깅 순서</h2>
 <p>연결이 안 되면: ① ACG 인바운드에 출발지·포트가 있나 → ② 그 서브넷의 NACL 인바운드에 있나 → ③ <strong>NACL 아웃바운드에 임시 포트가 있나</strong> → ④ 그래도면 tcpdump로 패킷의 행방을(그 글의 3패턴). 경험상 ③이 범인인 비율이 부끄러울 만큼 높습니다.</p>
 <h2 id="_7">한 줄 정리</h2>
-<p><strong>ACG는 기억하는 경비, NACL은 규칙만 보는 경비.</strong> 주 방어는 ACG(+ACG 체이닝), NACL은 넓게 두고 명시적 차단·층 분리에만 — 그리고 NACL을 조였다면 아웃바운드 임시 포트부터 확인하세요. 이 글 하나로 그 함정은 졸업입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --network</div><a href="../p/curl-verbose.html"><span class="g">&#10095;</span>curl -v 출력, 한 줄씩 읽는 법 — 어디서 막혔는지 혼자 말해준다</a><a href="../p/tcpdump-basics.html"><span class="g">&#10095;</span>말싸움 끝내는 법 — tcpdump로 &#x27;누가 응답을 안 하는지&#x27; 눈으로 보기</a><a href="../p/nat-gateway.html"><span class="g">&#10095;</span>NAT Gateway는 정확히 무슨 일을 하나 — 그리고 왜 요금 폭탄의 단골인가</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/curl-verbose.html"><span class="lbl">newer</span>curl -v 출력, 한 줄씩 읽는 법 — 어디서 막혔는지 혼자 말해준다</a><a href="../p/what-is-mcp.html" style="text-align:right"><span class="lbl">older</span>MCP가 뭔데 다들 만드나 — AI 도구 연결의 USB 규격</a></nav></article>
+<p><strong>ACG는 기억하는 경비, NACL은 규칙만 보는 경비.</strong> 주 방어는 ACG(+ACG 체이닝), NACL은 넓게 두고 명시적 차단·층 분리에만 — 그리고 NACL을 조였다면 아웃바운드 임시 포트부터 확인하세요. 이 글 하나로 그 함정은 졸업입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --network</div><a href="../p/service-ingress-visual.html"><span class="g">&#10095;</span>[그림 한 장] 쿠버네티스 Service와 Ingress — 트래픽이 Pod까지 가는 길</a><a href="../p/curl-verbose.html"><span class="g">&#10095;</span>curl -v 출력, 한 줄씩 읽는 법 — 어디서 막혔는지 혼자 말해준다</a><a href="../p/tcpdump-basics.html"><span class="g">&#10095;</span>말싸움 끝내는 법 — tcpdump로 &#x27;누가 응답을 안 하는지&#x27; 눈으로 보기</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/curl-verbose.html"><span class="lbl">newer</span>curl -v 출력, 한 줄씩 읽는 법 — 어디서 막혔는지 혼자 말해준다</a><a href="../p/what-is-mcp.html" style="text-align:right"><span class="lbl">older</span>MCP가 뭔데 다들 만드나 — AI 도구 연결의 USB 규격</a></nav></article>
 </main>
 <footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
 <script src="../assets/app.js" defer></script>
