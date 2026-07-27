@@ -109,12 +109,26 @@ _ICONS = {
 }
 
 
-def _icon(name, cx, cy, s=1.0):
-    """아이콘을 (cx, cy) 중심에 배치. s=1 → 32px."""
+_HALO = {
+    "server": "var(--dg-blue-s)", "laptop": "var(--dg-blue-s)", "globe": "var(--dg-blue-s)",
+    "cloud": "var(--dg-blue-s)", "user": "var(--dg-blue-s)", "gateway": "var(--dg-blue-s)",
+    "doc": "var(--dg-blue-s)", "router": "var(--dg-green-s)", "switch": "var(--dg-green-s)",
+    "shield": "var(--dg-green-s)", "box": "var(--dg-green-s)",
+    "firewall": "var(--dg-red-s)", "lock": "var(--dg-amber-s)",
+    "database": "var(--dg-violet-s)", "brain": "var(--dg-violet-s)",
+}
+
+def _icon(name, cx, cy, s=1.0, halo=False):
+    """아이콘을 (cx, cy) 중심에 배치. s=1 → 32px. halo=True 면 파스텔 원 배경."""
     body = _ICONS.get(name)
     if not body:
         return ""
-    return (f'<g transform="translate({cx - 16 * s:.1f},{cy - 16 * s:.1f}) scale({s:.3f})">'
+    pre = ""
+    if halo:
+        r = 16 * s + 7
+        pre = (f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{r:.1f}" '
+               f'fill="{_HALO.get(name, "var(--dg-blue-s)")}"/>')
+    return (pre + f'<g transform="translate({cx - 16 * s:.1f},{cy - 16 * s:.1f}) scale({s:.3f})">'
             f'{body}</g>')
 
 
@@ -140,11 +154,11 @@ DIAGRAMS["stateful-vs-stateless"] = {
 </style>
 <text x="16" y="24" class="dg-key" font-size="14">ACG / 보안그룹 &#8212; 스테이트풀 (대화를 기억)</text>
 <rect x="16" y="34" width="608" height="112" rx="12" class="dg-box"/>
-""" + _icon("server", 62, 88, 1.9) + """
+""" + _icon("server", 62, 88, 1.9, halo=True) + """
 <text x="44" y="132" class="dg-lab2">서버</text>
-""" + _icon("shield", 210, 88, 1.8) + """
+""" + _icon("shield", 210, 88, 1.8, halo=True) + """
 <text x="188" y="132" class="dg-lab2">ACG</text>
-""" + _icon("globe", 566, 88, 1.9) + """
+""" + _icon("globe", 566, 88, 1.9, halo=True) + """
 <text x="546" y="132" class="dg-lab2">외부</text>
 <text x="268" y="66" class="dg-lab">요청 나감</text>
 <g class="dg-anim d1-pkt"><circle cx="300" cy="78" r="7" fill="var(--dg-green)"/></g>
@@ -153,11 +167,11 @@ DIAGRAMS["stateful-vs-stateless"] = {
 
 <text x="16" y="196" class="dg-key" font-size="14">NACL &#8212; 스테이트리스 (기억 없음)</text>
 <rect x="16" y="206" width="608" height="112" rx="12" class="dg-box"/>
-""" + _icon("server", 62, 260, 1.9) + """
+""" + _icon("server", 62, 260, 1.9, halo=True) + """
 <text x="44" y="304" class="dg-lab2">서버</text>
-""" + _icon("firewall", 210, 260, 1.8) + """
+""" + _icon("firewall", 210, 260, 1.8, halo=True) + """
 <text x="186" y="304" class="dg-lab2">NACL</text>
-""" + _icon("globe", 566, 260, 1.9) + """
+""" + _icon("globe", 566, 260, 1.9, halo=True) + """
 <text x="546" y="304" class="dg-lab2">외부</text>
 <text x="268" y="238" class="dg-lab">인바운드 443 허용 &#8594; 요청 OK</text>
 <g class="dg-anim d1-pkt"><circle cx="300" cy="250" r="7" fill="var(--dg-green)"/></g>
@@ -188,13 +202,13 @@ DIAGRAMS["nat-snat"] = {
 @keyframes d2-l2{0%,40%{opacity:0}46%,88%{opacity:1}94%{opacity:0}100%{opacity:0}}
 @keyframes d2-row{0%,30%{opacity:0}36%,100%{opacity:1}}
 </style>
-""" + _icon("server", 54, 72, 1.9) + """
+""" + _icon("server", 54, 72, 1.9, halo=True) + """
 <text x="14" y="118" class="dg-t">private 서버</text>
 <text x="14" y="134" class="dg-ts">10.0.3.15</text>
-""" + _icon("gateway", 318, 72, 2.1) + """
+""" + _icon("gateway", 318, 72, 2.1, halo=True) + """
 <text x="286" y="118" class="dg-tl">NAT GW</text>
 <text x="286" y="134" class="dg-ts">공인 IP 1.2.3.4</text>
-""" + _icon("globe", 584, 72, 1.9) + """
+""" + _icon("globe", 584, 72, 1.9, halo=True) + """
 <text x="548" y="118" class="dg-t">외부 API</text>
 <line x1="92" y1="72" x2="288" y2="72" class="dg-arrow"/>
 <line x1="350" y1="72" x2="550" y2="72" class="dg-arrow"/>
@@ -203,7 +217,7 @@ DIAGRAMS["nat-snat"] = {
 <g class="dg-anim d2-l1"><text x="100" y="60" class="dg-lab2">from 10.0.3.15:44210</text></g>
 <g class="dg-anim d2-l2"><text x="360" y="60" class="dg-lab2">from 1.2.3.4:5501 &#8592; 바뀜</text></g>
 <rect x="196" y="160" width="250" height="72" rx="10" class="dg-box"/>
-""" + _icon("doc", 222, 196, 0.95) + """
+""" + _icon("doc", 222, 196, 1.3) + """
 <text x="250" y="182" class="dg-tl">장부 (매핑 테이블)</text>
 <g class="dg-anim d2-row">
   <text x="250" y="204" class="dg-lab2">5501 &#8594; 10.0.3.15:44210</text>
@@ -242,13 +256,13 @@ DIAGRAMS["rag-pipeline"] = {
 <rect class="dg-box dg-anim d3-3" x="310" y="34" width="126" height="62" rx="10"/>
 <rect class="dg-box dg-anim d3-4" x="458" y="34" width="126" height="62" rx="10"/>
 </g>
-""" + _icon("doc", 34, 55, 1.05) + """<text x="60" y="60" class="dg-t">임베딩</text>
+""" + _icon("doc", 34, 55, 1.3) + """<text x="60" y="60" class="dg-t">임베딩</text>
 <text x="34" y="80" class="dg-ts">벡터로 변환</text>
 <text x="182" y="60" class="dg-t">벡터 검색</text>
 <text x="182" y="80" class="dg-ts">top-50 (빠름·거침)</text>
 <text x="330" y="60" class="dg-t">리랭커</text>
 <text x="330" y="80" class="dg-ts">top-5 (느림·정확)</text>
-""" + _icon("brain", 478, 55, 1.05) + """<text x="504" y="60" class="dg-t">LLM</text>
+""" + _icon("brain", 478, 55, 1.3) + """<text x="504" y="60" class="dg-t">LLM</text>
 <text x="478" y="80" class="dg-ts">근거로만 답변</text>
 <line x1="140" y1="65" x2="162" y2="65" class="dg-arrow"/>
 <line x1="288" y1="65" x2="310" y2="65" class="dg-arrow"/>
@@ -297,8 +311,8 @@ def _flow(uid, steps, note=""):
                  f'width="{bw:.0f}" height="58" rx="10"/>')
         tx = x + 11
         if ic:
-            o.append(_icon(ic, x + 30, 47, 1.45))
-            tx = x + 54
+            o.append(_icon(ic, x + 32, 47, 1.25, halo=True))
+            tx = x + 58
         o.append(f'<text x="{tx:.0f}" y="42" class="dg-key">{t}</text>')
         o.append(f'<text x="{tx:.0f}" y="62" class="dg-lab2">{sub}</text>')
         if i < n - 1:
@@ -357,7 +371,7 @@ def _bars(uid, items, maxv, note="", thr=None, thr_label=""):
         over = thr is not None and val > thr
         col = "var(--dg-red)" if over else "var(--dg-green)"
         if ic:
-            o.append(_icon(ic, 30, y + 14, 1.0))
+            o.append(_icon(ic, 30, y + 13, 0.9, halo=True))
             o.append(f'<text x="52" y="{y + 19}" class="dg-t">{lab}</text>')
         else:
             o.append(f'<text x="12" y="{y + 18}" class="dg-t">{lab}</text>')
@@ -382,8 +396,8 @@ def _two(uid, lt, ll, rt, rl, note="", licon=None, ricon=None):
                  f'height="{h - (34 if note else 20)}" rx="12"/>')
         tx = x + 16
         if ic:
-            o.append(_icon(ic, x + 34, 40, 1.25))
-            tx = x + 60
+            o.append(_icon(ic, x + 36, 40, 1.15, halo=True))
+            tx = x + 64
         o.append(f'<text x="{tx:.0f}" y="46" class="dg-tl">{t}</text>')
         for i, (mk, txt) in enumerate(lines):
             y = 76 + i * 24
@@ -616,7 +630,7 @@ _add("context-desk", "컨텍스트 윈도우 = 책상 크기",
 @keyframes cd-new{0%,40%{transform:translateX(90px);opacity:0}75%,100%{transform:translateX(0);opacity:1}}
 </style>
 <rect x="60" y="40" width="520" height="96" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
-""" + _icon("doc", 40, 28, 1.05) + """<text x="68" y="32" class="dg-ts" fill="var(--dg-blue)">책상 = 컨텍스트 윈도우 (질문 + 문서 + 대화이력 + 답변 전부 포함)</text>
+""" + _icon("doc", 40, 28, 1.3) + """<text x="68" y="32" class="dg-ts" fill="var(--dg-blue)">책상 = 컨텍스트 윈도우 (질문 + 문서 + 대화이력 + 답변 전부 포함)</text>
 <g class="dg-anim cd-out"><rect x="76" y="58" width="70" height="60" rx="6" class="dg-box"/>
 <text x="86" y="84" class="dg-ts">초반</text><text x="86" y="100" class="dg-ts">대화</text></g>
 <rect x="158" y="58" width="70" height="60" rx="6" class="dg-box"/><text x="168" y="92" class="dg-ts">지시문</text>
@@ -721,7 +735,7 @@ _add("cutoff-timeline", "지식 컷오프 — 동결된 시점",
 <line x1="336" y1="76" x2="620" y2="76" stroke="var(--faint)" stroke-width="7" stroke-dasharray="7 7" stroke-linecap="round"/>
 <line x1="333" y1="46" x2="333" y2="106" class="dg-wall"/>
 <text x="290" y="38" class="dg-ts" fill="var(--accent)">컷오프</text>
-""" + _icon("brain", 30, 108, 1.05) + """<text x="58" y="112" class="dg-t">학습된 세상 — 잘 안다</text>
+""" + _icon("brain", 30, 108, 1.3) + """<text x="58" y="112" class="dg-t">학습된 세상 — 잘 안다</text>
 <text x="400" y="112" class="dg-t">모르는 구간</text>
 <rect x="216" y="56" width="112" height="40" rx="6" fill="var(--accent-soft)" opacity=".55"/>
 <text x="222" y="80" class="dg-ts">직전 몇 달: 어설프게 아는 회색지대</text>
@@ -743,11 +757,11 @@ _add("envelope-keys", "봉투암호화 — DEK와 KEK",
 """ + _icon("shield", 452, 84, 0.95) + """<text x="474" y="88" class="dg-t">마스터키 (KEK)</text>
 <text x="442" y="100" class="dg-ts">봉투를 봉인·개봉만</text>
 <rect x="14" y="40" width="180" height="70" rx="10" class="dg-box"/>
-""" + _icon("doc", 40, 66, 1.05) + """<text x="68" y="70" class="dg-t">데이터 (1GB)</text>
+""" + _icon("doc", 40, 66, 1.3) + """<text x="68" y="70" class="dg-t">데이터 (1GB)</text>
 <text x="30" y="86" class="dg-ts">DEK로 로컬에서 암호화</text>
 <text x="30" y="102" class="dg-ts">→ 빠름, 네트워크 불필요</text>
 <rect x="14" y="126" width="180" height="62" rx="10" fill="var(--raise)" stroke="var(--accent)" stroke-width="1.5"/>
-""" + _icon("lock", 40, 150, 1.05) + """<text x="68" y="154" class="dg-t">봉인된 봉투</text>
+""" + _icon("lock", 40, 150, 1.3) + """<text x="68" y="154" class="dg-t">봉인된 봉투</text>
 <text x="30" y="170" class="dg-ts">암호화된 DEK — 데이터와 함께 보관</text>
 <path d="M194 158 H 392 V 96" class="dg-arrow"/>
 <g class="dg-anim ev-k"><circle cx="300" cy="158" r="7" class="dg-ok"/></g>
@@ -787,11 +801,11 @@ _add("inode-gauge", "용량은 남았는데 'No space left'",
 .ig-b{animation:ig-g 2.6s ease-out infinite;transform-origin:left center;}
 @keyframes ig-g{0%{transform:scaleX(0)}45%,100%{transform:scaleX(1)}}
 </style>
-""" + _icon("database", 26, 22, 1.05) + """<text x="52" y="26" class="dg-t">df -h (용량)</text>
+""" + _icon("database", 26, 22, 1.3) + """<text x="52" y="26" class="dg-t">df -h (용량)</text>
 <rect x="160" y="12" width="420" height="22" rx="5" fill="var(--line-2)"/>
 <g class="dg-anim ig-b"><rect x="160" y="12" width="126" height="22" rx="5" fill="var(--accent)" opacity=".85"/></g>
 <text x="590" y="28" class="dg-ts">30%</text>
-""" + _icon("doc", 26, 72, 1.05) + """<text x="52" y="76" class="dg-t">df -i (inode)</text>
+""" + _icon("doc", 26, 72, 1.3) + """<text x="52" y="76" class="dg-t">df -i (inode)</text>
 <rect x="160" y="62" width="420" height="22" rx="5" fill="var(--line-2)"/>
 <g class="dg-anim ig-b" style="animation-delay:.2s"><rect x="160" y="62" width="420" height="22" rx="5" fill="#E5484D" opacity=".85"/></g>
 <text x="590" y="78" class="dg-ts" fill="#E5484D">100%</text>
@@ -815,7 +829,7 @@ _add("ann-search", "전수조사 vs ANN (고속도로망)",
     f'<circle cx="{40 + (i % 10) * 27}" cy="{56 + (i // 10) * 24}" r="5" fill="var(--muted)" style="animation-delay:{i * 0.02:.2f}s"/>'
     for i in range(40)) + """</g>
 <text x="40" y="152" class="dg-ts">전부 다 재본다 → 정확하지만 실시간 불가</text>
-""" + _icon("database", 336, 18, 1.05) + """<text x="362" y="22" class="dg-tl">HNSW — 점프로 몇십 번</text>
+""" + _icon("database", 336, 18, 1.3) + """<text x="362" y="22" class="dg-tl">HNSW — 점프로 몇십 번</text>
 <rect x="326" y="32" width="300" height="130" rx="10" class="dg-box"/>
 <g opacity=".3">""" + "".join(
     f'<circle cx="{352 + (i % 10) * 27}" cy="{56 + (i // 10) * 24}" r="5" fill="var(--muted)"/>'
@@ -896,7 +910,7 @@ _add("chunk-overlap", "청크 크기와 오버랩",
 <rect x="366" y="46" width="60" height="20" rx="4" fill="var(--line-2)" stroke="var(--line)"/>
 <rect x="432" y="46" width="60" height="20" rx="4" fill="var(--line-2)" stroke="var(--line)"/>
 <text x="500" y="61" class="dg-ts">뭐의 예외인지 모름</text>
-""" + _icon("doc", 26, 96, 1.05) + """<text x="54" y="100" class="dg-t">적당히 + 오버랩</text>
+""" + _icon("doc", 26, 96, 1.3) + """<text x="54" y="100" class="dg-t">적당히 + 오버랩</text>
 <rect x="300" y="86" width="150" height="22" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
 <rect x="410" y="112" width="150" height="22" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
 <rect x="410" y="86" width="40" height="48" rx="3" fill="var(--accent)" opacity=".22" class="dg-anim co-h"/>
@@ -1212,13 +1226,13 @@ _add("eval-loop", "LLM 앱 평가 루프",
  4%,22%{fill:var(--accent-soft);stroke:var(--accent)}}
 </style>
 <rect class="dg-box dg-anim el-1" x="18" y="30" width="140" height="60" rx="10"/>
-""" + _icon("doc", 42, 50, 1.05) + """<text x="70" y="54" class="dg-t">① 골든셋</text>
+""" + _icon("doc", 42, 50, 1.3) + """<text x="70" y="54" class="dg-t">① 골든셋</text>
 <text x="36" y="74" class="dg-ts">실제 질문 50~200개</text>
 <rect class="dg-box dg-anim el-2" x="250" y="30" width="140" height="60" rx="10"/>
 <text x="268" y="54" class="dg-t">② 일괄 실행</text>
 <text x="268" y="74" class="dg-ts">현재 버전으로</text>
 <rect class="dg-box dg-anim el-3" x="482" y="30" width="140" height="60" rx="10"/>
-""" + _icon("brain", 506, 50, 1.05) + """<text x="534" y="54" class="dg-t">③ 채점</text>
+""" + _icon("brain", 506, 50, 1.3) + """<text x="534" y="54" class="dg-t">③ 채점</text>
 <text x="500" y="74" class="dg-ts">규칙 · LLM · 사람</text>
 <rect class="dg-box dg-anim el-4" x="250" y="158" width="140" height="60" rx="10"/>
 <text x="268" y="182" class="dg-t">④ 유형별 비교</text>
