@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>에이전트를 여러 개 두면 더 똑똑해질까 — 멀티에이전트, 언제 쪼개나 · 삽질노트</title>
+<meta name="description" content="에이전트를 늘리는 건 팀을 꾸리는 것과 같습니다. 병렬성과 분업이 생기는 대신 회의 비용이 붙죠. 쪼개야 할 때와 하나로 충분할 때를 가르는 기준.">
+<meta property="og:title" content="에이전트를 여러 개 두면 더 똑똑해질까 — 멀티에이전트, 언제 쪼개나 · 삽질노트">
+<meta property="og:description" content="에이전트를 늘리는 건 팀을 꾸리는 것과 같습니다. 병렬성과 분업이 생기는 대신 회의 비용이 붙죠. 쪼개야 할 때와 하나로 충분할 때를 가르는 기준.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/multi-agent.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/multi-agent.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/multi-agent.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/multi-agent.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-29</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>에이전트를 여러 개 두면 더 똑똑해질까 — 멀티에이전트, 언제 쪼개나</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 멀티에이전트는 마법이 아니라 <strong>조직 설계</strong>입니다. 얻는 것은 분업(컨텍스트·도구 격리)과 병렬성, 잃는 것은 <strong>전달 손실과 비용</strong>. 기준은 하나예요 — <strong>"사람 팀이라도 쪼갤 일인가?"</strong> 아니라면 에이전트 하나 + 좋은 도구가 답입니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">에이전트 하나 vs 멀티에이전트</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><circle cx="48.0" cy="40.0" r="25.4" fill="var(--dg-violet-s)"/><g transform="translate(29.6,21.6) scale(1.150)">
+<path d="M16 5 a6 6 0 0 0 -6 6 a5 5 0 0 0 -2 9 a5.5 5.5 0 0 0 8 6 a5.5 5.5 0 0 0 8 -6 a5 5 0 0 0 -2 -9 a6 6 0 0 0 -6 -6 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.8"/>
+<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.4" stroke-linecap="round"/></g><text x="76" y="46" class="dg-tl">에이전트 하나 + 좋은 도구</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="76" class="dg-ts">추적·디버깅 쉬움, 비용 예측 가능</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="100" class="dg-ts">맥락이 한 곳에 — 전달 손실 없음</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="124" class="dg-ts">대부분의 작업은 이걸로 충분</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="148" class="dg-ts">긴 작업에서 책상(컨텍스트)이 붐빔</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><circle cx="362.0" cy="40.0" r="25.4" fill="var(--dg-blue-s)"/><g transform="translate(343.6,21.6) scale(1.150)">
+<circle cx="16" cy="10" r="6" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<path d="M4.5 29 c0 -6.6 5.2 -11 11.5 -11 s11.5 4.4 11.5 11" fill="var(--dg-blue-s)"
+      stroke="var(--dg-blue)" stroke-width="1.8" stroke-linecap="round"/></g><text x="390" y="46" class="dg-tl">오케스트레이터 + 작업자</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">컨텍스트 격리 — 각자 깨끗한 책상</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">권한 분리 (조회/실행) · 병렬 실행</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="124" class="dg-ts">전달마다 정보 손실, 호출 수 곱증가</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="148" class="dg-ts">3~4단 넘으면 잃는 게 커지기 시작</text><text x="12" y="182" class="dg-ts">순서: 프롬프트 → 도구 → 에이전트 하나 → 그래도 안 되면 분할 · 평가는 단계별로</text></svg><figcaption>쪼개면 분업·병렬을 얻고 전달 손실·비용을 잃습니다. 기준: 사람 팀이라도 쪼갤 일인가.</figcaption></figure>
+<h2 id="_1">유혹의 구조</h2>
+<p>에이전트 하나가 시원찮으면 이런 상상을 하게 됩니다 — "기획 에이전트, 코딩 에이전트, 리뷰 에이전트를 만들어서 서로 협업시키면 되겠다!" 회사 조직도처럼요. 가끔은 맞습니다. 그런데 <strong>사람 조직에서 벌어지는 일이 여기서도 똑같이</strong> 벌어집니다 — 전달하다 빠지는 맥락, 회의(토큰) 비용, 서로 "그건 쟤 일"이라며 빠뜨리는 구멍.</p>
+<p>그래서 출발 질문은 "몇 개로 쪼갤까"가 아니라 <strong>"쪼개면 뭘 얻는데?"</strong>여야 합니다.</p>
+<h2 id="_2">쪼개서 얻는 것 — 정당한 이유 셋</h2>
+<p><strong>① 컨텍스트 격리.</strong> 컨텍스트 윈도우 글에서 봤듯, 책상 하나에 모든 서류를 올리면 가운데가 흐려지고 서로 간섭합니다. 검색 담당은 검색 결과만, 작성 담당은 개요와 근거만 보게 하면 각자의 책상이 깨끗해져요. <strong>긴 작업에서 품질이 갈리는 실제 이유의 대부분이 이것</strong>입니다.</p>
+<p><strong>② 도구·권한 격리.</strong> 조회 도구만 가진 에이전트와 실행 도구를 가진 에이전트를 분리하면, 프롬프트 주입 글의 그 원칙 — "속아도 사고가 안 나게" — 이 구조로 보장됩니다. 읽기 에이전트가 오염돼도 실행 권한이 없으니까요.</p>
+<p><strong>③ 병렬성.</strong> 서로 독립인 하위 작업(리전별 조사, 문서 10개 요약)은 동시에 돌리면 그냥 빠릅니다.</p>
+<p>이 셋 중 어느 것도 해당 없다? 그럼 쪼개서 얻는 건 없고 잃는 것만 남습니다.</p>
+<h2 id="_3">잃는 것 — 회의 비용과 전달 손실</h2>
+<p>에이전트 간 소통은 결국 <strong>텍스트 전달</strong>입니다. A가 조사한 걸 B에게 넘길 때, 요약하면 정보가 빠지고 통째로 넘기면 토큰이 폭발하죠. 사람 조직의 "보고서 전달 게임"과 정확히 같은 손실 구조입니다. 게다가 단계가 늘수록 <strong>어디서 틀렸는지 추적이 어려워지고</strong>(디버깅 지옥), 호출 수가 곱으로 늘어 비용·지연도 뜁니다.</p>
+<p>경험칙: <strong>파이프라인이 3~4단을 넘어가면, 늘린 지능보다 잃은 맥락이 커지는 경우가 많습니다.</strong></p>
+<h2 id="_4">실전 패턴 둘만 알면 된다</h2>
+<p><strong>① 오케스트레이터 + 작업자.</strong> 사장 하나가 일을 쪼개 나눠주고 결과를 취합합니다. 작업자끼리는 서로 대화하지 않아요 — 통신 경로가 별 모양(★)이라 추적이 쉽고, 병렬도 자연스럽습니다. 멀티에이전트의 8할은 이걸로 충분합니다.</p>
+<div class="highlight"><pre><span></span><code>오케스트레이터: &quot;리전별 요금을 조사해 표로&quot; 
+  ├─ 작업자1: 서울 리전 조사 (동시에)
+  ├─ 작업자2: 도쿄 리전 조사 (동시에)
+  └─ 취합·검수 후 응답
+</code></pre></div>
+
+<p><strong>② 파이프라인.</strong> 초안 → 검수 → 수정처럼 순서가 본질인 작업. 각 단계의 입출력 형식을 <strong>계약처럼 고정</strong>하는 게 요령입니다(자유 산문 전달 금지, 구조화된 형식으로). 단계 사이가 곧 손실 지점이니까요.</p>
+<p>에이전트끼리 자유 대화하게 두는 구조(그물형)는 데모에선 신기한데, 운영에선 비용·추적성 양쪽에서 대가가 큽니다. 명확한 근거 없이는 비추천.</p>
+<h2 id="_5">판별 체크리스트</h2>
+<div class="highlight"><pre><span></span><code>□ 하위 작업들이 서로 독립인가 (병렬 이득)          → 예: 쪼갤 후보
+□ 단계마다 필요한 컨텍스트·도구가 크게 다른가        → 예: 쪼갤 후보
+□ 권한을 구조적으로 분리해야 하는가 (조회/실행)      → 예: 쪼갤 후보
+□ 셋 다 아니오                                    → 에이전트 1 + 도구·프롬프트 개선
+</code></pre></div>
+
+<p>그리고 순서의 원칙 — 파인튜닝 글의 그 사다리와 같습니다: <strong>프롬프트 개선 → 도구 개선 → 에이전트 하나 잘 만들기 → 그래도 안 되면 분할.</strong> "멀티에이전트가 필요해요"의 상당수는 앞 단계에서 해결돼요.</p>
+<h2 id="_6">운영 팁 둘</h2>
+<ul>
+<li><strong>평가는 단계별로.</strong> LLM 평가 글의 원칙 그대로 — 전체 결과만 재면 어느 에이전트가 문제인지 모릅니다. 오케스트레이터의 분배, 각 작업자의 산출을 따로 채점하세요.</li>
+<li><strong>비용 상한을 전체에.</strong> 에이전트 하나의 루프 상한만으론 부족합니다 — 위임이 위임을 부르면 곱으로 뛰니, <strong>전체 작업 단위의 토큰·호출 예산</strong>을 거세요.</li>
+</ul>
+<h2 id="_7">한 줄 정리</h2>
+<p>멀티에이전트의 본질은 <strong>분업의 이득이 회의 비용을 넘는가</strong>입니다. 컨텍스트·권한·병렬 중 하나라도 확실한 이유가 있을 때만 쪼개고, 쪼갠다면 오케스트레이터+작업자부터 — 그리고 언제나 그 전에, 에이전트 하나를 먼저 잘 만들어보세요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/llm-eval.html"><span class="g">&#10095;</span>프롬프트를 감으로 고치면 안 되는 이유 — LLM 앱 평가 만들기</a><a href="../p/rag-pipeline-visual.html"><span class="g">&#10095;</span>[그림 한 장] RAG 파이프라인 전체 — 문서가 답변이 되기까지</a><a href="../p/prompt-injection.html"><span class="g">&#10095;</span>프롬프트 주입 — AI가 읽은 문서가 AI에게 명령할 때</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><span></span><a href="../p/dns-records.html" style="text-align:right"><span class="lbl">older</span>A, CNAME, MX, TXT — 도메인 연결이 안 될 때 봐야 할 레코드들</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

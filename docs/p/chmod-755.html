@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chmod 755의 숫자는 어디서 왔나 — 읽기4 쓰기2 실행1 · 삽질노트</title>
+<meta name="description" content="755, 644, 600... 외우고 다니는 그 숫자들은 사실 덧셈입니다. 비트 세 개의 합이라는 걸 알면 어떤 조합도 즉석에서 만들 수 있어요.">
+<meta property="og:title" content="chmod 755의 숫자는 어디서 왔나 — 읽기4 쓰기2 실행1 · 삽질노트">
+<meta property="og:description" content="755, 644, 600... 외우고 다니는 그 숫자들은 사실 덧셈입니다. 비트 세 개의 합이라는 걸 알면 어떤 조합도 즉석에서 만들 수 있어요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/chmod-755.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/chmod-755.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/chmod-755.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/chmod-755.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html" class="on">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-29</span><a class="chip" href="../c/linux.html">--linux</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>chmod 755의 숫자는 어디서 왔나 — 읽기4 쓰기2 실행1</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 권한 숫자는 <strong>읽기(4) + 쓰기(2) + 실행(1)의 합</strong>이고, 그게 <strong>소유자/그룹/그외</strong> 세 자리로 반복됩니다. 755 = 소유자 7(4+2+1 전부) · 그룹 5(4+1 읽기+실행) · 그외 5. 외울 건 4·2·1 세 개뿐입니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">권한 숫자 = 4 + 2 + 1의 덧셈</div><svg viewBox="0 0 640 230" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.cb-on{animation:cb-p 3s ease-in-out infinite;}
+@keyframes cb-p{0%,100%{opacity:.75}50%{opacity:1}}
+</style>
+<text x="14" y="26" class="dg-tl">chmod 755 를 분해하면</text>
+<text x="70" y="66" font-size="30" font-weight="800" fill="var(--dg-red)" font-family="var(--mono)">7</text>
+<text x="300" y="66" font-size="30" font-weight="800" fill="var(--dg-blue)" font-family="var(--mono)">5</text>
+<text x="510" y="66" font-size="30" font-weight="800" fill="var(--dg-green)" font-family="var(--mono)">5</text>
+<text x="40" y="88" class="dg-ts">소유자 (user)</text>
+<text x="272" y="88" class="dg-ts">그룹 (group)</text>
+<text x="478" y="88" class="dg-ts">그외 (others)</text>
+<g class="dg-anim cb-on">
+<rect x="20" y="100" width="46" height="30" rx="6" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.5"/>
+<text x="32" y="120" class="dg-t" fill="var(--dg-red)">r 4</text>
+<rect x="72" y="100" width="46" height="30" rx="6" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.5"/>
+<text x="82" y="120" class="dg-t" fill="var(--dg-red)">w 2</text>
+<rect x="124" y="100" width="46" height="30" rx="6" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.5"/>
+<text x="136" y="120" class="dg-t" fill="var(--dg-red)">x 1</text>
+</g>
+<text x="60" y="152" class="dg-ts">4+2+1 = 7 (전부)</text>
+<rect x="250" y="100" width="46" height="30" rx="6" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.5"/>
+<text x="262" y="120" class="dg-t">r 4</text>
+<rect x="302" y="100" width="46" height="30" rx="6" fill="none" stroke="var(--line)" stroke-width="1.3" stroke-dasharray="4 3"/>
+<text x="311" y="120" class="dg-ts">w —</text>
+<rect x="354" y="100" width="46" height="30" rx="6" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.5"/>
+<text x="366" y="120" class="dg-t">x 1</text>
+<text x="288" y="152" class="dg-ts">4+1 = 5 (읽기+실행)</text>
+<rect x="460" y="100" width="46" height="30" rx="6" fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.5"/>
+<text x="472" y="120" class="dg-t" fill="var(--dg-green)">r 4</text>
+<rect x="512" y="100" width="46" height="30" rx="6" fill="none" stroke="var(--line)" stroke-width="1.3" stroke-dasharray="4 3"/>
+<text x="521" y="120" class="dg-ts">w —</text>
+<rect x="564" y="100" width="46" height="30" rx="6" fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.5"/>
+<text x="576" y="120" class="dg-t" fill="var(--dg-green)">x 1</text>
+<text x="498" y="152" class="dg-ts">4+1 = 5</text>
+<text x="14" y="186" class="dg-ts">표준 조합: 실행물·디렉토리 755 · 일반 파일 644 · 비밀(키·.env) 600</text>
+<text x="14" y="208" class="dg-ts">디렉토리의 x 는 '통과' — 경로 중간에 x 빠지면 안이 안 열립니다 (namei -l 로 색출)</text>
+</svg><figcaption>r(4) w(2) x(1) 스위치의 합이 한 자리, 그게 소유자·그룹·그외로 세 번 반복됩니다.</figcaption></figure>
+<h2 id="ls-l">ls -l 이 보여주는 것부터</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>$<span class="w"> </span>ls<span class="w"> </span>-l<span class="w"> </span>deploy.sh
+-rwxr-xr-x<span class="w">  </span><span class="m">1</span><span class="w"> </span>taewan<span class="w"> </span>devops<span class="w">  </span><span class="m">512</span><span class="w"> </span>Jul<span class="w"> </span><span class="m">29</span><span class="w"> </span><span class="m">09</span>:00<span class="w"> </span>deploy.sh
+</code></pre></div>
+
+<p>맨 앞 한 글자(파일 종류) 빼고 아홉 글자를 <strong>세 글자씩</strong> 끊어 읽습니다.</p>
+<div class="highlight"><pre><span></span><code>rwx  r-x  r-x
+└소유자 └그룹 └그외(others)
+</code></pre></div>
+
+<p>각 칸은 r(읽기), w(쓰기), x(실행)가 있냐 없냐(-). 이걸 숫자로 바꾸는 규칙이 <strong>r=4, w=2, x=1</strong> — 그래서 <code>rwx</code>=7, <code>r-x</code>=5, <code>r--</code>=4. 위 파일이 곧 755입니다.</p>
+<h2 id="4-2-1">왜 하필 4, 2, 1인가</h2>
+<p>이진수 자릿값이기 때문입니다. 세 비트 <code>rwx</code>를 각각 켜고 끄는 스위치로 보면:</p>
+<div class="highlight"><pre><span></span><code>r w x
+1 0 0  = 4   (읽기만)
+0 1 0  = 2   (쓰기만)
+0 0 1  = 1   (실행만)
+1 1 1  = 4+2+1 = 7
+1 0 1  = 4+1   = 5
+1 1 0  = 4+2   = 6
+</code></pre></div>
+
+<p>합이 겹치지 않게 설계된 덧셈이라, <strong>숫자 하나가 조합 하나와 정확히 1:1</strong>입니다. 6을 보면 "읽기+쓰기, 실행은 없음"이 역산되죠.</p>
+<h2 id="_1">자주 쓰는 조합, 이제 외우지 말고 만들기</h2>
+<ul>
+<li><strong>755</strong> — 소유자 전부 / 남은 읽고 실행만. <strong>실행 파일·스크립트·디렉토리</strong>의 표준.</li>
+<li><strong>644</strong> — 소유자 읽고 쓰기 / 남은 읽기만. <strong>일반 파일</strong>(설정, HTML)의 표준.</li>
+<li><strong>600</strong> — 소유자만 읽고 쓰기, 남은 아무것도. <strong>비밀 파일</strong>(키, .env)의 표준. SSH가 <code>~/.ssh/id_rsa</code>에 이걸 강제하는 이유입니다 — 남이 읽을 수 있는 개인키는 키가 아니니까요.</li>
+<li><strong>777</strong> — 전원 전부 허용. "일단 되게" 하고 싶을 때의 유혹인데, <strong>웹서버가 쓸 수 있는 실행 파일</strong>은 공격자에게도 그렇습니다. 777이 답인 상황은 거의 없고, 대부분 소유자를 고치는 게(chown) 진짜 답입니다.</li>
+</ul>
+<h2 id="x">디렉토리의 x는 다르다 — 함정 하나</h2>
+<p>파일의 x는 실행인데, <strong>디렉토리의 x는 "통과"</strong>입니다.</p>
+<ul>
+<li>디렉토리 r = 목록 보기(ls)</li>
+<li>디렉토리 x = <strong>그 안으로 들어가기(cd), 안의 파일에 접근하기</strong></li>
+</ul>
+<p>그래서 디렉토리에 r만 주고 x를 빼면(644), 목록은 이론상 보이는데 안의 파일은 못 여는 기묘한 상태가 됩니다. <strong>디렉토리는 5(r-x) 또는 7(rwx)</strong> — 4로 끝나는 디렉토리 권한은 거의 항상 실수예요. "웹서버가 파일을 못 읽어요"의 단골 원인이 파일 권한이 아니라 <strong>경로 중간 디렉토리의 x 누락</strong>이기도 합니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>namei<span class="w"> </span>-l<span class="w"> </span>/var/www/html/index.html<span class="w">   </span><span class="c1"># 경로의 각 단계 권한을 한 줄씩 — 범인 색출기</span>
+</code></pre></div>
+
+<h2 id="_2">실전 명령</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>chmod<span class="w"> </span><span class="m">644</span><span class="w"> </span>config.yml<span class="w">          </span><span class="c1"># 숫자로 지정</span>
+chmod<span class="w"> </span>+x<span class="w"> </span>deploy.sh<span class="w">            </span><span class="c1"># 기호로: 실행 비트만 추가 (지금 상태에 +)</span>
+chmod<span class="w"> </span><span class="nv">u</span><span class="o">=</span>rw,go<span class="o">=</span>r<span class="w"> </span>config.yml<span class="w">    </span><span class="c1"># 기호로: 소유자 rw, 그룹·그외 r</span>
+chmod<span class="w"> </span>-R<span class="w"> </span><span class="m">755</span><span class="w"> </span>/var/www/html<span class="w">    </span><span class="c1"># 재귀 — 단, 아래 주의</span>
+
+stat<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;%a %n&quot;</span><span class="w"> </span>*<span class="w">             </span><span class="c1"># 파일들의 숫자 권한 한눈에</span>
+</code></pre></div>
+
+<p><code>-R 755</code>의 함정: 디렉토리엔 맞지만 <strong>일반 파일에까지 실행 비트</strong>가 붙습니다. 파일 644 / 디렉토리 755를 한 번에 하려면:</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>find<span class="w"> </span>/var/www/html<span class="w"> </span>-type<span class="w"> </span>f<span class="w"> </span>-exec<span class="w"> </span>chmod<span class="w"> </span><span class="m">644</span><span class="w"> </span><span class="o">{}</span><span class="w"> </span>+
+find<span class="w"> </span>/var/www/html<span class="w"> </span>-type<span class="w"> </span>d<span class="w"> </span>-exec<span class="w"> </span>chmod<span class="w"> </span><span class="m">755</span><span class="w"> </span><span class="o">{}</span><span class="w"> </span>+
+</code></pre></div>
+
+<h2 id="_3">한 줄 정리</h2>
+<p>권한 숫자는 <strong>r4 + w2 + x1의 덧셈 × (소유자·그룹·그외)</strong>. 실행물·디렉토리 755, 일반 파일 644, 비밀 600 — 그리고 디렉토리의 x는 "통과"라는 것과, 안 열리면 <code>namei -l</code>로 경로 전체를 훑는 것까지가 한 세트입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --linux</div><a href="../p/kubectl-five.html"><span class="g">&#10095;</span>kubectl 디버깅은 다섯 명령으로 끝난다 — logs, describe, exec, get -o, port-forward</a><a href="../p/journalctl-debug.html"><span class="g">&#10095;</span>systemd 서비스가 자꾸 죽을 때 — journalctl로 원인 찾는 순서</a><a href="../p/load-average.html"><span class="g">&#10095;</span>load average 4.0은 위험한가 — top 숫자를 읽을 줄 안다는 것</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/dns-records.html"><span class="lbl">newer</span>A, CNAME, MX, TXT — 도메인 연결이 안 될 때 봐야 할 레코드들</a><a href="../p/region-az.html" style="text-align:right"><span class="lbl">older</span>리전과 가용영역 — &#x27;어디까지 죽으면 우리도 죽나&#x27;를 정하는 일</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

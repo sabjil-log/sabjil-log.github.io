@@ -1247,3 +1247,72 @@ _add("eval-loop", "LLM 앱 평가 루프",
 </svg>""")
 
 
+
+
+# ── 4차 배치 ──────────────────────────────────────────────────
+_add("chmod-bits", "권한 숫자 = 4 + 2 + 1의 덧셈",
+     "r(4) w(2) x(1) 스위치의 합이 한 자리, 그게 소유자·그룹·그외로 세 번 반복됩니다.",
+     "chmod-755",
+     '<svg viewBox="0 0 640 230" role="img"><style>' + _COMMON + """
+.cb-on{animation:cb-p 3s ease-in-out infinite;}
+@keyframes cb-p{0%,100%{opacity:.75}50%{opacity:1}}
+</style>
+<text x="14" y="26" class="dg-tl">chmod 755 를 분해하면</text>
+<text x="70" y="66" font-size="30" font-weight="800" fill="var(--dg-red)" font-family="var(--mono)">7</text>
+<text x="300" y="66" font-size="30" font-weight="800" fill="var(--dg-blue)" font-family="var(--mono)">5</text>
+<text x="510" y="66" font-size="30" font-weight="800" fill="var(--dg-green)" font-family="var(--mono)">5</text>
+<text x="40" y="88" class="dg-ts">소유자 (user)</text>
+<text x="272" y="88" class="dg-ts">그룹 (group)</text>
+<text x="478" y="88" class="dg-ts">그외 (others)</text>
+<g class="dg-anim cb-on">
+<rect x="20" y="100" width="46" height="30" rx="6" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.5"/>
+<text x="32" y="120" class="dg-t" fill="var(--dg-red)">r 4</text>
+<rect x="72" y="100" width="46" height="30" rx="6" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.5"/>
+<text x="82" y="120" class="dg-t" fill="var(--dg-red)">w 2</text>
+<rect x="124" y="100" width="46" height="30" rx="6" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.5"/>
+<text x="136" y="120" class="dg-t" fill="var(--dg-red)">x 1</text>
+</g>
+<text x="60" y="152" class="dg-ts">4+2+1 = 7 (전부)</text>
+<rect x="250" y="100" width="46" height="30" rx="6" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.5"/>
+<text x="262" y="120" class="dg-t">r 4</text>
+<rect x="302" y="100" width="46" height="30" rx="6" fill="none" stroke="var(--line)" stroke-width="1.3" stroke-dasharray="4 3"/>
+<text x="311" y="120" class="dg-ts">w —</text>
+<rect x="354" y="100" width="46" height="30" rx="6" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.5"/>
+<text x="366" y="120" class="dg-t">x 1</text>
+<text x="288" y="152" class="dg-ts">4+1 = 5 (읽기+실행)</text>
+<rect x="460" y="100" width="46" height="30" rx="6" fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.5"/>
+<text x="472" y="120" class="dg-t" fill="var(--dg-green)">r 4</text>
+<rect x="512" y="100" width="46" height="30" rx="6" fill="none" stroke="var(--line)" stroke-width="1.3" stroke-dasharray="4 3"/>
+<text x="521" y="120" class="dg-ts">w —</text>
+<rect x="564" y="100" width="46" height="30" rx="6" fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.5"/>
+<text x="576" y="120" class="dg-t" fill="var(--dg-green)">x 1</text>
+<text x="498" y="152" class="dg-ts">4+1 = 5</text>
+<text x="14" y="186" class="dg-ts">표준 조합: 실행물·디렉토리 755 · 일반 파일 644 · 비밀(키·.env) 600</text>
+<text x="14" y="208" class="dg-ts">디렉토리의 x 는 '통과' — 경로 중간에 x 빠지면 안이 안 열립니다 (namei -l 로 색출)</text>
+</svg>""")
+
+_add("dns-records", "도메인에 붙는 안내판 4종",
+     "A는 주소, CNAME은 별명, MX는 우편함, TXT는 소유확인·메일인증 메모. 반영 지연의 범인은 TTL 캐시입니다.",
+     "dns-records",
+     _ladder("dr", [
+         ("A", "example.com → 1.2.3.4", "이름을 IP에 직결", "globe"),
+         ("CNAME", "www → example.com", "별명 (루트엔 불가)", "doc"),
+         ("MX", "메일 → mx.google.com", "우편함 위치 (숫자=우선순위)", "gateway"),
+         ("TXT", "소유확인 · SPF/DKIM", "메모 — 메일 스팸행 방지의 핵심", "shield"),
+     ], "확인: dig +short 도메인 [A|CNAME|MX|TXT] · 변경 계획은 TTL을 먼저 300으로 낮추고"))
+
+_add("multi-agent", "에이전트 하나 vs 멀티에이전트",
+     "쪼개면 분업·병렬을 얻고 전달 손실·비용을 잃습니다. 기준: 사람 팀이라도 쪼갤 일인가.",
+     "multi-agent",
+     _two("ma", "에이전트 하나 + 좋은 도구", [
+         ("ok", "추적·디버깅 쉬움, 비용 예측 가능"),
+         ("ok", "맥락이 한 곳에 — 전달 손실 없음"),
+         ("ok", "대부분의 작업은 이걸로 충분"),
+         ("no", "긴 작업에서 책상(컨텍스트)이 붐빔"),
+     ], "오케스트레이터 + 작업자", [
+         ("ok", "컨텍스트 격리 — 각자 깨끗한 책상"),
+         ("ok", "권한 분리 (조회/실행) · 병렬 실행"),
+         ("no", "전달마다 정보 손실, 호출 수 곱증가"),
+         ("no", "3~4단 넘으면 잃는 게 커지기 시작"),
+     ], "순서: 프롬프트 → 도구 → 에이전트 하나 → 그래도 안 되면 분할 · 평가는 단계별로",
+        licon="brain", ricon="user"))
