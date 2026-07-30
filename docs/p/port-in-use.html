@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>죽였는데 포트가 안 풀린다 — Address already in use 3분 수사 · 삽질노트</title>
+<meta name="description" content="분명 프로세스를 죽였는데 재시작하면 Address already in use. 범인은 셋 중 하나입니다 — 살아있는 자식, TIME_WAIT, 또는 엉뚱한 점유자.">
+<meta property="og:title" content="죽였는데 포트가 안 풀린다 — Address already in use 3분 수사 · 삽질노트">
+<meta property="og:description" content="분명 프로세스를 죽였는데 재시작하면 Address already in use. 범인은 셋 중 하나입니다 — 살아있는 자식, TIME_WAIT, 또는 엉뚱한 점유자.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/port-in-use.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/port-in-use.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/port-in-use.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/port-in-use.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html" class="on">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-30</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>죽였는데 포트가 안 풀린다 — Address already in use 3분 수사</h1><blockquote>
+<p><strong>한 줄 요약:</strong> "죽였는데 포트가 안 풀린다"의 범인은 거의 항상 셋 중 하나입니다 — <strong>① 부모만 죽고 살아남은 자식 프로세스, ② TIME_WAIT 잔상, ③ 애초에 딴 놈이 쓰고 있었음.</strong> <code>ss -tlnp</code> 한 줄이면 셋을 즉시 가릅니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">EADDRINUSE — 세 가지 범인</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.ph-0{animation:ph-h 3.0s ease-in-out infinite;animation-delay:0.0s;}
+.ph-1{animation:ph-h 3.0s ease-in-out infinite;animation-delay:1.0s;}
+.ph-2{animation:ph-h 3.0s ease-in-out infinite;animation-delay:2.0s;}
+@keyframes ph-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,20.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim ph-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="60" y="36" class="dg-t">① 살아남은 자식</text><text x="216" y="36" class="dg-lab2">같은 이름, 다른 pid</text><text x="396" y="36" class="dg-ts">그룹째 kill · systemd 이관</text><rect class="dg-box dg-anim ph-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="60" y="84" class="dg-t">② 엉뚱한 선점자</text><text x="216" y="84" class="dg-lab2">처음 보는 프로세스</text><text x="396" y="84" class="dg-ts">docker-proxy 단골 — docker ps</text><rect class="dg-box dg-anim ph-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<rect x="2" y="11" width="28" height="11" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="5" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="10" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="15" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="20" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<circle cx="26.5" cy="16.5" r="1.2" fill="var(--dg-green)"/></g><text x="60" y="132" class="dg-t">③ TIME_WAIT 잔상</text><text x="216" y="132" class="dg-lab2">pid 없음, 잔상만</text><text x="396" y="132" class="dg-ts">SO_REUSEADDR (bind 전에)</text><text x="12" y="182" class="dg-ts">시작은 항상: sudo ss -tlnp | grep :포트 — kill -9 난사와 재부팅은 수사 포기</text></svg><figcaption>ss -tlnp 한 줄로 가립니다. pid가 있으면 생존자/선점자, 없으면 TIME_WAIT 잔상.</figcaption></figure>
+<h2 id="_1">상황</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>$<span class="w"> </span><span class="nb">kill</span><span class="w"> </span><span class="m">12345</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./run_server.sh
+Error:<span class="w"> </span>listen<span class="w"> </span>EADDRINUSE:<span class="w"> </span>address<span class="w"> </span>already<span class="w"> </span><span class="k">in</span><span class="w"> </span>use<span class="w"> </span>:::8080
+</code></pre></div>
+
+<p>방금 죽였는데요? 여기서 <code>kill -9</code>를 난사하거나 재부팅으로 도망가는 대신, 3분 수사를 합니다.</p>
+<h2 id="1">수사 1단계 — 지금 누가 잡고 있나</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>sudo<span class="w"> </span>ss<span class="w"> </span>-tlnp<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>:8080
+<span class="c1"># LISTEN 0 511 *:8080  users:((&quot;node&quot;,pid=12401,fd=23))</span>
+</code></pre></div>
+
+<p><strong>pid가 나온다 = 살아있는 누군가가 잡고 있다.</strong> 게임 끝, 그 pid를 조사하면 됩니다. (구형 서버라면 <code>sudo lsof -i :8080</code> 도 같은 답을 줍니다.)</p>
+<p>아무것도 안 나오는데 EADDRINUSE라면? 리스닝은 없는데 소켓 잔상이 남은 것 — 3단계(TIME_WAIT)로.</p>
+<h2 id="2-pid">수사 2단계 — 그 pid의 정체</h2>
+<p><strong>케이스 A: 죽인 것과 같은 이름, 다른 pid — 자식이 살아남았다.</strong></p>
+<p>가장 흔한 범인입니다. Node 클러스터, gunicorn/uWSGI 워커, <code>&amp;</code>로 띄운 셸 스크립트의 자식 — <strong>부모를 죽여도 자식은 죽지 않습니다.</strong> 오히려 고아가 되어 init에 입양된 채 포트를 물고 버텨요.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>ps<span class="w"> </span>-ef<span class="w"> </span>--forest<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A3<span class="w"> </span>node<span class="w">     </span><span class="c1"># 가족 관계도로 확인</span>
+<span class="c1"># 해법: 프로세스 그룹째 죽이기</span>
+<span class="nb">kill</span><span class="w"> </span>--<span class="w"> </span>-<span class="k">$(</span>ps<span class="w"> </span>-o<span class="w"> </span><span class="nv">pgid</span><span class="o">=</span><span class="w"> </span>-p<span class="w"> </span><span class="m">12401</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39; &#39;</span><span class="k">)</span>
+<span class="c1"># 또는 패턴으로 일괄</span>
+pkill<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;node server.js&quot;</span>
+</code></pre></div>
+
+<p>근본 대책은 <strong>systemd로 띄우는 것</strong> — <code>KillMode=control-group</code>(기본값)이 서비스의 자식들까지 한 cgroup으로 묶어 정리해줍니다. "kill 했는데 안 죽어요"류 문제의 절반이 systemd 이관으로 사라져요.</p>
+<p><strong>케이스 B: 처음 보는 프로세스 — 애초에 선점자가 따로 있었다.</strong></p>
+<p>내 앱이 죽은 이유 자체가 이놈 때문이었을 수 있습니다. 도커 프록시(<code>docker-proxy</code>)가 자주 등장하는 용의자 — 어떤 컨테이너가 <code>-p 8080</code>으로 그 포트를 물고 있는 거죠.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>docker<span class="w"> </span>ps<span class="w"> </span>--format<span class="w"> </span><span class="s1">&#39;{{.Names}}\t{{.Ports}}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="m">8080</span>
+</code></pre></div>
+
+<p><strong>케이스 C: pid는 없는데 안 열린다 — TIME_WAIT/FIN_WAIT 잔상.</strong></p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>ss<span class="w"> </span>-tan<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>:8080<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $1}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c
+<span class="c1">#   87 TIME-WAIT     ← 리스닝은 없고 잔상만</span>
+</code></pre></div>
+
+<p>TIME_WAIT 글에서 본 그 "치우는 중 테이블"입니다. 몇 분 기다리면 풀리지만, 서버 재시작이 잦은 개발 환경에서 매번 기다릴 순 없죠. 정석 해법은 기다림이 아니라 <strong>서버 코드에서 <code>SO_REUSEADDR</code></strong> — "치우는 중인 테이블이라도 내가 다시 앉겠다"는 소켓 옵션입니다.</p>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">socket</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+<span class="n">s</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">SOL_SOCKET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SO_REUSEADDR</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>   <span class="c1"># bind 전에!</span>
+<span class="n">s</span><span class="o">.</span><span class="n">bind</span><span class="p">((</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span> <span class="mi">8080</span><span class="p">))</span>
+</code></pre></div>
+
+<p>대부분의 웹 프레임워크·서버(nginx, gunicorn, Node)는 기본으로 켜져 있어서, 이게 문제가 되는 건 주로 <strong>직접 짠 소켓 코드</strong>입니다. 반대로 말하면 — 내가 만든 데몬이 재시작 때마다 EADDRINUSE라면 십중팔구 이 옵션 누락이에요.</p>
+<h2 id="_2">손버릇으로 만들 원라이너</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># 이 포트, 지금 상황이 어떻게 되나 (리스닝+잔상 한 번에)</span>
+sudo<span class="w"> </span>ss<span class="w"> </span>-tanp<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>:8080
+
+<span class="c1"># 잡고 있는 놈을 찾아 바로 죽이기 (개발 환경 한정)</span>
+sudo<span class="w"> </span>fuser<span class="w"> </span>-k<span class="w"> </span><span class="m">8080</span>/tcp
+</code></pre></div>
+
+<p><code>fuser -k</code>는 편하지만 <strong>무엇을 죽이는지 안 보여주고 죽입니다</strong> — 운영 서버에선 반드시 ss/lsof로 정체 확인 후 처리하세요. C 케이스(잔상)에는 죽일 프로세스 자체가 없으니 효과도 없고요.</p>
+<h2 id="_3">한 줄 정리</h2>
+<p>EADDRINUSE는 <code>ss -tlnp</code>로 시작합니다. <strong>pid 있음 → 자식 생존(그룹째 kill, systemd 이관) 또는 선점자(도커 확인) / pid 없음 → TIME_WAIT 잔상(SO_REUSEADDR).</strong> kill -9 난사와 재부팅은 수사를 포기하는 것 — 3분이면 범인이 나옵니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --troubleshooting</div><a href="../p/docker-volumes.html"><span class="g">&#10095;</span>컨테이너를 지웠더니 DB가 날아갔다 — 볼륨과 바인드 마운트 제대로 알기</a><a href="../p/oom-killer.html"><span class="g">&#10095;</span>프로세스가 흔적도 없이 사라졌다 — OOM Killer의 소행 확인하기</a><a href="../p/cron-env.html"><span class="g">&#10095;</span>손으로 돌리면 되는데 크론으로는 안 되는 스크립트 — 환경변수의 배신</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/prompt-caching.html"><span class="lbl">newer</span>같은 프롬프트 앞부분은 왜 싸질까 — 프롬프트 캐싱의 원리와 설계</a><a href="../p/bastion-host.html" style="text-align:right"><span class="lbl">older</span>서버마다 SSH 문을 내지 마세요 — 배스천 호스트 설계</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

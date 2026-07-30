@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>같은 프롬프트 앞부분은 왜 싸질까 — 프롬프트 캐싱의 원리와 설계 · 삽질노트</title>
+<meta name="description" content="LLM은 매 요청마다 프롬프트 전체를 다시 계산합니다. 캐싱은 그 계산의 &#x27;중간 결과&#x27;를 재사용하는 것 — 프롬프트를 어떻게 배치하느냐가 곧 요금입니다.">
+<meta property="og:title" content="같은 프롬프트 앞부분은 왜 싸질까 — 프롬프트 캐싱의 원리와 설계 · 삽질노트">
+<meta property="og:description" content="LLM은 매 요청마다 프롬프트 전체를 다시 계산합니다. 캐싱은 그 계산의 &#x27;중간 결과&#x27;를 재사용하는 것 — 프롬프트를 어떻게 배치하느냐가 곧 요금입니다.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/prompt-caching.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/prompt-caching.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/prompt-caching.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/prompt-caching.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-30</span><a class="chip" href="../c/ai.html">--ai</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>같은 프롬프트 앞부분은 왜 싸질까 — 프롬프트 캐싱의 원리와 설계</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 모델은 답하기 전에 프롬프트 전체를 읽고 <strong>중간 계산 결과(KV 캐시)</strong>를 만듭니다. 프롬프트 캐싱은 <strong>앞부분이 완전히 동일한 요청</strong>에 대해 그 계산을 재사용하는 것 — 그래서 <strong>변하지 않는 것은 앞으로, 변하는 것은 뒤로</strong> 배치하는 게 캐싱 설계의 전부입니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">프롬프트 캐싱 — 책갈피 지점부터 이어 읽기</div><svg viewBox="0 0 640 250" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.pc-hit{animation:pc-h 3.4s ease-in-out infinite;}
+.pc-new{animation:pc-n 3.4s ease-in-out infinite;}
+@keyframes pc-h{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes pc-n{0%{opacity:.2}45%,100%{opacity:1}}
+</style>
+<text x="14" y="24" class="dg-tl">요청 1 — 전체 계산</text>
+<rect x="14" y="34" width="360" height="34" rx="7" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.4"/>
+<text x="26" y="56" class="dg-lab2">시스템 프롬프트 + 도구 + 고정 문서 (20,000 tok)</text>
+<rect x="382" y="34" width="120" height="34" rx="7" class="dg-box"/>
+<text x="394" y="56" class="dg-lab2">질문 A (200)</text>
+<text x="516" y="56" class="dg-ts">전액 계산</text>
+<text x="14" y="106" class="dg-tl">요청 2 — 책갈피부터</text>
+<g class="dg-anim pc-hit">
+<rect x="14" y="116" width="360" height="34" rx="7" fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.6"/>
+<text x="26" y="138" class="dg-lab2" fill="var(--dg-green)">동일 프리픽스 — 캐시 히트 (할인)</text>
+</g>
+<line x1="374" y1="108" x2="374" y2="158" class="dg-wall"/>
+<text x="330" y="170" class="dg-ts" fill="var(--dg-green)">책갈피</text>
+<g class="dg-anim pc-new">
+<rect x="382" y="116" width="120" height="34" rx="7" class="dg-box"/>
+<text x="394" y="138" class="dg-lab2">질문 B (200)</text>
+</g>
+<text x="516" y="138" class="dg-ts">이만큼만 계산</text>
+<text x="14" y="200" class="dg-key" font-size="12.5">캐시를 깨는 실수: 프리픽스에 현재 시각 · 세션 ID · 매번 다른 인사말</text>
+<text x="14" y="222" class="dg-ts">규칙: 고정(시스템·도구·문서)은 앞 / 동적(검색결과·질문·시각)은 뒤 · usage의 캐시 지표를 대시보드에</text>
+</svg><figcaption>앞부분이 완전히 같으면 계산도 같습니다. 고정부는 앞으로, 동적부는 뒤로 — 배치가 곧 요금입니다.</figcaption></figure>
+<h2 id="_1">왜 매번 다시 읽나</h2>
+<p>컨텍스트 윈도우 글에서 봤듯, LLM은 요청 사이에 아무것도 기억하지 않습니다. 챗봇이 대화를 "기억"하는 건 매번 <strong>과거 대화 전체를 다시 보내기</strong> 때문이죠. 그 말은 — 모델이 매 턴마다 시스템 프롬프트 3천 토큰 + 대화 이력 전체를 <strong>처음부터 다시 계산</strong>한다는 뜻입니다. 100번째 턴이면 같은 시스템 프롬프트를 100번 계산한 셈. 낭비가 눈에 보이죠.</p>
+<h2 id="_2">캐싱의 원리 — 책을 읽다 꽂아둔 책갈피</h2>
+<p>모델이 프롬프트를 읽는 과정은 앞에서부터 순차적이고, 각 토큰을 읽으며 만든 <strong>중간 계산 결과(KV 캐시)</strong>는 "여기까지 읽은 상태"의 스냅샷입니다. 핵심 성질: <strong>앞부분이 완전히 같으면, 거기까지의 계산 결과도 완전히 같다.</strong></p>
+<p>그래서 벤더들은 이렇게 합니다 — 어떤 요청의 프롬프트 앞부분(프리픽스)을 계산해두고, <strong>다음 요청의 앞부분이 그것과 정확히 일치하면</strong> 책갈피 지점부터 이어 읽기. 계산을 건너뛴 만큼 <strong>입력 요금이 대폭 할인</strong>되고(벤더별로 캐시 히트 분은 수분의 일 가격), 첫 토큰이 나오는 속도도 빨라집니다.</p>
+<p>조건이 하나 있습니다 — <strong>"정확히 일치"는 글자 그대로</strong>입니다. 공백 하나, 날짜 하나가 달라져도 그 지점부터는 캐시가 깨져요. 그리고 캐시는 프리픽스 단위라, <strong>다른 건 다 같은데 앞쪽 한 줄만 바뀌면 그 뒤 전체가 무효</strong>입니다.</p>
+<h2 id="_3">설계 규칙: 변하지 않는 것부터 쌓아라</h2>
+<p>이 성질에서 프롬프트 배치 규칙이 그대로 나옵니다.</p>
+<div class="highlight"><pre><span></span><code>[캐시되는 앞부분 — 요청마다 동일하게 유지]
+1. 시스템 프롬프트 (역할, 규칙, 근거 지시)
+2. 도구 명세 (에이전트라면)
+3. 고정 참고자료 (제품 문서, 정책, few-shot 예시)
+
+[캐시 안 되는 뒷부분 — 요청마다 바뀜]
+4. RAG 검색 결과 (질문마다 다름)
+5. 대화 이력의 최신 부분
+6. 이번 질문
+</code></pre></div>
+
+<p>흔한 실수들이 정확히 이 규칙의 위반입니다.</p>
+<ul>
+<li><strong>시스템 프롬프트에 현재 시각 삽입</strong> — <code>오늘은 2026-07-30 21:48입니다</code> 가 맨 앞에 있으면 <strong>매 요청이 캐시 미스</strong>. 시각이 필요하면 뒤쪽(사용자 턴)에 넣으세요.</li>
+<li><strong>고정 문서를 질문 뒤에 첨부</strong> — 매번 같은 3만 토큰짜리 매뉴얼인데 질문 뒤에 붙이면 캐시 혜택 0. 앞으로 옮기는 것만으로 요금이 달라집니다.</li>
+<li><strong>세션마다 다른 인사말/ID를 프롬프트 상단에</strong> — 같은 이유.</li>
+</ul>
+<p>대화형 앱에서는 자연스럽게 맞아떨어집니다 — [시스템+이력]은 턴이 지나도 프리픽스로 유지되고 새 질문만 뒤에 붙으니, 턴마다 직전까지의 캐시를 타는 구조가 되죠. 컨텍스트 윈도우 글에서 말한 "요약으로 접기"와의 트레이드오프 하나만 기억하세요 — <strong>이력 중간을 요약으로 교체하면 그 지점부터 캐시가 깨집니다.</strong> 접을 거면 가끔, 큰 단위로.</p>
+<h2 id="_4">얼마나 아껴지나 — 감각</h2>
+<p>시스템 프롬프트+고정 문서 20,000토큰, 질문 200토큰, 하루 10,000 요청이라 치면 — 캐싱 없이는 매 요청이 20,200토큰 입력. 캐싱이 맞으면 그중 20,000토큰이 할인가로 떨어집니다. <strong>입력 비용의 대부분이 "고정부 반복"에서 나오는 서비스일수록</strong> 효과가 극적이고, 매번 내용이 통째로 바뀌는 워크로드(일회성 문서 요약 등)에는 효과가 없어요. 벤더에 따라 명시적으로 캐시 지점을 표시하는 방식(Anthropic의 cache_control)과 자동 적용 방식이 있고, 캐시 유지 시간도 짧게는 몇 분 단위라 <strong>요청 간격이 뜸한 서비스는 히트율이 떨어진다</strong>는 것까지가 실무 감각입니다.</p>
+<h2 id="_5">확인하는 법</h2>
+<p>감이 아니라 응답의 usage 필드로 봅니다 — 캐시에서 읽은 토큰 수가 따로 찍힙니다(벤더별 필드명 상이). <strong>"캐시 히트율"을 대시보드 지표로</strong> 두면, 프롬프트 구조를 바꿨다가 히트율이 무너지는 사고(앞쪽에 동적 값을 넣은 커밋)를 바로 잡아냅니다. LLM 평가 글의 골든셋 돌릴 때 비용도 같이 기록하면 금상첨화고요.</p>
+<h2 id="_6">한 줄 정리</h2>
+<p>프롬프트 캐싱은 <strong>"같은 앞부분은 다시 계산하지 않는다"</strong>입니다. 설계 규칙은 하나 — <strong>고정(시스템·도구·문서)은 앞, 동적(검색결과·질문·시각)은 뒤.</strong> 그리고 usage의 캐시 지표를 대시보드에 올려두세요. 프롬프트 한 줄의 위치가 월 청구서를 바꿉니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/multi-agent.html"><span class="g">&#10095;</span>에이전트를 여러 개 두면 더 똑똑해질까 — 멀티에이전트, 언제 쪼개나</a><a href="../p/llm-eval.html"><span class="g">&#10095;</span>프롬프트를 감으로 고치면 안 되는 이유 — LLM 앱 평가 만들기</a><a href="../p/rag-pipeline-visual.html"><span class="g">&#10095;</span>[그림 한 장] RAG 파이프라인 전체 — 문서가 답변이 되기까지</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><span></span><a href="../p/port-in-use.html" style="text-align:right"><span class="lbl">older</span>죽였는데 포트가 안 풀린다 — Address already in use 3분 수사</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

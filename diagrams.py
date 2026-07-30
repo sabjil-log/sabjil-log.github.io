@@ -1316,3 +1316,79 @@ _add("multi-agent", "에이전트 하나 vs 멀티에이전트",
          ("no", "3~4단 넘으면 잃는 게 커지기 시작"),
      ], "순서: 프롬프트 → 도구 → 에이전트 하나 → 그래도 안 되면 분할 · 평가는 단계별로",
         licon="brain", ricon="user"))
+
+
+# ── 5차 배치 ──────────────────────────────────────────────────
+_add("port-holders", "EADDRINUSE — 세 가지 범인",
+     "ss -tlnp 한 줄로 가립니다. pid가 있으면 생존자/선점자, 없으면 TIME_WAIT 잔상.",
+     "port-in-use",
+     _ladder("ph", [
+         ("① 살아남은 자식", "같은 이름, 다른 pid", "그룹째 kill · systemd 이관", "box"),
+         ("② 엉뚱한 선점자", "처음 보는 프로세스", "docker-proxy 단골 — docker ps", "server"),
+         ("③ TIME_WAIT 잔상", "pid 없음, 잔상만", "SO_REUSEADDR (bind 전에)", "switch"),
+     ], "시작은 항상: sudo ss -tlnp | grep :포트 — kill -9 난사와 재부팅은 수사 포기"))
+
+_add("bastion-door", "문을 하나로 — 배스천 패턴",
+     "모든 서버의 22를 여는 대신, 지키는 문 하나로 동선을 모읍니다. 옆문 폐쇄까지가 한 세트.",
+     "bastion-host",
+     '<svg viewBox="0 0 640 300" role="img"><style>' + _COMMON + """
+.bd-p{animation:bd-p 4s ease-in-out infinite;}
+.bd-x{animation:bd-x 4s ease-in-out infinite;}
+@keyframes bd-p{0%{transform:translate(0,0);opacity:0}8%{opacity:1}
+ 40%{transform:translate(150px,0);opacity:1}55%{transform:translate(150px,44px);opacity:1}
+ 88%{transform:translate(322px,44px);opacity:1}100%{opacity:0}}
+@keyframes bd-x{0%,100%{opacity:.5}50%{opacity:1}}
+</style>
+""" + _icon("user", 60, 82, 1.6, halo=True) + """
+<text x="34" y="126" class="dg-t">관리자</text>
+<rect x="176" y="40" width="150" height="86" rx="12" class="dg-box"/>
+""" + _icon("gateway", 216, 76, 1.5, halo=True) + """
+<text x="248" y="72" class="dg-tl" font-size="12.5">배스천</text>
+<text x="248" y="90" class="dg-ts">public · 22만</text>
+<text x="186" y="118" class="dg-ts">빈 껍데기 — sshd와 로그뿐</text>
+<rect x="392" y="24" width="234" height="212" rx="12" fill="none" stroke="var(--dg-blue)"
+      stroke-dasharray="6 4" stroke-width="1.4"/>
+<text x="404" y="44" class="dg-lab2">private 서브넷</text>
+""" + _icon("server", 448, 96, 1.35, halo=True) + """
+""" + _icon("server", 548, 96, 1.35, halo=True) + """
+""" + _icon("database", 498, 178, 1.35, halo=True) + """
+<text x="420" y="216" class="dg-ts">ACG: 배스천 ACG 로부터의 22만</text>
+<line x1="94" y1="82" x2="176" y2="82" class="dg-arrow"/>
+<line x1="326" y1="126" x2="392" y2="126" class="dg-arrow"/>
+<g class="dg-anim bd-p"><circle cx="120" cy="82" r="7" fill="var(--dg-green)"/></g>
+<text x="98" y="66" class="dg-lab2">ssh -J bastion 10.0.3.15</text>
+<g class="dg-anim bd-x"><text x="404" y="256" class="dg-warn" font-size="11.5">옆문 폐쇄: 각 서버 공인 22 차단</text></g>
+<text x="14" y="262" class="dg-ts">키는 노트북에만 (배스천에 개인키 복사 금지) · ProxyJump는 종단간 암호화 유지</text>
+<text x="14" y="284" class="dg-ts">다음 단계: SSM류 — 인바운드 22가 0개인 접속 (에이전트가 아웃바운드로 연결)</text>
+</svg>""")
+
+_add("prompt-cache", "프롬프트 캐싱 — 책갈피 지점부터 이어 읽기",
+     "앞부분이 완전히 같으면 계산도 같습니다. 고정부는 앞으로, 동적부는 뒤로 — 배치가 곧 요금입니다.",
+     "prompt-caching",
+     '<svg viewBox="0 0 640 250" role="img"><style>' + _COMMON + """
+.pc-hit{animation:pc-h 3.4s ease-in-out infinite;}
+.pc-new{animation:pc-n 3.4s ease-in-out infinite;}
+@keyframes pc-h{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes pc-n{0%{opacity:.2}45%,100%{opacity:1}}
+</style>
+<text x="14" y="24" class="dg-tl">요청 1 — 전체 계산</text>
+<rect x="14" y="34" width="360" height="34" rx="7" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.4"/>
+<text x="26" y="56" class="dg-lab2">시스템 프롬프트 + 도구 + 고정 문서 (20,000 tok)</text>
+<rect x="382" y="34" width="120" height="34" rx="7" class="dg-box"/>
+<text x="394" y="56" class="dg-lab2">질문 A (200)</text>
+<text x="516" y="56" class="dg-ts">전액 계산</text>
+<text x="14" y="106" class="dg-tl">요청 2 — 책갈피부터</text>
+<g class="dg-anim pc-hit">
+<rect x="14" y="116" width="360" height="34" rx="7" fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.6"/>
+<text x="26" y="138" class="dg-lab2" fill="var(--dg-green)">동일 프리픽스 — 캐시 히트 (할인)</text>
+</g>
+<line x1="374" y1="108" x2="374" y2="158" class="dg-wall"/>
+<text x="330" y="170" class="dg-ts" fill="var(--dg-green)">책갈피</text>
+<g class="dg-anim pc-new">
+<rect x="382" y="116" width="120" height="34" rx="7" class="dg-box"/>
+<text x="394" y="138" class="dg-lab2">질문 B (200)</text>
+</g>
+<text x="516" y="138" class="dg-ts">이만큼만 계산</text>
+<text x="14" y="200" class="dg-key" font-size="12.5">캐시를 깨는 실수: 프리픽스에 현재 시각 · 세션 ID · 매번 다른 인사말</text>
+<text x="14" y="222" class="dg-ts">규칙: 고정(시스템·도구·문서)은 앞 / 동적(검색결과·질문·시각)은 뒤 · usage의 캐시 지표를 대시보드에</text>
+</svg>""")

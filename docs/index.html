@@ -32,7 +32,19 @@
   <nav class="nav"><a href="index.html" class="on">home</a><a href="c/troubleshooting.html">--troubleshooting</a><a href="c/linux.html">--linux</a><a href="c/cloud.html">--cloud</a><a href="c/network.html">--network</a><a href="c/security.html">--security</a><a href="c/ai.html">--ai</a><a href="visual.html">--visual</a><a href="archive.html">--all</a></nav>
 </div></header>
 <div class="wrap"><section class="facade" aria-label="삽질노트"><div class="fac-bar"><span class="fac-dots"></span><span class="fac-title">sabjil-log — bash</span></div><div class="fac-body"><div class="fac-line"><span class="fac-p">$</span> whoami</div><div class="fac-name">삽질노트</div><div class="fac-line"><span class="fac-p">$</span> cat tagline.txt</div><div class="fac-out">삽질해서 배운 걸, 남은 안 삽질하게.<br>리눅스 · 클라우드 · AI — 매일 쌓는 실무 노트</div><div class="fac-line"><span class="fac-p">$</span><span class="cur"></span></div></div></section></div><main class="wrap">
-<section class="list"><div class="search"><span class="sig">grep -i</span><input id="q" type="search" placeholder="&quot;검색어&quot; — 제목·요약·태그" autocomplete="off" spellcheck="false"></div><div class="list-head">최근 글 · 58개</div><article class="entry" data-search="에이전트를 여러 개 두면 더 똑똑해질까 — 멀티에이전트, 언제 쪼개나 에이전트를 늘리는 건 팀을 꾸리는 것과 같습니다. 병렬성과 분업이 생기는 대신 회의 비용이 붙죠. 쪼개야 할 때와 하나로 충분할 때를 가르는 기준. ai/llm ai 멀티에이전트 오케스트레이터 에이전트 llm 설계">
+<section class="list"><div class="search"><span class="sig">grep -i</span><input id="q" type="search" placeholder="&quot;검색어&quot; — 제목·요약·태그" autocomplete="off" spellcheck="false"></div><div class="list-head">최근 글 · 61개</div><article class="entry" data-search="같은 프롬프트 앞부분은 왜 싸질까 — 프롬프트 캐싱의 원리와 설계 llm은 매 요청마다 프롬프트 전체를 다시 계산합니다. 캐싱은 그 계산의 &#x27;중간 결과&#x27;를 재사용하는 것 — 프롬프트를 어떻게 배치하느냐가 곧 요금입니다. ai/llm ai 프롬프트캐싱 prompt caching kv cache 비용 llm">
+  <div class="meta"><span>2026-07-30</span><a class="chip" href="c/ai.html">--ai</a><span>3 min</span></div>
+  <h2><a href="p/prompt-caching.html"><span class="g">&#10095;</span>같은 프롬프트 앞부분은 왜 싸질까 — 프롬프트 캐싱의 원리와 설계</a></h2>
+  <p class="sum">LLM은 매 요청마다 프롬프트 전체를 다시 계산합니다. 캐싱은 그 계산의 &#x27;중간 결과&#x27;를 재사용하는 것 — 프롬프트를 어떻게 배치하느냐가 곧 요금입니다.</p>
+</article><article class="entry" data-search="죽였는데 포트가 안 풀린다 — address already in use 3분 수사 분명 프로세스를 죽였는데 재시작하면 address already in use. 범인은 셋 중 하나입니다 — 살아있는 자식, time_wait, 또는 엉뚱한 점유자. 트러블슈팅 troubleshooting lsof 포트 address already in use ss 프로세스">
+  <div class="meta"><span>2026-07-30</span><a class="chip" href="c/troubleshooting.html">--troubleshooting</a><span>3 min</span></div>
+  <h2><a href="p/port-in-use.html"><span class="g">&#10095;</span>죽였는데 포트가 안 풀린다 — Address already in use 3분 수사</a></h2>
+  <p class="sum">분명 프로세스를 죽였는데 재시작하면 Address already in use. 범인은 셋 중 하나입니다 — 살아있는 자식, TIME_WAIT, 또는 엉뚱한 점유자.</p>
+</article><article class="entry" data-search="서버마다 ssh 문을 내지 마세요 — 배스천 호스트 설계 관리자 접속 문이 서버 수만큼 있으면 지킬 문도 그만큼입니다. 문을 하나로 모으는 배스천 패턴과 proxyjump, 그리고 흔한 설계 실수까지. 보안 security 배스천 bastion ssh proxyjump 접근통제 ncp aws">
+  <div class="meta"><span>2026-07-30</span><a class="chip" href="c/security.html">--security</a><span>3 min</span></div>
+  <h2><a href="p/bastion-host.html"><span class="g">&#10095;</span>서버마다 SSH 문을 내지 마세요 — 배스천 호스트 설계</a></h2>
+  <p class="sum">관리자 접속 문이 서버 수만큼 있으면 지킬 문도 그만큼입니다. 문을 하나로 모으는 배스천 패턴과 ProxyJump, 그리고 흔한 설계 실수까지.</p>
+</article><article class="entry" data-search="에이전트를 여러 개 두면 더 똑똑해질까 — 멀티에이전트, 언제 쪼개나 에이전트를 늘리는 건 팀을 꾸리는 것과 같습니다. 병렬성과 분업이 생기는 대신 회의 비용이 붙죠. 쪼개야 할 때와 하나로 충분할 때를 가르는 기준. ai/llm ai 멀티에이전트 오케스트레이터 에이전트 llm 설계">
   <div class="meta"><span>2026-07-29</span><a class="chip" href="c/ai.html">--ai</a><span>2 min</span></div>
   <h2><a href="p/multi-agent.html"><span class="g">&#10095;</span>에이전트를 여러 개 두면 더 똑똑해질까 — 멀티에이전트, 언제 쪼개나</a></h2>
   <p class="sum">에이전트를 늘리는 건 팀을 꾸리는 것과 같습니다. 병렬성과 분업이 생기는 대신 회의 비용이 붙죠. 쪼개야 할 때와 하나로 충분할 때를 가르는 기준.</p>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>서버마다 SSH 문을 내지 마세요 — 배스천 호스트 설계 · 삽질노트</title>
+<meta name="description" content="관리자 접속 문이 서버 수만큼 있으면 지킬 문도 그만큼입니다. 문을 하나로 모으는 배스천 패턴과 ProxyJump, 그리고 흔한 설계 실수까지.">
+<meta property="og:title" content="서버마다 SSH 문을 내지 마세요 — 배스천 호스트 설계 · 삽질노트">
+<meta property="og:description" content="관리자 접속 문이 서버 수만큼 있으면 지킬 문도 그만큼입니다. 문을 하나로 모으는 배스천 패턴과 ProxyJump, 그리고 흔한 설계 실수까지.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/bastion-host.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/bastion-host.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/bastion-host.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/bastion-host.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html" class="on">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-07-30</span><a class="chip" href="../c/security.html">--security</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>서버마다 SSH 문을 내지 마세요 — 배스천 호스트 설계</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 배스천은 <strong>관리자 SSH가 드나드는 유일한 문</strong>입니다. 모든 서버의 22번을 인터넷에 여는 대신, 공개된 문 하나(배스천)만 지키고 나머지는 private에 숨기는 것 — 지킬 곳이 N개에서 1개로 줄어드는 게 핵심입니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">문을 하나로 — 배스천 패턴</div><svg viewBox="0 0 640 300" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.bd-p{animation:bd-p 4s ease-in-out infinite;}
+.bd-x{animation:bd-x 4s ease-in-out infinite;}
+@keyframes bd-p{0%{transform:translate(0,0);opacity:0}8%{opacity:1}
+ 40%{transform:translate(150px,0);opacity:1}55%{transform:translate(150px,44px);opacity:1}
+ 88%{transform:translate(322px,44px);opacity:1}100%{opacity:0}}
+@keyframes bd-x{0%,100%{opacity:.5}50%{opacity:1}}
+</style>
+<circle cx="60.0" cy="82.0" r="32.6" fill="var(--dg-blue-s)"/><g transform="translate(34.4,56.4) scale(1.600)">
+<circle cx="16" cy="10" r="6" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<path d="M4.5 29 c0 -6.6 5.2 -11 11.5 -11 s11.5 4.4 11.5 11" fill="var(--dg-blue-s)"
+      stroke="var(--dg-blue)" stroke-width="1.8" stroke-linecap="round"/></g>
+<text x="34" y="126" class="dg-t">관리자</text>
+<rect x="176" y="40" width="150" height="86" rx="12" class="dg-box"/>
+<circle cx="216.0" cy="76.0" r="31.0" fill="var(--dg-blue-s)"/><g transform="translate(192.0,52.0) scale(1.500)">
+<path d="M5 29 V13 a11 11 0 0 1 22 0 v16 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.8"/>
+<path d="M11 29 V15 a5 5 0 0 1 10 0 v14 z" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.7"/>
+<circle cx="19" cy="22" r="1.2" fill="var(--dg-blue)"/></g>
+<text x="248" y="72" class="dg-tl" font-size="12.5">배스천</text>
+<text x="248" y="90" class="dg-ts">public · 22만</text>
+<text x="186" y="118" class="dg-ts">빈 껍데기 — sshd와 로그뿐</text>
+<rect x="392" y="24" width="234" height="212" rx="12" fill="none" stroke="var(--dg-blue)"
+      stroke-dasharray="6 4" stroke-width="1.4"/>
+<text x="404" y="44" class="dg-lab2">private 서브넷</text>
+<circle cx="448.0" cy="96.0" r="28.6" fill="var(--dg-blue-s)"/><g transform="translate(426.4,74.4) scale(1.350)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g>
+<circle cx="548.0" cy="96.0" r="28.6" fill="var(--dg-blue-s)"/><g transform="translate(526.4,74.4) scale(1.350)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g>
+<circle cx="498.0" cy="178.0" r="28.6" fill="var(--dg-violet-s)"/><g transform="translate(476.4,156.4) scale(1.350)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g>
+<text x="420" y="216" class="dg-ts">ACG: 배스천 ACG 로부터의 22만</text>
+<line x1="94" y1="82" x2="176" y2="82" class="dg-arrow"/>
+<line x1="326" y1="126" x2="392" y2="126" class="dg-arrow"/>
+<g class="dg-anim bd-p"><circle cx="120" cy="82" r="7" fill="var(--dg-green)"/></g>
+<text x="98" y="66" class="dg-lab2">ssh -J bastion 10.0.3.15</text>
+<g class="dg-anim bd-x"><text x="404" y="256" class="dg-warn" font-size="11.5">옆문 폐쇄: 각 서버 공인 22 차단</text></g>
+<text x="14" y="262" class="dg-ts">키는 노트북에만 (배스천에 개인키 복사 금지) · ProxyJump는 종단간 암호화 유지</text>
+<text x="14" y="284" class="dg-ts">다음 단계: SSM류 — 인바운드 22가 0개인 접속 (에이전트가 아웃바운드로 연결)</text>
+</svg><figcaption>모든 서버의 22를 여는 대신, 지키는 문 하나로 동선을 모읍니다. 옆문 폐쇄까지가 한 세트.</figcaption></figure>
+<h2 id="_1">문제: 문이 너무 많다</h2>
+<p>서버가 10대면 SSH 문이 10개. 공인 IP가 붙은 서버의 22번 포트에는 <strong>몇 분 안에</strong> 전 세계 봇들의 로그인 시도가 쏟아지기 시작합니다. <code>journalctl -u ssh | grep Failed</code>를 열어보면 장관이죠. 문이 10개면 자물쇠 관리(키 배포·회수, 패치, 로그 감시)도 10벌 — 하나만 삐끗해도 뚫립니다.</p>
+<p>발상은 건물 설계와 같습니다. <strong>모든 사무실에 외부 현관을 내지 말고, 경비가 지키는 정문 하나로 동선을 모으는 것.</strong></p>
+<h2 id="_2">구조</h2>
+<div class="highlight"><pre><span></span><code>관리자 → (인터넷) → [배스천: public 서브넷, 22만 허용] → [서버들: private, 배스천에서만 22 허용]
+</code></pre></div>
+
+<ul>
+<li><strong>배스천</strong>: public 서브넷의 작은 인스턴스. 하는 일이 "통과"뿐이라 뭘 깔지 않습니다 — 깔린 게 없어야 뚫을 것도 없으니까.</li>
+<li><strong>서버들</strong>: private 서브넷. ACG를 <strong>"배스천 ACG로부터의 22만 허용"</strong>으로 — IP가 아니라 역할로 여는 그 체이닝(ACG 글) 그대로입니다.</li>
+<li><strong>배스천의 22</strong>: 가능하면 전 세계가 아니라 <strong>회사·VPN 대역만</strong>. 문 하나로 모았으면 그 문도 좁혀야죠.</li>
+</ul>
+<h2 id="proxyjump">ProxyJump — 두 번 접속을 한 번처럼</h2>
+<p>배스천에 들어가서 다시 ssh 치는 건 2005년 방식입니다. <code>-J</code>(ProxyJump) 하나면 <strong>배스천을 경유하되 내 터미널에서 목적지로 직행</strong>하는 것처럼 씁니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>ssh<span class="w"> </span>-J<span class="w"> </span>bastion.example.com<span class="w"> </span><span class="m">10</span>.0.3.15<span class="w">        </span><span class="c1"># 배스천 경유 원샷</span>
+scp<span class="w"> </span>-J<span class="w"> </span>bastion.example.com<span class="w"> </span>app.tar<span class="w"> </span><span class="m">10</span>.0.3.15:/tmp/<span class="w">   </span><span class="c1"># 파일 전송도 그대로</span>
+</code></pre></div>
+
+<p><code>~/.ssh/config</code>에 박아두면 평생 씁니다.</p>
+<div class="highlight"><pre><span></span><code>Host bastion
+    HostName bastion.example.com
+    User taewan
+
+Host 10.0.*
+    ProxyJump bastion       # 이 대역은 전부 배스천 경유
+    User taewan
+</code></pre></div>
+
+<p>이후로는 그냥 <code>ssh 10.0.3.15</code>. 중요한 보안 포인트 — ProxyJump는 <strong>종단간 암호화가 유지</strong>됩니다. 배스천은 터널을 이어줄 뿐 내 트래픽을 복호화하지 못해요. 그리고 <strong>개인키를 배스천에 복사해두면 안 됩니다</strong> — ProxyJump(또는 agent forwarding)를 쓰면 키는 내 노트북에만 있으면 됩니다. 배스천에 뒹구는 개인키는 그 자체가 사고입니다.</p>
+<h2 id="_3">흔한 설계 실수 넷</h2>
+<p><strong>① 배스천에 이것저것 설치</strong> — 모니터링 도구, 배포 스크립트, cron... 어느새 배스천이 중요 서버가 됩니다. 배스천은 <strong>언제든 부수고 다시 만들 수 있는 빈 껍데기</strong>여야 해요. 필요한 건 sshd와 로그뿐.</p>
+<p><strong>② 만들어놓고 서버들 공인 IP를 안 뗌</strong> — 정문을 세웠는데 옆문들이 열려 있으면 의미가 없습니다. 배스천 도입 = 다른 서버의 22 인바운드 전부 차단 + 공인 IP 회수까지가 한 세트.</p>
+<p><strong>③ 계정 공유</strong> — 다 같이 <code>ec2-user</code>로 들어가면 로그에 "누가"가 없습니다. 사람별 계정·키, 그리고 퇴사 시 즉시 회수(IAM 글의 오프보딩 그대로).</p>
+<p><strong>④ 배스천 자체가 SPOF/장애 반경 무시</strong> — 배스천이 죽으면 전 서버 접속 불가. 이미지를 떠두고 재생성 절차를 문서화하거나, 중요 환경이면 존 분산(리전·AZ 글의 그 원칙)까지.</p>
+<h2 id="_4">요즘 흐름: 문 자체를 없애기</h2>
+<p>클라우드 벤더들은 한 발 더 나가서 <strong>SSH 포트를 아예 안 여는</strong> 접속 방식을 제공합니다 — AWS SSM Session Manager가 대표적이고, NCP도 콘솔 기반 서버 접속 기능이 있죠. 에이전트가 아웃바운드로 접속을 맺기 때문에 인바운드 22가 <strong>0개</strong>가 되고, 접속 기록·세션 로그가 IAM과 통합됩니다. 신규 설계라면 이쪽을 1순위로 검토하고, 배스천은 그게 안 되는 환경(규제, 하이브리드)의 표준 대안으로 보는 게 현재 감각입니다.</p>
+<h2 id="_5">한 줄 정리</h2>
+<p>배스천의 본질은 <strong>지킬 문을 1개로 줄이는 것</strong>입니다. private + ACG 체이닝 + ProxyJump(키는 노트북에만)가 기본형, 배스천은 빈 껍데기로 유지, 옆문(각 서버 공인 22)은 반드시 폐쇄 — 그리고 가능하다면 문 자체가 없는 SSM류가 다음 단계입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --security</div><a href="../p/iam-least-privilege.html"><span class="g">&#10095;</span>일단 관리자 권한 주세요 — 클라우드 IAM 최소권한, 현실적으로 시작하기</a><a href="../p/envelope-encryption.html"><span class="g">&#10095;</span>KMS의 봉투암호화 — 금고 열쇠로 데이터를 직접 잠그지 않는 이유</a><a href="../p/secret-manager.html"><span class="g">&#10095;</span>코드에 DB 비밀번호를 박으면 생기는 일 — Secret Manager를 쓰는 이유</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/port-in-use.html"><span class="lbl">newer</span>죽였는데 포트가 안 풀린다 — Address already in use 3분 수사</a><a href="../p/multi-agent.html" style="text-align:right"><span class="lbl">older</span>에이전트를 여러 개 두면 더 똑똑해질까 — 멀티에이전트, 언제 쪼개나</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
