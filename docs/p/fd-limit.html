@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Too many open files — 파일도 안 여는데 왜 한도 초과일까 · 삽질노트</title>
+<meta name="description" content="이 에러의 &#x27;파일&#x27;에는 소켓·파이프도 포함됩니다. 한도의 3단 구조(시스템/프로세스/systemd)와 누수 색출법을 정리했어요.">
+<meta property="og:title" content="Too many open files — 파일도 안 여는데 왜 한도 초과일까 · 삽질노트">
+<meta property="og:description" content="이 에러의 &#x27;파일&#x27;에는 소켓·파이프도 포함됩니다. 한도의 3단 구조(시스템/프로세스/systemd)와 누수 색출법을 정리했어요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/fd-limit.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/fd-limit.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/fd-limit.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/fd-limit.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html" class="on">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-08-02</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>Too many open files — 파일도 안 여는데 왜 한도 초과일까</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 리눅스에서 <strong>소켓, 파이프, 장치까지 전부 '파일'</strong>이고, 프로세스가 열 수 있는 개수에는 한도(기본 1024인 경우가 많음)가 있습니다. 트래픽 좀 받는 서버라면 연결 하나가 fd 하나씩을 먹으니 금방 차요 — 해법은 <strong>한도 올리기 + 누수 잡기</strong> 두 갈래입니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">fd 한도의 3층 구조</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.fl-0{animation:fl-h 3.0s ease-in-out infinite;animation-delay:0.0s;}
+.fl-1{animation:fl-h 3.0s ease-in-out infinite;animation-delay:1.0s;}
+.fl-2{animation:fl-h 3.0s ease-in-out infinite;animation-delay:2.0s;}
+@keyframes fl-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,20.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim fl-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="60" y="36" class="dg-t">① 커널 전체</text><text x="216" y="36" class="dg-lab2">/proc/sys/fs/file-max</text><text x="396" y="36" class="dg-ts">시스템 총량</text><rect class="dg-box dg-anim fl-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<rect x="4" y="4" width="24" height="16" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="6.5" y="6.5" width="19" height="11" rx="1" fill="var(--dg-screen)"/>
+<path d="M1.5 22 h29 l-2.5 3.5 H4 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/></g><text x="60" y="84" class="dg-t">② 셸 ulimit</text><text x="216" y="84" class="dg-lab2">ulimit -n / -Hn</text><text x="396" y="84" class="dg-ts">새로 뜨는 것에만 적용</text><rect class="dg-box dg-anim fl-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="60" y="132" class="dg-t">③ 프로세스 실제값</text><text x="216" y="132" class="dg-lab2">/proc/PID/limits</text><text x="396" y="132" class="dg-ts">여기가 진실 — systemd는 LimitNOFILE</text><text x="12" y="182" class="dg-ts">소켓·파이프도 전부 fd — 우상향이면 한도가 아니라 누수 (lsof로 sock 비율, CLOSE_WAIT 확인)</text></svg><figcaption>올렸는데 안 먹으면 다른 층을 올린 겁니다. 떠 있는 프로세스의 진짜 한도는 /proc/PID/limits.</figcaption></figure>
+<h2 id="_1">착각부터 교정</h2>
+<p>"우리 앱은 파일을 몇 개 안 여는데요?" — 파일 디스크립터(fd)는 <strong>열려 있는 모든 입출력 통로의 번호표</strong>입니다.</p>
+<ul>
+<li>클라이언트 연결 1개 = 소켓 fd 1개</li>
+<li>DB 커넥션 풀 50개 = fd 50개</li>
+<li>로그 파일, 파이프, 타이머까지 전부 fd</li>
+</ul>
+<p>즉 동시 접속 900명 + 커넥션 풀 + 로그 몇 개면, "파일"을 안 열어도 기본 한도 1024는 넘칩니다. 웹서버·프록시·크롤러가 이 에러의 단골인 이유예요.</p>
+<h2 id="3">한도는 3층 구조다</h2>
+<p>여기가 헷갈리는 지점입니다 — 올렸는데 안 먹는다면 <strong>다른 층</strong>을 올린 겁니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># ① 시스템 전체 한도 (커널)</span>
+cat<span class="w"> </span>/proc/sys/fs/file-max
+
+<span class="c1"># ② 내 셸/프로세스의 한도 (ulimit)</span>
+<span class="nb">ulimit</span><span class="w"> </span>-n<span class="w">                      </span><span class="c1"># soft (실제 적용값)</span>
+<span class="nb">ulimit</span><span class="w"> </span>-Hn<span class="w">                     </span><span class="c1"># hard (soft를 올릴 수 있는 상한)</span>
+
+<span class="c1"># ③ 이미 떠 있는 그 프로세스의 진짜 한도 ← 제일 중요</span>
+cat<span class="w"> </span>/proc/<span class="k">$(</span>pgrep<span class="w"> </span>-f<span class="w"> </span>myapp<span class="k">)</span>/limits<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;open files&quot;</span>
+</code></pre></div>
+
+<p>③이 핵심입니다. <strong>한도는 프로세스가 시작될 때 물려받는 값</strong>이라, 지금 셸에서 <code>ulimit -n 65535</code>를 쳐도 이미 떠 있는 서비스에는 아무 효과가 없어요. 그리고 —</p>
+<p><strong>systemd로 뜨는 서비스는 ulimit 설정 파일(/etc/security/limits.conf)을 아예 안 봅니다.</strong> limits.conf는 로그인 세션용이거든요. 서비스는 유닛에서 직접 지정합니다:</p>
+<div class="highlight"><pre data-lang="ini"><span></span><code><span class="c1"># systemctl edit myapp  →  override에 추가</span>
+<span class="k">[Service]</span>
+<span class="na">LimitNOFILE</span><span class="o">=</span><span class="s">65535</span>
+</code></pre></div>
+
+<div class="highlight"><pre data-lang="bash"><span></span><code>sudo<span class="w"> </span>systemctl<span class="w"> </span>daemon-reload<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sudo<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>myapp
+cat<span class="w"> </span>/proc/<span class="k">$(</span>pgrep<span class="w"> </span>-f<span class="w"> </span>myapp<span class="k">)</span>/limits<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>open<span class="w">    </span><span class="c1"># 반영 확인까지가 한 세트</span>
+</code></pre></div>
+
+<p>"limits.conf 고쳤는데 안 돼요"의 답이 십중팔구 이겁니다 — journalctl 글에서 본 그 원칙: 서비스의 세계는 systemd가 지배합니다.</p>
+<h2 id="_2">올리기 전에: 정상 사용인가, 누수인가</h2>
+<p>한도 상향은 <strong>정상적으로 많이 쓰는 경우</strong>의 처방입니다. 그런데 fd 사용량이 시간이 갈수록 <strong>우상향</strong>한다면 — 그건 닫지 않는 코드, 즉 <strong>누수</strong>고, 한도를 올려봐야 죽는 날짜만 미뤄집니다. OOM 글의 그 구분(스파이크냐 우상향이냐)과 똑같은 판별법이에요.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># 지금 누가 많이 열고 있나 — fd 개수 랭킹</span>
+<span class="k">for</span><span class="w"> </span>p<span class="w"> </span><span class="k">in</span><span class="w"> </span>/proc/<span class="o">[</span><span class="m">0</span>-9<span class="o">]</span>*<span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>ls<span class="w"> </span><span class="nv">$p</span>/fd<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l<span class="k">)</span><span class="s2"> </span><span class="k">$(</span>cat<span class="w"> </span><span class="nv">$p</span>/comm<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="k">)</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">done</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn<span class="w"> </span><span class="p">|</span><span class="w"> </span>head
+
+<span class="c1"># 그 프로세스가 &#39;뭘&#39; 열어두고 있나</span>
+ls<span class="w"> </span>-l<span class="w"> </span>/proc/12345/fd<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-20
+sudo<span class="w"> </span>lsof<span class="w"> </span>-p<span class="w"> </span><span class="m">12345</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $5}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn
+<span class="c1">#   1800 sock   ← 소켓이 압도적이면 연결을 안 닫는 것</span>
+<span class="c1">#     12 REG    ← 일반 파일</span>
+</code></pre></div>
+
+<p><code>sock</code>이 계속 늘면 응답 후 연결을 안 닫는 코드나 <strong>CLOSE_WAIT 방치</strong>(상대는 끊었는데 우리 앱이 close()를 안 부른 상태)를 의심하세요. <code>ss -tan | grep CLOSE-WAIT | wc -l</code> 이 계속 늘고 있다면 확정입니다. 파일이라면 <code>with open(...)</code> 없이 열고 버리는 루프가 단골이고요.</p>
+<h2 id="_3">처방 정리</h2>
+<ol>
+<li><strong>누수면 코드 수정이 답</strong> — close 누락, 커넥션 풀 미사용(그 TIME_WAIT 글의 keep-alive 얘기가 fd에도 그대로), CLOSE_WAIT 방치.</li>
+<li><strong>정상 사용량이면 한도 상향</strong> — systemd 서비스는 <code>LimitNOFILE=</code>, 컨테이너는 도커/쿠버 쪽 ulimit 옵션. 요즘 서버라면 65535는 부담 없는 값입니다.</li>
+<li><strong>모니터링에 fd 사용률 추가</strong> — <code>현재 fd 수 / 한도</code> 를 80%에서 알람. 이 지표가 있으면 이 에러를 두 번 다시 새벽에 만나지 않습니다.</li>
+</ol>
+<h2 id="_4">한 줄 정리</h2>
+<p>"파일"은 소켓 포함이고, 한도는 <strong>떠 있는 프로세스 기준(/proc/PID/limits)</strong>으로 확인하며, systemd 서비스는 <strong>LimitNOFILE</strong>로 올립니다. 단, 우상향 그래프면 한도가 아니라 <strong>누수</strong> — lsof로 sock/REG 비율부터 보세요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --troubleshooting</div><a href="../p/port-in-use.html"><span class="g">&#10095;</span>죽였는데 포트가 안 풀린다 — Address already in use 3분 수사</a><a href="../p/docker-volumes.html"><span class="g">&#10095;</span>컨테이너를 지웠더니 DB가 날아갔다 — 볼륨과 바인드 마운트 제대로 알기</a><a href="../p/oom-killer.html"><span class="g">&#10095;</span>프로세스가 흔적도 없이 사라졌다 — OOM Killer의 소행 확인하기</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/structured-output.html"><span class="lbl">newer</span>LLM 응답 파싱 지옥에서 탈출하기 — 구조화 출력 제대로 쓰는 법</a><a href="../p/alert-design.html" style="text-align:right"><span class="lbl">older</span>알람이 100개 오면 0개 온 것과 같다 — 알람 피로 없는 모니터링 설계</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

@@ -5,6 +5,27 @@
   <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
   <language>ko</language>
     <item>
+      <title>LLM 응답 파싱 지옥에서 탈출하기 — 구조화 출력 제대로 쓰는 법</title>
+      <link>https://sabjil-log.github.io/p/structured-output.html</link>
+      <guid>https://sabjil-log.github.io/p/structured-output.html</guid>
+      <pubDate>Sun, 02 Aug 2026 00:00:00 -0000</pubDate>
+      <description>&#x27;JSON으로만 답해&#x27;는 언젠가 배신당합니다. 프롬프트 구걸부터 스키마 강제까지 4단계 사다리와, 구조화가 놓치기 쉬운 함정들.</description>
+    </item>
+    <item>
+      <title>Too many open files — 파일도 안 여는데 왜 한도 초과일까</title>
+      <link>https://sabjil-log.github.io/p/fd-limit.html</link>
+      <guid>https://sabjil-log.github.io/p/fd-limit.html</guid>
+      <pubDate>Sun, 02 Aug 2026 00:00:00 -0000</pubDate>
+      <description>이 에러의 &#x27;파일&#x27;에는 소켓·파이프도 포함됩니다. 한도의 3단 구조(시스템/프로세스/systemd)와 누수 색출법을 정리했어요.</description>
+    </item>
+    <item>
+      <title>알람이 100개 오면 0개 온 것과 같다 — 알람 피로 없는 모니터링 설계</title>
+      <link>https://sabjil-log.github.io/p/alert-design.html</link>
+      <guid>https://sabjil-log.github.io/p/alert-design.html</guid>
+      <pubDate>Sun, 02 Aug 2026 00:00:00 -0000</pubDate>
+      <description>알람의 목적은 &#x27;알림&#x27;이 아니라 &#x27;행동&#x27;입니다. 증상 기반 알람, 지속시간 조건, 심각도 분리 — 새벽에 울릴 자격이 있는 알람만 남기는 법.</description>
+    </item>
+    <item>
       <title>같은 프롬프트 앞부분은 왜 싸질까 — 프롬프트 캐싱의 원리와 설계</title>
       <link>https://sabjil-log.github.io/p/prompt-caching.html</link>
       <guid>https://sabjil-log.github.io/p/prompt-caching.html</guid>
@@ -122,26 +143,5 @@
       <guid>https://sabjil-log.github.io/p/kubectl-five.html</guid>
       <pubDate>Sun, 19 Jul 2026 00:00:00 -0000</pubDate>
       <description>쿠버 문제의 9할은 다섯 명령의 조합으로 잡힙니다. 각각이 &#x27;무엇을 보는 창&#x27;인지, 어떤 순서로 꺼내는지 정리했어요.</description>
-    </item>
-    <item>
-      <title>ALB냐 NLB냐 — L7과 L4, 로드밸런서 고르는 기준</title>
-      <link>https://sabjil-log.github.io/p/alb-vs-nlb.html</link>
-      <guid>https://sabjil-log.github.io/p/alb-vs-nlb.html</guid>
-      <pubDate>Sun, 19 Jul 2026 00:00:00 -0000</pubDate>
-      <description>둘 다 트래픽을 나눠주는데 뭐가 다를까요. &#x27;내용을 읽고 나누느냐, 주소만 보고 나누느냐&#x27; — 이 차이에서 기능·성능·클라이언트IP 문제까지 전부 갈립니다.</description>
-    </item>
-    <item>
-      <title>말싸움 끝내는 법 — tcpdump로 &#x27;누가 응답을 안 하는지&#x27; 눈으로 보기</title>
-      <link>https://sabjil-log.github.io/p/tcpdump-basics.html</link>
-      <guid>https://sabjil-log.github.io/p/tcpdump-basics.html</guid>
-      <pubDate>Sat, 18 Jul 2026 00:00:00 -0000</pubDate>
-      <description>네트워크 문제는 결국 &#x27;패킷이 갔냐, 답이 왔냐&#x27;입니다. tcpdump 필터 몇 개와 SYN/RST 읽는 법만 알면, 추측 대신 증거로 말할 수 있어요.</description>
-    </item>
-    <item>
-      <title>NAT Gateway는 정확히 무슨 일을 하나 — 그리고 왜 요금 폭탄의 단골인가</title>
-      <link>https://sabjil-log.github.io/p/nat-gateway.html</link>
-      <guid>https://sabjil-log.github.io/p/nat-gateway.html</guid>
-      <pubDate>Sat, 18 Jul 2026 00:00:00 -0000</pubDate>
-      <description>private 서버가 밖에 나가는 문이라는 건 알겠는데, 안에서 무슨 일이 벌어지고 왜 청구서에 자주 등장하는지 — 발신자 주소 바꿔치기의 원리부터 비용 우회로까지.</description>
     </item>
 </channel></rss>

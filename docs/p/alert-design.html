@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>알람이 100개 오면 0개 온 것과 같다 — 알람 피로 없는 모니터링 설계 · 삽질노트</title>
+<meta name="description" content="알람의 목적은 &#x27;알림&#x27;이 아니라 &#x27;행동&#x27;입니다. 증상 기반 알람, 지속시간 조건, 심각도 분리 — 새벽에 울릴 자격이 있는 알람만 남기는 법.">
+<meta property="og:title" content="알람이 100개 오면 0개 온 것과 같다 — 알람 피로 없는 모니터링 설계 · 삽질노트">
+<meta property="og:description" content="알람의 목적은 &#x27;알림&#x27;이 아니라 &#x27;행동&#x27;입니다. 증상 기반 알람, 지속시간 조건, 심각도 분리 — 새벽에 울릴 자격이 있는 알람만 남기는 법.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/alert-design.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/alert-design.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/alert-design.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/alert-design.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-08-02</span><a class="chip" href="../c/cloud.html">--cloud</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>알람이 100개 오면 0개 온 것과 같다 — 알람 피로 없는 모니터링 설계</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 알람 설계의 유일한 기준은 <strong>"이게 울리면 누가 지금 뭘 해야 하는가"</strong>입니다. 답이 없으면 알람이 아니라 소음이고, 소음이 쌓이면 진짜 알람도 무시됩니다(늑대소년 효과). 처방은 셋 — <strong>증상 기반, 지속시간 조건, 심각도 2단 분리.</strong></p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">알람 자격 심사</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><circle cx="48.0" cy="40.0" r="25.4" fill="var(--dg-green-s)"/><g transform="translate(29.6,21.6) scale(1.150)">
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
+      stroke-linecap="round" stroke-linejoin="round"/></g><text x="76" y="46" class="dg-tl">알람 자격 있음 (증상·행동)</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="76" class="dg-ts">5xx 에러율 > 1% 이 5분 지속</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="100" class="dg-ts">p95 응답시간 > 2초 지속</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="124" class="dg-ts">외부 헬스체크 실패</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="148" class="dg-ts">디스크·인증서·fd (시한폭탄 예고)</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><circle cx="362.0" cy="40.0" r="25.4" fill="var(--dg-blue-s)"/><g transform="translate(343.6,21.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="390" y="46" class="dg-tl">대시보드로 강등 (원인 지표)</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="76" class="dg-ts">CPU 90% 순간치 — 배치·GC마다 발화</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="100" class="dg-ts">메모리·로드 — 장애의 원인 후보일 뿐</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--muted)">·</text><text x="358" y="124" class="dg-ts">알람이 울린 '뒤에' 수사용으로 보기</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--muted)">·</text><text x="358" y="148" class="dg-ts">행동 없는 알람은 다음 청소 때 삭제</text><text x="12" y="182" class="dg-ts">리트머스: 새벽 3시에 이걸로 깨어나도 화나지 않겠는가 — 아니면 P2(슬랙)로</text></svg><figcaption>증상이면 울리고, 원인 지표는 대시보드로. 새벽에 깨울 것(P1)과 아침에 볼 것(P2)을 나눕니다.</figcaption></figure>
+<h2 id="_1">실패의 전형</h2>
+<p>모니터링을 처음 붙이면 의욕이 넘칩니다 — CPU 70%, 메모리 80%, 디스크 70%, 프로세스 수, 로드애버리지... 전부 알람. 첫 주에 슬랙이 하루 수십 번 울리고, 둘째 주에 채널을 음소거하고, 셋째 달에 <strong>진짜 장애 알람이 그 더미 속에서 조용히 묻힙니다.</strong> 알람이 100개 오는 채널은 0개 오는 채널과 정보량이 같아요.</p>
+<p>원인은 알람을 "걱정되는 것"마다 단 것. 기준을 바꿔야 합니다 — <strong>걱정이 아니라 행동.</strong></p>
+<h2 id="1">원칙 ① — 원인이 아닌 증상에 알람을</h2>
+<p>CPU 90%는 <strong>원인 후보</strong>지 장애가 아닙니다. 배치가 열심히 도는 중일 수도, 압축 작업일 수도 있죠. 사용자가 실제로 겪는 건 <strong>증상</strong>입니다 — 응답이 느리다, 에러가 난다, 안 열린다.</p>
+<div class="highlight"><pre><span></span><code>증상 기반 (사용자 관점 — 알람 자격 있음):
+- 5xx 에러율 &gt; 1%
+- p95 응답시간 &gt; 2초
+- 헬스체크 실패 (외부에서 찔러본 결과)
+- 큐 적체 (처리가 소비를 못 따라감)
+
+원인 지표 (대시보드로 강등):
+- CPU, 메모리, 로드, 디스크 I/O …
+</code></pre></div>
+
+<p>원인 지표는 알람이 울린 <strong>뒤에</strong> 대시보드에서 보는 겁니다 — 계층 진단 글의 순서처럼, 증상으로 출동하고 원인 지표로 수사하는 거죠. 예외 둘은 인정합니다: <strong>디스크 사용률과 인증서 만료.</strong> 이 둘은 지금 증상이 없어도 시한폭탄이라, "터지기 며칠 전" 예고 알람의 가치가 있어요 (fd 사용률 80%도 같은 계열).</p>
+<h2 id="2">원칙 ② — 지속시간을 걸어라</h2>
+<p>순간 스파이크는 정상입니다. <code>CPU &gt; 90%</code> 순간 알람은 배포·크론·GC 때마다 웁니다. <strong>"5분 동안 지속되면"</strong> 조건 하나로 소음의 절반이 사라져요.</p>
+<div class="highlight"><pre><span></span><code>나쁨: 에러율 &gt; 1%              (순간치 — 요청 3개 중 1개 실패해도 발화)
+좋음: 에러율 &gt; 1% 이 5분 지속   (추세 — 진짜 문제만)
+</code></pre></div>
+
+<p>CloudWatch의 evaluation periods, NCP Cloud Insight의 지속시간 조건이 정확히 이 용도입니다. 반대급부(감지가 5분 늦음)는 심각도 설계로 흡수합니다 — 다음 원칙.</p>
+<h2 id="3">원칙 ③ — 새벽에 깨울 것과 아침에 볼 것을 나눠라</h2>
+<p>모든 알람이 같은 채널로 가면 전부 같은 무게가 됩니다. 두 단계면 충분해요.</p>
+<ul>
+<li><strong>P1 (지금 일어나): 사용자가 겪고 있음.</strong> 서비스 다운, 에러율 급등, p95 폭주. → 전화·문자·온콜 호출. <strong>"받으면 즉시 할 행동이 정의된 것만.</strong>"</li>
+<li><strong>P2 (업무시간에 처리): 곧 문제가 될 것.</strong> 디스크 80%, 인증서 D-14, fd 80%, 복제 지연. → 슬랙 채널·티켓.</li>
+</ul>
+<p>리트머스 시험지: <strong>"이 알람으로 새벽 3시에 깨어났을 때, 화가 나지 않겠는가?"</strong> 화가 날 것 같으면 P2로 내리거나 삭제입니다.</p>
+<h2 id="_2">운영 루틴 — 알람도 청소가 필요하다</h2>
+<p>비용 누수 글의 월간 점검처럼, 알람도 정기 청소 대상입니다.</p>
+<ol>
+<li><strong>울렸는데 아무도 행동 안 한 알람</strong> → 그 자리에서 삭제하거나 조건 수정. "일단 두자"가 소음의 씨앗입니다.</li>
+<li><strong>장애였는데 안 울린 것</strong> → 포스트모템에서 알람 추가. 골든셋에 실패 사례 넣던 그 습관(LLM 평가 글)의 인프라 버전.</li>
+<li><strong>알람 문구에 행동을 적기</strong> — "CPU high"가 아니라 "5xx 급등 — 런북: wiki/incident-web". 새벽의 나는 낮의 나보다 멍청하니, 문구가 절반의 대응입니다.</li>
+<li><strong>주간 알람 카운트 추적</strong> — 주당 P1이 몇 번인지. 이 숫자가 늘면 시스템이 아픈 것이고, P1인데 행동이 없었다면 설계가 아픈 겁니다.</li>
+</ol>
+<h2 id="_3">한 줄 정리</h2>
+<p>알람은 <strong>행동 요청서</strong>입니다. 증상에 걸고(원인은 대시보드로), 지속시간으로 스파이크를 거르고, "새벽에 깨울 것"과 "아침에 볼 것"을 나누세요. 그리고 행동으로 이어지지 않은 알람은 청소 — <strong>적게 울리는 채널이 잘 듣는 채널입니다.</strong></p><aside class="related"><div class="rel-head">이어서 읽기 · --cloud</div><a href="../p/region-az.html"><span class="g">&#10095;</span>리전과 가용영역 — &#x27;어디까지 죽으면 우리도 죽나&#x27;를 정하는 일</a><a href="../p/vpc-journey-visual.html"><span class="g">&#10095;</span>[그림 한 장] 요청 한 번의 VPC 여정 — 클릭에서 응답까지 무슨 일이 벌어지나</a><a href="../p/alb-vs-nlb.html"><span class="g">&#10095;</span>ALB냐 NLB냐 — L7과 L4, 로드밸런서 고르는 기준</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/fd-limit.html"><span class="lbl">newer</span>Too many open files — 파일도 안 여는데 왜 한도 초과일까</a><a href="../p/prompt-caching.html" style="text-align:right"><span class="lbl">older</span>같은 프롬프트 앞부분은 왜 싸질까 — 프롬프트 캐싱의 원리와 설계</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

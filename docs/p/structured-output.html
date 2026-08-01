@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM 응답 파싱 지옥에서 탈출하기 — 구조화 출력 제대로 쓰는 법 · 삽질노트</title>
+<meta name="description" content="&#x27;JSON으로만 답해&#x27;는 언젠가 배신당합니다. 프롬프트 구걸부터 스키마 강제까지 4단계 사다리와, 구조화가 놓치기 쉬운 함정들.">
+<meta property="og:title" content="LLM 응답 파싱 지옥에서 탈출하기 — 구조화 출력 제대로 쓰는 법 · 삽질노트">
+<meta property="og:description" content="&#x27;JSON으로만 답해&#x27;는 언젠가 배신당합니다. 프롬프트 구걸부터 스키마 강제까지 4단계 사다리와, 구조화가 놓치기 쉬운 함정들.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/structured-output.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/structured-output.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/structured-output.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/structured-output.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-08-02</span><a class="chip" href="../c/ai.html">--ai</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>LLM 응답 파싱 지옥에서 탈출하기 — 구조화 출력 제대로 쓰는 법</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 코드가 LLM 응답을 이어받으려면 형식이 <strong>매번, 반드시</strong> 같아야 합니다. 방법은 강제력 순으로 4단계 — <strong>프롬프트 부탁 &lt; JSON 모드 &lt; 도구 호출(tool use) &lt; 스키마 강제.</strong> 파싱 코드로 방어하지 말고, 가능한 가장 높은 단계로 올라가는 게 답입니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">구조화 출력 — 강제력의 사다리</div><svg viewBox="0 0 640 238" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.sl-0{animation:sl-h 4.0s ease-in-out infinite;animation-delay:0.0s;}
+.sl-1{animation:sl-h 4.0s ease-in-out infinite;animation-delay:1.0s;}
+.sl-2{animation:sl-h 4.0s ease-in-out infinite;animation-delay:2.0s;}
+.sl-3{animation:sl-h 4.0s ease-in-out infinite;animation-delay:3.0s;}
+@keyframes sl-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim sl-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="60" y="36" class="dg-t">① 프롬프트 부탁</text><text x="216" y="36" class="dg-lab2">"JSON으로만 답해"</text><text x="396" y="36" class="dg-ts">강제력 없음 — 프로토타입용</text><rect class="dg-box dg-anim sl-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="60" y="84" class="dg-t">② JSON 모드</text><text x="216" y="84" class="dg-lab2">문법만 보장</text><text x="396" y="84" class="dg-ts">필드는 창의적일 수 있음</text><rect class="dg-box dg-anim sl-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<path d="M5 29 V13 a11 11 0 0 1 22 0 v16 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.8"/>
+<path d="M11 29 V15 a5 5 0 0 1 10 0 v14 z" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.7"/>
+<circle cx="19" cy="22" r="1.2" fill="var(--dg-blue)"/></g><text x="60" y="132" class="dg-t">③ 도구 호출</text><text x="216" y="132" class="dg-lab2">인자 스키마 강제</text><text x="396" y="132" class="dg-ts">실전 표준 — 파싱 코드 소멸</text><rect class="dg-box dg-anim sl-3" x="12" y="156" width="616" height="38" rx="9"/><g transform="translate(17.6,156.6) scale(1.150)">
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
+      stroke-linecap="round" stroke-linejoin="round"/></g><text x="60" y="180" class="dg-t">④ 스키마 강제</text><text x="216" y="180" class="dg-lab2">디코딩 단계 제약</text><text x="396" y="180" class="dg-ts">가장 강함 (지원 시)</text><text x="12" y="230" class="dg-ts">스키마에 설명·enum·'모름' 출구를 — 형식을 조일수록 내용 환각의 해독제가 필요합니다</text></svg><figcaption>부탁은 계약이 아닙니다. 파싱 방어 코드가 자라면 사다리를 올라갈 때입니다.</figcaption></figure>
+<h2 id="_1">지옥의 풍경</h2>
+<p>LLM으로 정보 추출을 붙이면 이런 코드가 자라기 시작합니다.</p>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="n">text</span> <span class="o">=</span> <span class="n">resp</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;```json&quot;</span><span class="p">):</span> <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="p">[</span><span class="mi">7</span><span class="p">:]</span>      <span class="c1"># 마크다운 펜스 제거</span>
+<span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;```&quot;</span><span class="p">):</span>     <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span>
+<span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;```&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="p">[</span><span class="n">text</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;{&quot;</span><span class="p">):]</span>                         <span class="c1"># &quot;네, 알겠습니다!&quot; 서두 제거</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>                              <span class="c1"># 그래도 가끔 터짐</span>
+</code></pre></div>
+
+<p>동작은 합니다 — <strong>99%는.</strong> 문제는 하루 1만 건이면 1%가 100건이라는 것. "JSON으로만 답해 주세요"는 부탁이지 계약이 아니거든요. 모델은 어느 날 친절하게 설명을 덧붙이고, 필드명을 창의적으로 바꾸고, 숫자를 문자열로 감쌉니다.</p>
+<h2 id="4">강제력의 사다리 — 4단계</h2>
+<p><strong>1단 · 프롬프트 부탁</strong> — "JSON으로만, 코드펜스 없이". 프로토타입용. 강제력 없음.</p>
+<p><strong>2단 · JSON 모드</strong> — 벤더가 제공하는 "출력은 유효한 JSON" 스위치. <strong>문법</strong>은 보장되지만 <strong>구조</strong>는 아닙니다 — 유효한 JSON이면서 내가 원한 필드가 없는 답이 얼마든지 가능해요.</p>
+<p><strong>3단 · 도구 호출(tool use) 전용</strong> — 에이전트 글의 그 메커니즘을 추출에 역이용하는 것. "이 도구를 호출해"라고 하면 모델은 <strong>도구의 인자 스키마에 맞는 구조</strong>를 만들어야 합니다. 잡담·서두·펜스가 끼어들 자리가 아예 없죠.</p>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="n">tools</span> <span class="o">=</span> <span class="p">[{</span>
+  <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;save_extraction&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;문서에서 추출한 정보를 저장한다&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;input_schema&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">&quot;company&quot;</span><span class="p">:</span>  <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+      <span class="s2">&quot;amount&quot;</span><span class="p">:</span>   <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;원 단위, 숫자만&quot;</span><span class="p">},</span>
+      <span class="s2">&quot;due_date&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;YYYY-MM-DD&quot;</span><span class="p">},</span>
+      <span class="s2">&quot;confident&quot;</span><span class="p">:{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;boolean&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;추출 확신 여부&quot;</span><span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;company&quot;</span><span class="p">,</span> <span class="s2">&quot;amount&quot;</span><span class="p">,</span> <span class="s2">&quot;confident&quot;</span><span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">}]</span>
+<span class="c1"># 응답에서 resp.tool_calls[0].args 를 꺼내면 이미 dict — 파싱 코드 자체가 사라짐</span>
+</code></pre></div>
+
+<p><strong>4단 · 스키마 강제(constrained decoding)</strong> — 벤더/서빙에 따라 "이 JSON 스키마에 맞는 토큰만 생성하게" 디코딩 단계에서 묶는 기능(structured outputs, vLLM의 guided decoding 등). 문법+구조가 <strong>생성 과정에서</strong> 보장되는 가장 강한 단계입니다. 쓸 수 있으면 이걸 쓰고, 없으면 3단이 실전 표준이에요.</p>
+<h2 id="_2">스키마가 곧 프롬프트다</h2>
+<p>3~4단에서 품질을 가르는 건 <strong>스키마의 설명(description)</strong>입니다 — 도구 명세가 절반이라던 그 원칙 그대로.</p>
+<ul>
+<li><code>amount: integer</code> 만 쓰지 말고 <strong>"원 단위, 쉼표 없이 숫자만"</strong> — 단위·형식 모호성이 오답의 주범.</li>
+<li><strong>enum을 적극적으로</strong> — <code>"category": {"enum": ["환불","배송","기타"]}</code> 면 창의적 카테고리 발명이 원천 봉쇄됩니다.</li>
+<li><strong>"모름"의 자리를 만들 것</strong> — 환각 글의 그 출구가 여기서도 필요합니다. <code>confident: boolean</code> 이나 nullable 필드가 없으면, 모델은 required를 채우려고 <strong>없는 값을 지어냅니다.</strong> 스키마 강제의 역설 — 형식을 조일수록 내용 환각이 늘 수 있어요. 출구 필드가 해독제입니다.</li>
+</ul>
+<h2 id="_3">그래도 남는 함정들</h2>
+<ul>
+<li><strong>구조 보장 ≠ 내용 보장.</strong> due_date가 완벽한 YYYY-MM-DD인데 문서에 없는 날짜일 수 있습니다. 형식 검증(pydantic 등)과 별개로 <strong>값 검증</strong>(원문 대조, 범위 체크)은 남습니다.</li>
+<li><strong>너무 큰 스키마.</strong> 필드 30개짜리 한 방 추출은 품질이 급락합니다. 문서 하나에 여러 주제면 나눠 뽑으세요 — 청킹의 "한 조각 = 한 생각"이 스키마에도 적용됩니다.</li>
+<li><strong>재시도 설계.</strong> 검증 실패 시 에러 내용을 붙여 1회 재요청("due_date가 스키마와 다릅니다: ...")하는 루프가 실전 표준. 단, 재시도는 1~2회로 — 무한 루프는 에이전트 글의 그 상한 원칙.</li>
+<li><strong>usage 감시.</strong> 스키마가 커지면 그만큼 입력 토큰입니다. 고정 스키마는 프롬프트 캐싱 글의 규칙대로 <strong>앞쪽에 고정 배치</strong> — 도구 명세는 원래 앞에 가니 자연스럽게 캐시를 탑니다.</li>
+</ul>
+<h2 id="_4">한 줄 정리</h2>
+<p>파싱 방어 코드가 자라고 있다면 그건 신호입니다 — <strong>사다리를 올라갈 때</strong>라는. 부탁(1) 말고 도구 호출(3)이나 스키마 강제(4)로, 스키마에는 <strong>설명·enum·'모름'의 출구</strong>를 담고, 형식 검증 뒤 값 검증까지. 파싱 지옥의 출구는 정규식이 아니라 계약입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/prompt-caching.html"><span class="g">&#10095;</span>같은 프롬프트 앞부분은 왜 싸질까 — 프롬프트 캐싱의 원리와 설계</a><a href="../p/multi-agent.html"><span class="g">&#10095;</span>에이전트를 여러 개 두면 더 똑똑해질까 — 멀티에이전트, 언제 쪼개나</a><a href="../p/llm-eval.html"><span class="g">&#10095;</span>프롬프트를 감으로 고치면 안 되는 이유 — LLM 앱 평가 만들기</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><span></span><a href="../p/fd-limit.html" style="text-align:right"><span class="lbl">older</span>Too many open files — 파일도 안 여는데 왜 한도 초과일까</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
