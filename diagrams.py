@@ -1429,3 +1429,87 @@ _add("structured-ladder", "구조화 출력 — 강제력의 사다리",
          ("③ 도구 호출", "인자 스키마 강제", "실전 표준 — 파싱 코드 소멸", "gateway"),
          ("④ 스키마 강제", "디코딩 단계 제약", "가장 강함 (지원 시)", "shield"),
      ], "스키마에 설명·enum·'모름' 출구를 — 형식을 조일수록 내용 환각의 해독제가 필요합니다"))
+
+
+# ── 7차 배치 ──────────────────────────────────────────────────
+_add("zombie-reap", "좀비 — 부모가 안 떼 간 사망 신고서",
+     "죽은 프로세스의 종료 기록만 남은 상태라 kill이 무의미합니다. 회수(wait)는 항상 부모의 일이에요.",
+     "zombie-process",
+     '<svg viewBox="0 0 640 270" role="img"><style>' + _COMMON + """
+.zb-x{opacity:0;animation:zb-x 4s ease-in-out infinite;}
+.zb-p{animation:zb-p 4s ease-in-out infinite;}
+.zb-gone{animation:zb-g 4s ease-in-out infinite;}
+@keyframes zb-x{0%,18%{opacity:0}26%,44%{opacity:1}52%,100%{opacity:0}}
+@keyframes zb-p{0%,50%{transform:translateX(0);opacity:0}58%{opacity:1}
+ 84%{transform:translateX(-200px);opacity:1}92%{opacity:0}100%{opacity:0}}
+@keyframes zb-g{0%,86%{opacity:1}94%,100%{opacity:.15}}
+</style>
+""" + _icon("box", 66, 66, 1.5, halo=True) + """
+<text x="34" y="112" class="dg-t">자식 프로세스</text>
+<text x="34" y="128" class="dg-ts">종료됨 — 자원은 즉시 회수</text>
+<line x1="104" y1="66" x2="238" y2="66" class="dg-arrow"/>
+<g class="dg-anim zb-gone">
+""" + _icon("doc", 286, 66, 1.5, halo=True) + """
+<text x="252" y="112" class="dg-key" font-size="12">Z — 사망 신고서</text>
+<text x="252" y="128" class="dg-ts">종료 코드만 커널이 보관</text>
+</g>
+""" + _icon("user", 564, 66, 1.5, halo=True) + """
+<text x="540" y="112" class="dg-t">부모</text>
+<text x="512" y="128" class="dg-ts">wait() 를 안 부름</text>
+<g class="dg-anim zb-p"><circle cx="520" cy="66" r="7" fill="var(--dg-green)"/></g>
+<text x="360" y="52" class="dg-lab2">wait() = 신고서 회수 → 소멸</text>
+<g class="dg-anim zb-x">
+<text x="180" y="196" class="dg-key" font-size="13">kill -9</text>
+<line x1="230" y1="192" x2="266" y2="98" stroke="var(--dg-red)" stroke-width="2" stroke-dasharray="5 4"/>
+<text x="276" y="176" font-size="20" fill="var(--dg-red)" font-weight="700">✕</text>
+<text x="300" y="180" class="dg-ts" fill="var(--dg-red)">이미 죽어서 무효</text>
+</g>
+<text x="14" y="230" class="dg-ts">치우기: ① kill -CHLD 부모 (회수 독촉) ② 부모 재시작 → init이 입양·즉시 회수 ③ 코드에 wait / SIG_IGN</text>
+<text x="14" y="252" class="dg-ts">몇 개면 무해 (CPU·메모리 0) · 수천 개 쌓이면 PID 고갈 — 컨테이너는 docker run --init</text>
+</svg>""")
+
+_add("snapshot-vs-image", "스냅샷 vs 서버 이미지",
+     "디스크의 시점을 찍는 스냅샷, 부팅 가능한 서버 원판을 뜨는 이미지 — 복구 시나리오가 선택 기준입니다.",
+     "snapshot-vs-image",
+     _two("si", "스냅샷 — 디스크의 시점", [
+         ("ok", "\"데이터를 어제로 되돌리고 싶다\""),
+         ("ok", "DB·업로드 등 변하는 볼륨에 매일"),
+         ("ok", "복구 = 새 볼륨 만들어 갈아끼우기"),
+         ("no", "보존 정책 없으면 비용 폭탄 (일7+주4+월3)"),
+     ], "이미지 — 부팅 가능한 원판", [
+         ("ok", "\"이 서버를 다시/하나 더 만들고 싶다\""),
+         ("ok", "오토스케일링 템플릿 · 배스천 재생성"),
+         ("ok", "서버를 소모품으로 만드는 전제"),
+         ("no", "갱신 주기 없으면 반 년 전 서버가 부활"),
+     ], "정석: 소(서버)=이미지, 우유(데이터)=스냅샷 · 중요한 건 타 리전 복제까지",
+        licon="database", ricon="server"))
+
+_add("lora-adapter", "LoRA — 원본은 얼리고 포스트잇만 학습",
+     "거대한 W는 동결, 옆에 붙는 작은 A×B만 학습합니다. 결과물은 수십 MB 어댑터 파일 — 갈아끼우기도 자유.",
+     "lora",
+     '<svg viewBox="0 0 640 260" role="img"><style>' + _COMMON + """
+.lr-t{animation:lr-t 3.2s ease-in-out infinite;}
+@keyframes lr-t{0%,100%{opacity:.55}50%{opacity:1}}
+</style>
+<rect x="30" y="40" width="180" height="150" rx="12" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<text x="96" y="122" font-size="30" font-weight="800" fill="var(--dg-blue)" font-family="var(--mono)">W</text>
+""" + _icon("lock", 190, 60, 1.0, halo=True) + """
+<text x="50" y="214" class="dg-t">원본 가중치 — 동결</text>
+<text x="50" y="230" class="dg-ts">4096×4096 = 1,677만 개</text>
+<text x="240" y="122" font-size="26" font-weight="700" fill="var(--muted)">+</text>
+<g class="dg-anim lr-t">
+<rect x="286" y="60" width="34" height="110" rx="7" fill="var(--dg-amber-s)" stroke="var(--dg-amber)" stroke-width="1.8"/>
+<text x="296" y="122" font-size="16" font-weight="800" fill="var(--dg-amber)" font-family="var(--mono)">A</text>
+<rect x="330" y="98" width="110" height="34" rx="7" fill="var(--dg-amber-s)" stroke="var(--dg-amber)" stroke-width="1.8"/>
+<text x="378" y="121" font-size="16" font-weight="800" fill="var(--dg-amber)" font-family="var(--mono)">B</text>
+</g>
+<text x="288" y="214" class="dg-key" font-size="12.5">학습되는 건 이것뿐</text>
+<text x="288" y="230" class="dg-ts">6.5만 개 — 전체의 0.4% (r=8)</text>
+<rect x="480" y="52" width="146" height="136" rx="12" class="dg-box"/>
+""" + _icon("doc", 512, 88, 1.2, halo=True) + """
+<text x="540" y="92" class="dg-t">어댑터 파일</text>
+<text x="496" y="128" class="dg-ts">수십 MB — 원본과 분리</text>
+<text x="496" y="146" class="dg-ts">용도별 갈아끼우기</text>
+<text x="496" y="164" class="dg-ts">병합 or 다중 장착</text>
+<text x="14" y="254" class="dg-ts">r=16에서 시작 · QLoRA(원본 4bit)면 소비자용 GPU 1장 · 지식 주입은 여전히 RAG</text>
+</svg>""")

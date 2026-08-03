@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>좀비 프로세스는 kill -9로도 안 죽는다 — Z 상태의 정체 · 삽질노트</title>
+<meta name="description" content="좀비는 이미 죽은 프로세스입니다. 죽은 걸 또 죽일 수는 없죠. 남은 건 부모가 회수하지 않은 &#x27;사망 신고서&#x27; — 문제의 주어는 항상 부모입니다.">
+<meta property="og:title" content="좀비 프로세스는 kill -9로도 안 죽는다 — Z 상태의 정체 · 삽질노트">
+<meta property="og:description" content="좀비는 이미 죽은 프로세스입니다. 죽은 걸 또 죽일 수는 없죠. 남은 건 부모가 회수하지 않은 &#x27;사망 신고서&#x27; — 문제의 주어는 항상 부모입니다.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/zombie-process.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/zombie-process.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/zombie-process.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/zombie-process.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html" class="on">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-08-03</span><a class="chip" href="../c/linux.html">--linux</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>좀비 프로세스는 kill -9로도 안 죽는다 — Z 상태의 정체</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 좀비(Z, defunct)는 <strong>이미 종료된 프로세스의 잔여 기록</strong>입니다 — 부모가 종료 코드를 회수(wait)해줄 때까지 커널이 보관하는 사망 신고서죠. 그래서 kill이 안 통합니다(죽은 걸 또 죽일 수 없음). <strong>치우는 방법은 부모를 고치거나, 부모를 없애는 것</strong>뿐입니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">좀비 — 부모가 안 떼 간 사망 신고서</div><svg viewBox="0 0 640 270" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.zb-x{opacity:0;animation:zb-x 4s ease-in-out infinite;}
+.zb-p{animation:zb-p 4s ease-in-out infinite;}
+.zb-gone{animation:zb-g 4s ease-in-out infinite;}
+@keyframes zb-x{0%,18%{opacity:0}26%,44%{opacity:1}52%,100%{opacity:0}}
+@keyframes zb-p{0%,50%{transform:translateX(0);opacity:0}58%{opacity:1}
+ 84%{transform:translateX(-200px);opacity:1}92%{opacity:0}100%{opacity:0}}
+@keyframes zb-g{0%,86%{opacity:1}94%,100%{opacity:.15}}
+</style>
+<circle cx="66.0" cy="66.0" r="31.0" fill="var(--dg-green-s)"/><g transform="translate(42.0,42.0) scale(1.500)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g>
+<text x="34" y="112" class="dg-t">자식 프로세스</text>
+<text x="34" y="128" class="dg-ts">종료됨 — 자원은 즉시 회수</text>
+<line x1="104" y1="66" x2="238" y2="66" class="dg-arrow"/>
+<g class="dg-anim zb-gone">
+<circle cx="286.0" cy="66.0" r="31.0" fill="var(--dg-blue-s)"/><g transform="translate(262.0,42.0) scale(1.500)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g>
+<text x="252" y="112" class="dg-key" font-size="12">Z — 사망 신고서</text>
+<text x="252" y="128" class="dg-ts">종료 코드만 커널이 보관</text>
+</g>
+<circle cx="564.0" cy="66.0" r="31.0" fill="var(--dg-blue-s)"/><g transform="translate(540.0,42.0) scale(1.500)">
+<circle cx="16" cy="10" r="6" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<path d="M4.5 29 c0 -6.6 5.2 -11 11.5 -11 s11.5 4.4 11.5 11" fill="var(--dg-blue-s)"
+      stroke="var(--dg-blue)" stroke-width="1.8" stroke-linecap="round"/></g>
+<text x="540" y="112" class="dg-t">부모</text>
+<text x="512" y="128" class="dg-ts">wait() 를 안 부름</text>
+<g class="dg-anim zb-p"><circle cx="520" cy="66" r="7" fill="var(--dg-green)"/></g>
+<text x="360" y="52" class="dg-lab2">wait() = 신고서 회수 → 소멸</text>
+<g class="dg-anim zb-x">
+<text x="180" y="196" class="dg-key" font-size="13">kill -9</text>
+<line x1="230" y1="192" x2="266" y2="98" stroke="var(--dg-red)" stroke-width="2" stroke-dasharray="5 4"/>
+<text x="276" y="176" font-size="20" fill="var(--dg-red)" font-weight="700">✕</text>
+<text x="300" y="180" class="dg-ts" fill="var(--dg-red)">이미 죽어서 무효</text>
+</g>
+<text x="14" y="230" class="dg-ts">치우기: ① kill -CHLD 부모 (회수 독촉) ② 부모 재시작 → init이 입양·즉시 회수 ③ 코드에 wait / SIG_IGN</text>
+<text x="14" y="252" class="dg-ts">몇 개면 무해 (CPU·메모리 0) · 수천 개 쌓이면 PID 고갈 — 컨테이너는 docker run --init</text>
+</svg><figcaption>죽은 프로세스의 종료 기록만 남은 상태라 kill이 무의미합니다. 회수(wait)는 항상 부모의 일이에요.</figcaption></figure>
+<h2 id="_1">발견의 순간</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>$<span class="w"> </span>ps<span class="w"> </span>aux<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>defunct
+worker<span class="w">   </span><span class="m">23841</span><span class="w">  </span><span class="m">0</span>.0<span class="w">  </span><span class="m">0</span>.0<span class="w">    </span><span class="m">0</span><span class="w">     </span><span class="m">0</span><span class="w"> </span>?<span class="w">  </span>Z<span class="w">  </span><span class="m">10</span>:02<span class="w">  </span><span class="m">0</span>:00<span class="w"> </span><span class="o">[</span>python<span class="o">]</span><span class="w"> </span>&lt;defunct&gt;
+$<span class="w"> </span><span class="nb">kill</span><span class="w"> </span>-9<span class="w"> </span><span class="m">23841</span>
+$<span class="w"> </span>ps<span class="w"> </span>aux<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>defunct
+worker<span class="w">   </span><span class="m">23841</span><span class="w">  </span>...<span class="w">  </span>Z<span class="w">  </span>...<span class="w">  </span><span class="o">[</span>python<span class="o">]</span><span class="w"> </span>&lt;defunct&gt;<span class="w">     </span><span class="c1"># 그대로다?!</span>
+</code></pre></div>
+
+<p>kill -9는 만능 아니었나요? — 좀비에게는 아닙니다. 이유를 알면 당연해져요.</p>
+<h2 id="_2">정체: 사망 신고서를 안 떼 간 것</h2>
+<p>프로세스가 종료되면 커널은 메모리·fd 등 자원을 즉시 회수합니다. 그런데 딱 하나, <strong>프로세스 테이블의 항목(종료 코드, PID)</strong>은 남겨둡니다. 왜? <strong>부모가 "우리 애 어떻게 죽었어요?"라고 물어볼 권리(wait 시스템콜)</strong>가 있기 때문이에요. 종료 코드는 부모가 떼 가야 하는 사망 신고서고, 그걸 보관 중인 상태가 Z입니다.</p>
+<p>그래서 —
+- <strong>좀비는 CPU도 메모리도 안 씁니다.</strong> 몇 개쯤은 완전히 무해해요.
+- <strong>kill이 안 통합니다.</strong> 시그널은 살아있는 프로세스에게 보내는 것인데, 얘는 이미 죽었으니까요.
+- <strong>문제의 주어는 죽은 자식이 아니라 산 부모입니다.</strong> 부모가 wait()를 안 부르고 있는 것 — 자식을 fork해놓고 뒷정리 코드를 빠뜨린 버그죠.</p>
+<h2 id="_3">그럼 언제 문제가 되나</h2>
+<p>두 경우입니다.</p>
+<p><strong>① 쌓일 때.</strong> 좀비 하나는 무해하지만, 워커를 계속 fork하면서 한 번도 회수하지 않는 데몬은 좀비를 수천 개 만듭니다. PID는 유한한 자원이라(기본 수만 개), 다 차면 <strong>시스템 전체가 새 프로세스를 못 만듭니다</strong> — fork 실패는 fd 고갈보다 더 광범위한 마비예요.</p>
+<p><strong>② 좀비인 줄 알았는데 아닐 때.</strong> D 상태(디스크 대기, load average 글의 그것)를 좀비로 오인하는 경우가 많습니다. Z는 무해한 기록, D는 I/O에 붙들린 산 프로세스 — 대응이 완전히 다르니 상태 글자부터 확인하세요.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>ps<span class="w"> </span>-eo<span class="w"> </span>state,pid,ppid,cmd<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;$1==&quot;Z&quot;&#39;</span><span class="w">     </span><span class="c1"># 좀비 목록 + 부모 PID</span>
+ps<span class="w"> </span>-eo<span class="w"> </span>state<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w">                  </span><span class="c1"># 상태별 분포 한눈에</span>
+</code></pre></div>
+
+<h2 id="_4">치우는 법 — 부모를 향해</h2>
+<p><strong>방법 1: 부모에게 회수 신호 (SIGCHLD).</strong></p>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="nb">kill</span><span class="w"> </span>-CHLD<span class="w"> </span>&lt;부모PID&gt;
+</code></pre></div>
+
+<p>부모가 정상적인 프로그램이라면 "자식 정리하세요" 알림을 받고 wait를 부릅니다. 이걸로 치워지면 부모의 핸들러는 있는데 놓친 케이스.</p>
+<p><strong>방법 2: 부모를 죽인다 — 고아는 init이 거둔다.</strong></p>
+<p>방법 1이 안 통하면(회수 코드 자체가 없음) 부모를 재시작합니다. 부모가 죽으면 좀비들은 <strong>고아가 되어 PID 1(init/systemd)에 입양</strong>되는데, init은 직업이 자식 회수인 존재라 <strong>입양 즉시 좀비가 사라집니다.</strong> port-in-use 글에서 본 고아 입양이 여기선 해결책으로 작동하는 셈이죠.</p>
+<p><strong>방법 3 (근본): 코드를 고친다.</strong></p>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">signal</span>
+<span class="c1"># 자식의 종료를 자동 회수 — &quot;우리 집은 사망신고 자동화&quot;</span>
+<span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">,</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIG_IGN</span><span class="p">)</span>
+
+<span class="c1"># 또는 명시적으로: fork한 만큼 os.waitpid(...) 로 거둬들이기</span>
+<span class="c1"># subprocess 모듈을 쓴다면 .wait() / .communicate() 호출 누락이 단골 범인</span>
+</code></pre></div>
+
+<p>셸 스크립트라면 백그라운드 작업(<code>&amp;</code>) 뒤의 <code>wait</code>가 같은 역할입니다. 그리고 <strong>컨테이너에서 좀비가 쌓인다면</strong> — 컨테이너의 PID 1이 내 앱이라서 입양은 되는데 회수를 안 하는 상황입니다. <code>docker run --init</code> (또는 tini)으로 회수 전담 PID 1을 세우는 게 정석이에요.</p>
+<h2 id="_5">한 줄 정리</h2>
+<p>좀비는 <strong>부모가 안 떼 간 사망 신고서</strong>라 kill이 무의미합니다. 몇 개면 무시, 쌓이면 PID 고갈 — 치료는 항상 부모 쪽(SIGCHLD → 재시작 → 코드에 wait/SIG_IGN, 컨테이너면 --init)입니다. 그리고 Z와 D를 혼동하지 마세요 — 하나는 죽은 기록, 하나는 산 채로 붙들린 겁니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --linux</div><a href="../p/chmod-755.html"><span class="g">&#10095;</span>chmod 755의 숫자는 어디서 왔나 — 읽기4 쓰기2 실행1</a><a href="../p/kubectl-five.html"><span class="g">&#10095;</span>kubectl 디버깅은 다섯 명령으로 끝난다 — logs, describe, exec, get -o, port-forward</a><a href="../p/journalctl-debug.html"><span class="g">&#10095;</span>systemd 서비스가 자꾸 죽을 때 — journalctl로 원인 찾는 순서</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><span></span><a href="../p/snapshot-vs-image.html" style="text-align:right"><span class="lbl">older</span>스냅샷과 서버 이미지, 뭘 찍는 게 다른가 — 복구 시나리오로 가르기</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
