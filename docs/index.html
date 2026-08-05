@@ -32,7 +32,19 @@
   <nav class="nav"><a href="index.html" class="on">home</a><a href="c/troubleshooting.html">--troubleshooting</a><a href="c/linux.html">--linux</a><a href="c/cloud.html">--cloud</a><a href="c/network.html">--network</a><a href="c/security.html">--security</a><a href="c/ai.html">--ai</a><a href="visual.html">--visual</a><a href="archive.html">--all</a></nav>
 </div></header>
 <div class="wrap"><section class="facade" aria-label="삽질노트"><div class="fac-bar"><span class="fac-dots"></span><span class="fac-title">sabjil-log — bash</span></div><div class="fac-body"><div class="fac-line"><span class="fac-p">$</span> whoami</div><div class="fac-name">삽질노트</div><div class="fac-line"><span class="fac-p">$</span> cat tagline.txt</div><div class="fac-out">삽질해서 배운 걸, 남은 안 삽질하게.<br>리눅스 · 클라우드 · AI — 매일 쌓는 실무 노트</div><div class="fac-line"><span class="fac-p">$</span><span class="cur"></span></div></div></section></div><main class="wrap">
-<section class="list"><div class="search"><span class="sig">grep -i</span><input id="q" type="search" placeholder="&quot;검색어&quot; — 제목·요약·태그" autocomplete="off" spellcheck="false"></div><div class="list-head">최근 글 · 67개</div><article class="entry" data-search="좀비 프로세스는 kill -9로도 안 죽는다 — z 상태의 정체 좀비는 이미 죽은 프로세스입니다. 죽은 걸 또 죽일 수는 없죠. 남은 건 부모가 회수하지 않은 &#x27;사망 신고서&#x27; — 문제의 주어는 항상 부모입니다. 리눅스 linux 좀비 zombie defunct wait 프로세스">
+<section class="list"><div class="search"><span class="sig">grep -i</span><input id="q" type="search" placeholder="&quot;검색어&quot; — 제목·요약·태그" autocomplete="off" spellcheck="false"></div><div class="list-head">최근 글 · 70개</div><article class="entry" data-search="프로세스가 뭘 하다 멈췄는지 훔쳐보기 — strace 입문 로그도 없이 멈춘 프로세스, 소스도 없는 바이너리 — strace는 프로세스와 커널 사이의 대화를 도청해 &#x27;지금 뭘 기다리는지&#x27;를 보여줍니다. 리눅스 linux strace 시스템콜 디버깅 행 트러블슈팅">
+  <div class="meta"><span>2026-08-05</span><a class="chip" href="c/linux.html">--linux</a><span>3 min</span></div>
+  <h2><a href="p/strace.html"><span class="g">&#10095;</span>프로세스가 뭘 하다 멈췄는지 훔쳐보기 — strace 입문</a></h2>
+  <p class="sum">로그도 없이 멈춘 프로세스, 소스도 없는 바이너리 — strace는 프로세스와 커널 사이의 대화를 도청해 &#x27;지금 뭘 기다리는지&#x27;를 보여줍니다.</p>
+</article><article class="entry" data-search="서버가 사라져도 로그는 남아야 한다 — 로그 중앙화 설계 오토스케일링과 소모품 서버의 시대엔 &#x27;서버에 들어가서 로그 보기&#x27;가 성립하지 않습니다. 수집→중앙 저장→보존 정책의 기본 구조와 실무 함정. 클라우드 cloud 로그 중앙화 cloud log analytics cloudwatch logs 보존 수집기">
+  <div class="meta"><span>2026-08-05</span><a class="chip" href="c/cloud.html">--cloud</a><span>3 min</span></div>
+  <h2><a href="p/log-centralization.html"><span class="g">&#10095;</span>서버가 사라져도 로그는 남아야 한다 — 로그 중앙화 설계</a></h2>
+  <p class="sum">오토스케일링과 소모품 서버의 시대엔 &#x27;서버에 들어가서 로그 보기&#x27;가 성립하지 않습니다. 수집→중앙 저장→보존 정책의 기본 구조와 실무 함정.</p>
+</article><article class="entry" data-search="llm 호출을 한 문으로 모아라 — 게이트웨이(릴레이) 패턴 앱마다 벤더 api를 직접 부르면 키·비용·로깅·정책이 사방에 흩어집니다. 중간에 문 하나를 세우는 게이트웨이 패턴의 역할과 설계 포인트. ai/llm ai llm 게이트웨이 릴레이 프록시 폴백 키관리 llm">
+  <div class="meta"><span>2026-08-05</span><a class="chip" href="c/ai.html">--ai</a><span>3 min</span></div>
+  <h2><a href="p/llm-gateway.html"><span class="g">&#10095;</span>LLM 호출을 한 문으로 모아라 — 게이트웨이(릴레이) 패턴</a></h2>
+  <p class="sum">앱마다 벤더 API를 직접 부르면 키·비용·로깅·정책이 사방에 흩어집니다. 중간에 문 하나를 세우는 게이트웨이 패턴의 역할과 설계 포인트.</p>
+</article><article class="entry" data-search="좀비 프로세스는 kill -9로도 안 죽는다 — z 상태의 정체 좀비는 이미 죽은 프로세스입니다. 죽은 걸 또 죽일 수는 없죠. 남은 건 부모가 회수하지 않은 &#x27;사망 신고서&#x27; — 문제의 주어는 항상 부모입니다. 리눅스 linux 좀비 zombie defunct wait 프로세스">
   <div class="meta"><span>2026-08-03</span><a class="chip" href="c/linux.html">--linux</a><span>3 min</span></div>
   <h2><a href="p/zombie-process.html"><span class="g">&#10095;</span>좀비 프로세스는 kill -9로도 안 죽는다 — Z 상태의 정체</a></h2>
   <p class="sum">좀비는 이미 죽은 프로세스입니다. 죽은 걸 또 죽일 수는 없죠. 남은 건 부모가 회수하지 않은 &#x27;사망 신고서&#x27; — 문제의 주어는 항상 부모입니다.</p>

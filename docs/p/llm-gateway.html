@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM 호출을 한 문으로 모아라 — 게이트웨이(릴레이) 패턴 · 삽질노트</title>
+<meta name="description" content="앱마다 벤더 API를 직접 부르면 키·비용·로깅·정책이 사방에 흩어집니다. 중간에 문 하나를 세우는 게이트웨이 패턴의 역할과 설계 포인트.">
+<meta property="og:title" content="LLM 호출을 한 문으로 모아라 — 게이트웨이(릴레이) 패턴 · 삽질노트">
+<meta property="og:description" content="앱마다 벤더 API를 직접 부르면 키·비용·로깅·정책이 사방에 흩어집니다. 중간에 문 하나를 세우는 게이트웨이 패턴의 역할과 설계 포인트.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/llm-gateway.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/llm-gateway.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/llm-gateway.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/llm-gateway.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-08-05</span><a class="chip" href="../c/ai.html">--ai</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>LLM 호출을 한 문으로 모아라 — 게이트웨이(릴레이) 패턴</h1><blockquote>
+<p><strong>한 줄 요약:</strong> LLM 게이트웨이는 <strong>모든 LLM 호출이 지나가는 단일 관문</strong>입니다. 벤더 API 키는 게이트웨이만 알고, 앱들은 게이트웨이에게만 말하죠. 얻는 것 — <strong>키 통제, 사용량·비용 가시성, 폴백/재시도, 정책(마스킹·차단) 일괄 적용.</strong> 배스천이 SSH에 한 일을 LLM 호출에 하는 겁니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">LLM 게이트웨이 — 호출의 배스천</div><svg viewBox="0 0 640 300" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.lg-a{animation:lg-a 4s ease-in-out infinite;}
+.lg-b{animation:lg-b 4s ease-in-out infinite;}
+.lg-fb{opacity:0;animation:lg-f 4s ease-in-out infinite;}
+@keyframes lg-a{0%{transform:translate(0,0);opacity:0}8%{opacity:1}
+ 38%{transform:translate(150px,0);opacity:1}46%{opacity:0}100%{opacity:0}}
+@keyframes lg-b{0%,48%{transform:translate(0,0);opacity:0}56%{opacity:1}
+ 84%{transform:translate(148px,-40px);opacity:1}92%{opacity:0}100%{opacity:0}}
+@keyframes lg-f{0%,58%{opacity:0}66%,90%{opacity:1}100%{opacity:0}}
+</style>
+<circle cx="46.0" cy="46.0" r="26.2" fill="var(--dg-green-s)"/><g transform="translate(26.8,26.8) scale(1.200)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g>
+<circle cx="46.0" cy="116.0" r="26.2" fill="var(--dg-green-s)"/><g transform="translate(26.8,96.8) scale(1.200)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g>
+<circle cx="46.0" cy="186.0" r="26.2" fill="var(--dg-green-s)"/><g transform="translate(26.8,166.8) scale(1.200)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g>
+<text x="20" y="230" class="dg-ts">앱들 — 내부 토큰만</text>
+<line x1="78" y1="116" x2="230" y2="116" class="dg-arrow"/>
+<g class="dg-anim lg-a"><circle cx="110" cy="116" r="7" fill="var(--dg-green)"/></g>
+<rect x="230" y="56" width="180" height="130" rx="14" class="dg-box"/>
+<circle cx="268.0" cy="96.0" r="31.0" fill="var(--dg-blue-s)"/><g transform="translate(244.0,72.0) scale(1.500)">
+<path d="M5 29 V13 a11 11 0 0 1 22 0 v16 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.8"/>
+<path d="M11 29 V15 a5 5 0 0 1 10 0 v14 z" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.7"/>
+<circle cx="19" cy="22" r="1.2" fill="var(--dg-blue)"/></g>
+<text x="300" y="90" class="dg-tl" font-size="13">게이트웨이</text>
+<text x="300" y="108" class="dg-ts">/v1/messages</text>
+<text x="246" y="140" class="dg-lab2">키 보관 · 계측 · 정책</text>
+<text x="246" y="158" class="dg-lab2">마스킹 · 예산 · 폴백</text>
+<text x="240" y="230" class="dg-ts">무상태·2대 이상 · 우회는 이그레스로 차단</text>
+<line x1="410" y1="96" x2="530" y2="66" class="dg-arrow"/>
+<line x1="410" y1="136" x2="530" y2="166" class="dg-arrow"/>
+<g class="dg-anim lg-b"><circle cx="420" cy="106" r="7" fill="var(--dg-green)"/></g>
+<circle cx="566.0" cy="62.0" r="29.4" fill="var(--dg-blue-s)"/><g transform="translate(543.6,39.6) scale(1.400)">
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g>
+<text x="540" y="106" class="dg-ts">벤더 A</text>
+<circle cx="566.0" cy="162.0" r="29.4" fill="var(--dg-blue-s)"/><g transform="translate(543.6,139.6) scale(1.400)">
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g>
+<text x="524" y="206" class="dg-ts">벤더 B / 로컬</text>
+<g class="dg-anim lg-fb"><text x="452" y="152" class="dg-warn" font-size="11.5">429/5xx → 폴백</text></g>
+<text x="14" y="262" class="dg-ts">키 유출 반경 = 내부 토큰 하나 · 비용은 서비스별 대시보드 · 스트리밍은 통과시키며 계측</text>
+<text x="14" y="284" class="dg-ts">도입 신호: LLM 쓰는 서비스 2~3개 초과 + "비용 집계 좀 / 키 교체 좀"이 고통이 될 때</text>
+</svg><figcaption>키는 게이트웨이만 알고, 앱은 base URL만 바꿉니다. 계측·폴백·정책이 한 문에서 처리돼요.</figcaption></figure>
+<h2 id="_1">흩어지면 생기는 일</h2>
+<p>팀마다 챗봇, 요약기, 에이전트를 만들며 각자 벤더 API를 직접 부릅니다. 반 년 뒤 —</p>
+<ul>
+<li><strong>키가 사방에</strong> — 서비스 5개 × 벤더 2곳의 키가 각 저장소·설정에 흩어져, 회수하려면 사냥부터(Secret 글의 그 악몽).</li>
+<li><strong>"이번 달 LLM 비용 왜 이래?"에 답 못 함</strong> — 어느 서비스가 얼마 썼는지 집계 불가.</li>
+<li><strong>벤더 장애 = 전 서비스 장애</strong> — 폴백이 없으니.</li>
+<li><strong>정책이 제각각</strong> — 마스킹을 하는 앱과 안 하는 앱이 공존.</li>
+</ul>
+<p>배스천 글에서 본 그 문제입니다 — <strong>문이 N개면 지킬 곳도 N개.</strong> 처방도 같아요: 문을 하나로.</p>
+<h2 id="_2">게이트웨이가 서는 자리</h2>
+<div class="highlight"><pre><span></span><code>[앱들] --(내부 인증)--&gt; [LLM 게이트웨이] --(벤더 키)--&gt; [벤더 A / 벤더 B / 로컬 모델]
+</code></pre></div>
+
+<p>구현 관점에서 핵심은 <strong>표준 API 모양을 그대로 흉내 내는 것</strong>입니다 — <code>/v1/messages</code>, <code>/v1/chat/completions</code> 같은 표준 엔드포인트를 게이트웨이가 제공하면, 앱들은 <strong>base URL만 바꾸면</strong> 그대로 붙습니다. 기존 SDK·코드 무수정. (이게 릴레이라 불리는 이유 — 받은 요청을 그대로 벤더에 중계하되, 중간에서 부가가치를 얹는 구조죠.)</p>
+<p>게이트웨이가 얹는 부가가치, 우선순위 순으로:</p>
+<p><strong>① 키의 단일 보관.</strong> 벤더 키는 게이트웨이의 Secret에만. 앱에는 <strong>게이트웨이용 내부 토큰</strong>을 발급합니다 — 서비스별로 다르게, 회수 가능하게(최소권한 글의 그 원칙). 키 유출 사고의 폭발 반경이 "그 앱의 내부 토큰 하나"로 줄어듭니다.</p>
+<p><strong>② 사용량 계측.</strong> 모든 요청이 지나가니, <strong>서비스별·모델별 토큰 사용량과 비용</strong>이 한 곳에 쌓입니다. usage 응답을 저장하는 것만으로 "이번 달 청구서" 질문이 대시보드 하나로 끝나요. 프롬프트 캐싱 글의 캐시 히트율 지표도 여기서 공짜로 나옵니다.</p>
+<p><strong>③ 폴백과 재시도.</strong> 벤더 A가 429/5xx면 B로, B도 죽으면 로컬 모델로 — 헬스체크·로드밸런서 글의 그 구도가 LLM 층에서 재현됩니다. 주의 하나: <strong>모델이 바뀌면 답변 품질·형식이 흔들릴 수 있으니</strong>, 폴백은 "무조건 투명하게"보다 응답에 어떤 모델이 답했는지 표시하는 게 운영상 정직합니다(평가·디버깅을 위해).</p>
+<p><strong>④ 정책의 일괄 적용.</strong> 요청이 벤더로 나가기 <strong>전에</strong> 민감정보 마스킹/가명화(로그 중앙화 글의 그 마스킹이 LLM 방향으로도 필요한 이유 — 프롬프트는 회사 데이터가 외부로 나가는 통로입니다), 금칙 요청 차단, 팀별 레이트리밋·예산 상한. 에이전트 글의 "루프 상한"을 조직 차원으로 올린 셈이죠.</p>
+<h2 id="_3">설계 포인트 셋</h2>
+<p><strong>스트리밍을 처음부터.</strong> LLM 응답은 SSE 스트리밍이 기본인데, 게이트웨이가 전체 응답을 모았다 주면 체감 지연이 확 나빠집니다. <strong>통과시키면서 계측</strong>(청크를 흘리며 토큰 집계)하는 구조로 — 프록시 구현에서 제일 자주 틀리는 지점입니다.</p>
+<p><strong>게이트웨이 자신이 SPOF.</strong> 문을 하나로 모으면 그 문이 죽을 때 전부 죽습니다 — 배스천 글의 그 경고 그대로. 게이트웨이는 상태 없는(stateless) 얇은 계층으로 유지하고(계측 기록은 비동기로 밖에), 2대 이상 + LB 뒤에 두세요. 그리고 <strong>게이트웨이 우회 금지를 네트워크로 강제</strong> — 벤더 API로 나가는 직접 호출을 이그레스에서 막아야 "선택적 준수"가 안 됩니다.</p>
+<p><strong>로깅의 딜레마.</strong> 요청·응답 전문을 남기면 디버깅·평가(골든셋 재료!)에 최고지만, 그 로그가 곧 민감정보 저장소가 됩니다. 균형점 — 메타데이터(누가·언제·모델·토큰·지연)는 전부, <strong>본문은 마스킹 후 샘플링 또는 팀별 옵트인.</strong></p>
+<h2 id="_4">언제 도입하나</h2>
+<p>서비스 하나면 과잉입니다. 신호는 명확해요 — <strong>LLM을 쓰는 서비스가 2~3개를 넘고</strong>, "비용 집계 좀"이나 "키 교체 좀"이 고통이 되기 시작할 때. 자체 구현(FastAPI로 표준 엔드포인트 + 중계)도 하루이틀 거리고, LiteLLM 같은 기성 게이트웨이를 세우는 것도 방법입니다 — 어느 쪽이든 <strong>얇게</strong> 유지하는 게 요령입니다.</p>
+<h2 id="_5">한 줄 정리</h2>
+<p>LLM 게이트웨이는 <strong>LLM 호출의 배스천</strong>입니다 — 키는 한 곳에, 비용은 보이게, 장애엔 폴백, 정책은 일괄로. 표준 API 모양을 유지해 앱은 base URL만 바꾸게 하고, 스트리밍 통과·무상태·우회 차단까지 챙기면 — 흩어진 호출들이 관리 가능한 하나의 시스템이 됩니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/lora.html"><span class="g">&#10095;</span>LoRA — 파인튜닝을 가난하게 하는 법</a><a href="../p/structured-output.html"><span class="g">&#10095;</span>LLM 응답 파싱 지옥에서 탈출하기 — 구조화 출력 제대로 쓰는 법</a><a href="../p/prompt-caching.html"><span class="g">&#10095;</span>같은 프롬프트 앞부분은 왜 싸질까 — 프롬프트 캐싱의 원리와 설계</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/log-centralization.html"><span class="lbl">newer</span>서버가 사라져도 로그는 남아야 한다 — 로그 중앙화 설계</a><a href="../p/zombie-process.html" style="text-align:right"><span class="lbl">older</span>좀비 프로세스는 kill -9로도 안 죽는다 — Z 상태의 정체</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

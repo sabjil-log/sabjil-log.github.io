@@ -5,6 +5,27 @@
   <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
   <language>ko</language>
     <item>
+      <title>프로세스가 뭘 하다 멈췄는지 훔쳐보기 — strace 입문</title>
+      <link>https://sabjil-log.github.io/p/strace.html</link>
+      <guid>https://sabjil-log.github.io/p/strace.html</guid>
+      <pubDate>Wed, 05 Aug 2026 00:00:00 -0000</pubDate>
+      <description>로그도 없이 멈춘 프로세스, 소스도 없는 바이너리 — strace는 프로세스와 커널 사이의 대화를 도청해 &#x27;지금 뭘 기다리는지&#x27;를 보여줍니다.</description>
+    </item>
+    <item>
+      <title>서버가 사라져도 로그는 남아야 한다 — 로그 중앙화 설계</title>
+      <link>https://sabjil-log.github.io/p/log-centralization.html</link>
+      <guid>https://sabjil-log.github.io/p/log-centralization.html</guid>
+      <pubDate>Wed, 05 Aug 2026 00:00:00 -0000</pubDate>
+      <description>오토스케일링과 소모품 서버의 시대엔 &#x27;서버에 들어가서 로그 보기&#x27;가 성립하지 않습니다. 수집→중앙 저장→보존 정책의 기본 구조와 실무 함정.</description>
+    </item>
+    <item>
+      <title>LLM 호출을 한 문으로 모아라 — 게이트웨이(릴레이) 패턴</title>
+      <link>https://sabjil-log.github.io/p/llm-gateway.html</link>
+      <guid>https://sabjil-log.github.io/p/llm-gateway.html</guid>
+      <pubDate>Wed, 05 Aug 2026 00:00:00 -0000</pubDate>
+      <description>앱마다 벤더 API를 직접 부르면 키·비용·로깅·정책이 사방에 흩어집니다. 중간에 문 하나를 세우는 게이트웨이 패턴의 역할과 설계 포인트.</description>
+    </item>
+    <item>
       <title>좀비 프로세스는 kill -9로도 안 죽는다 — Z 상태의 정체</title>
       <link>https://sabjil-log.github.io/p/zombie-process.html</link>
       <guid>https://sabjil-log.github.io/p/zombie-process.html</guid>
@@ -122,26 +143,5 @@
       <guid>https://sabjil-log.github.io/p/service-ingress-visual.html</guid>
       <pubDate>Tue, 21 Jul 2026 00:00:00 -0000</pubDate>
       <description>Ingress는 도메인·경로를 보는 정문 안내판, Service는 갈아타는 Pod들의 고정 전화번호. 움직이는 그림 한 장으로 트래픽의 전체 여정을 담았어요.</description>
-    </item>
-    <item>
-      <title>[그림 한 장] RAG 파이프라인 전체 — 문서가 답변이 되기까지</title>
-      <link>https://sabjil-log.github.io/p/rag-pipeline-visual.html</link>
-      <guid>https://sabjil-log.github.io/p/rag-pipeline-visual.html</guid>
-      <pubDate>Tue, 21 Jul 2026 00:00:00 -0000</pubDate>
-      <description>청킹, 임베딩, 벡터검색, 리랭커, 근거 프롬프트 — 시리즈로 하나씩 다뤘던 부품을 움직이는 그림 한 장으로 조립했습니다. 이 그림이 곧 시리즈의 지도예요.</description>
-    </item>
-    <item>
-      <title>프롬프트 주입 — AI가 읽은 문서가 AI에게 명령할 때</title>
-      <link>https://sabjil-log.github.io/p/prompt-injection.html</link>
-      <guid>https://sabjil-log.github.io/p/prompt-injection.html</guid>
-      <pubDate>Mon, 20 Jul 2026 00:00:00 -0000</pubDate>
-      <description>SQL 인젝션의 AI 버전이지만 더 까다롭습니다. 데이터와 명령이 같은 언어로 쓰여 있으니까요. 공격의 구조와, 완치 아닌 &#x27;감염 관리&#x27; 전략을 정리했어요.</description>
-    </item>
-    <item>
-      <title>curl -v 출력, 한 줄씩 읽는 법 — 어디서 막혔는지 혼자 말해준다</title>
-      <link>https://sabjil-log.github.io/p/curl-verbose.html</link>
-      <guid>https://sabjil-log.github.io/p/curl-verbose.html</guid>
-      <pubDate>Mon, 20 Jul 2026 00:00:00 -0000</pubDate>
-      <description>curl -v는 DNS→TCP→TLS→HTTP 네 단계를 순서대로 중계해주는 실황 방송입니다. 어느 줄에서 멈췄는지가 곧 진단 결과예요.</description>
     </item>
 </channel></rss>

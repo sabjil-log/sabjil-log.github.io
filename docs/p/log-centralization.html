@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>서버가 사라져도 로그는 남아야 한다 — 로그 중앙화 설계 · 삽질노트</title>
+<meta name="description" content="오토스케일링과 소모품 서버의 시대엔 &#x27;서버에 들어가서 로그 보기&#x27;가 성립하지 않습니다. 수집→중앙 저장→보존 정책의 기본 구조와 실무 함정.">
+<meta property="og:title" content="서버가 사라져도 로그는 남아야 한다 — 로그 중앙화 설계 · 삽질노트">
+<meta property="og:description" content="오토스케일링과 소모품 서버의 시대엔 &#x27;서버에 들어가서 로그 보기&#x27;가 성립하지 않습니다. 수집→중앙 저장→보존 정책의 기본 구조와 실무 함정.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/log-centralization.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/log-centralization.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/log-centralization.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/log-centralization.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-08-05</span><a class="chip" href="../c/cloud.html">--cloud</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>서버가 사라져도 로그는 남아야 한다 — 로그 중앙화 설계</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 서버를 소모품(이미지에서 다시 태어나는 소)으로 만들었다면 필연적으로 따라오는 숙제 — <strong>로그가 서버 로컬에 있으면 서버와 함께 증발합니다.</strong> 답은 구조 하나예요: <strong>각 서버의 수집기 → 중앙 저장소 → 검색·알람 + 보존 정책.</strong></p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">로그 중앙화 — 우체국 모델</div><svg viewBox="0 0 640 116" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.lp-0{animation:lp-h 4.6s ease-in-out infinite;animation-delay:0.0s;}
+.lp-1{animation:lp-h 4.6s ease-in-out infinite;animation-delay:1.15s;}
+.lp-2{animation:lp-h 4.6s ease-in-out infinite;animation-delay:2.3s;}
+.lp-3{animation:lp-h 4.6s ease-in-out infinite;animation-delay:3.45s;}
+@keyframes lp-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim lp-0" x="12" y="18" width="145" height="58" rx="10"/><circle cx="44.0" cy="47.0" r="27.0" fill="var(--dg-green-s)"/><g transform="translate(24.0,27.0) scale(1.250)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="70" y="42" class="dg-key">앱</text><text x="70" y="62" class="dg-lab2">stdout/JSON 쓰기만</text><line x1="157" y1="47" x2="169" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim lp-1" x="169" y="18" width="145" height="58" rx="10"/><circle cx="201.0" cy="47.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(181.0,27.0) scale(1.250)">
+<path d="M5 29 V13 a11 11 0 0 1 22 0 v16 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.8"/>
+<path d="M11 29 V15 a5 5 0 0 1 10 0 v14 z" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.7"/>
+<circle cx="19" cy="22" r="1.2" fill="var(--dg-blue)"/></g><text x="227" y="42" class="dg-key">수집기</text><text x="227" y="62" class="dg-lab2">tail → 전송·버퍼</text><line x1="314" y1="47" x2="326" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim lp-2" x="326" y="18" width="145" height="58" rx="10"/><circle cx="358.0" cy="47.0" r="27.0" fill="var(--dg-violet-s)"/><g transform="translate(338.0,27.0) scale(1.250)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="384" y="42" class="dg-key">중앙 저장</text><text x="384" y="62" class="dg-lab2">관리형 · 보존 계층화</text><line x1="471" y1="47" x2="483" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim lp-3" x="483" y="18" width="145" height="58" rx="10"/><circle cx="515.0" cy="47.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(495.0,27.0) scale(1.250)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="541" y="42" class="dg-key">검색·알람</text><text x="541" y="62" class="dg-lab2">trace_id 추적</text><text x="12" y="102" class="dg-ts">핫 7~30일 / 콜드는 Object Storage · 민감정보는 앱단 마스킹 · debug는 로컬만</text></svg><figcaption>앱은 쓰기만, 수집기가 부치고, 중앙에서 찾습니다. 서버가 죽어도 로그는 이미 밖에 있어요.</figcaption></figure>
+<h2 id="_1">왜 이제는 필수인가</h2>
+<p>전통적 디버깅: 서버에 SSH로 들어가 <code>journalctl</code>과 <code>grep</code>으로 수사(그 글들의 방식). 이 방식이 무너지는 순간이 셋 있습니다.</p>
+<ol>
+<li><strong>서버가 사라질 때</strong> — 오토스케일링이 축소하면서 지운 서버, 이미지에서 재생성한 서버(스냅샷 글의 그 소모품 철학). 장애 원인이 담긴 로그가 서버와 함께 화장됩니다.</li>
+<li><strong>서버가 여러 대일 때</strong> — 요청 하나가 LB를 거쳐 10대 중 어디로 갔는지 모른 채, 10대에 순서대로 들어가 grep하는 건 수사가 아니라 고행입니다.</li>
+<li><strong>서버가 뚫렸을 때</strong> — 침입자가 제일 먼저 지우는 게 로컬 로그입니다. <strong>서버 밖으로 이미 나간 로그</strong>만이 증거로 남아요(보안 관점에서 중앙화는 백업이 아니라 증거 보전입니다).</li>
+</ol>
+<h2 id="_2">기본 구조 — 우체국 모델</h2>
+<div class="highlight"><pre><span></span><code>[각 서버] 앱은 stdout/파일에 쓰기만 → [수집기(에이전트)]가 부치고 → [중앙 저장소] → 검색·대시보드·알람
+</code></pre></div>
+
+<p>역할 분리가 핵심입니다.</p>
+<ul>
+<li><strong>앱은 로그를 '보내지' 않습니다.</strong> stdout이나 파일에 쓰기만 — 전송 실패·재시도·버퍼링은 앱의 일이 아니에요. (앱에서 직접 외부 로그 API를 호출하는 설계는 로그 시스템 장애가 앱 장애로 번지는 지름길입니다.)</li>
+<li><strong>수집기(Fluent Bit, Vector 등)</strong>가 각 서버에서 파일을 꼬리물기(tail)해 중앙으로 부칩니다. 네트워크 단절 시 로컬 버퍼로 버티다 재전송 — 우체국의 일이죠.</li>
+<li><strong>중앙 저장소</strong>는 관리형이 기본값입니다 — NCP Cloud Log Analytics, AWS CloudWatch Logs 계열. 검색·보존·권한이 딸려오고, 로그 시스템 자체를 운영하는 일(그것도 만만치 않은 인프라)을 삽니다. 자체 구축(OpenSearch 스택 등)은 볼륨이 커져 관리형 요금이 아플 때의 다음 단계로.</li>
+</ul>
+<p>컨테이너/쿠버라면 이 구조가 반쯤 강제됩니다 — 컨테이너는 stdout으로 쓰고, 노드의 수집기(DaemonSet)가 걷어가는 표준 패턴. docker 볼륨 글에서 "컨테이너는 버려질 수 있다"고 한 그 전제가 로그에도 그대로 적용되는 거예요.</p>
+<h2 id="_3">실무를 가르는 세 가지 결정</h2>
+<p><strong>① 형식: 처음부터 JSON 한 줄로.</strong> <code>2026-08-05 ERROR 결제 실패 user=123</code> 같은 자유 문장은 중앙에서 파싱 지옥을 만듭니다(구조화 출력 글의 교훈이 로그에도). 앱에서부터 <strong>한 줄 JSON</strong>으로 —</p>
+<div class="highlight"><pre data-lang="json"><span></span><code><span class="p">{</span><span class="nt">&quot;ts&quot;</span><span class="p">:</span><span class="s2">&quot;2026-08-05T14:30:00+09:00&quot;</span><span class="p">,</span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="s2">&quot;error&quot;</span><span class="p">,</span><span class="nt">&quot;msg&quot;</span><span class="p">:</span><span class="s2">&quot;payment failed&quot;</span><span class="p">,</span><span class="nt">&quot;user_id&quot;</span><span class="p">:</span><span class="mi">123</span><span class="p">,</span><span class="nt">&quot;order_id&quot;</span><span class="p">:</span><span class="s2">&quot;A-9&quot;</span><span class="p">,</span><span class="nt">&quot;trace_id&quot;</span><span class="p">:</span><span class="s2">&quot;7f3a...&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>trace_id(요청 ID)</strong>가 백미입니다 — LB 뒤 10대 문제를 "이 요청의 전체 여정"으로 꿰는 열쇠. 게이트웨이/LB에서 요청 ID를 발급해 헤더로 흘리고 모든 로그에 찍게 하세요.</p>
+<p><strong>② 보존: 뜨거움/차가움 분리.</strong> 전부 검색 가능한 상태로 쌓으면 로그가 비용 누수 톱6이 됩니다(그 글에 추가할 판). 정석은 계층화 —</p>
+<div class="highlight"><pre><span></span><code>최근 7~30일: 중앙 저장소 (검색 가능, 비쌈)
+그 이후:     Object Storage로 내보내기 (싸고, 필요시 재적재)
+법정 보존:   요구 기간만큼 콜드에 (컴플라이언스 확인)
+</code></pre></div>
+
+<p><strong>③ 수집 범위: 앱 로그만이 아니다.</strong> 시스템 로그(journald), 웹서버 액세스 로그, <strong>그리고 감사 추적</strong>(누가 SSH 접속했나 — 배스천 글의 그 로그, 클라우드 API 호출 이력)까지. 특히 감사 로그는 "서버 밖 보전"의 가치가 가장 큰 대상입니다.</p>
+<h2 id="_4">흔한 함정</h2>
+<ul>
+<li><strong>민감정보 유입</strong> — 비밀번호·토큰·주민번호가 로그에 찍혀 중앙으로 모이면, 로그 시스템이 <strong>회사에서 제일 큰 개인정보 저장소</strong>가 됩니다. 앱 단에서 마스킹이 1선, 수집기 필터가 2선.</li>
+<li><strong>수집기 자원 무한정</strong> — 수집기의 버퍼가 디스크를 다 먹거나(디스크 알람의 단골 범인) CPU를 잡아먹는 사고. 버퍼 상한과 수집기 자체 모니터링을 잊지 마세요.</li>
+<li><strong>debug 레벨 전송</strong> — 대역폭·저장 비용이 곱으로 뜁니다. 중앙 전송은 info 이상, debug는 로컬 단기 보관이 일반적 균형.</li>
+<li><strong>시계 불일치</strong> — 서버들의 시간이 어긋나면 중앙에서 타임라인이 뒤섞입니다. NTP 동기화(그리고 로그의 타임존 명시 — cron UTC 글의 그 교훈)가 전제 조건.</li>
+</ul>
+<h2 id="_5">한 줄 정리</h2>
+<p>로그 중앙화는 <strong>"서버는 죽어도 로그는 남는다"</strong>를 구조로 보장하는 일입니다. 앱은 JSON 한 줄로 쓰기만, 수집기가 부치고, 관리형 저장소에서 찾고, 뜨거움/차가움으로 보존을 계층화 — 그리고 trace_id 하나가 열 대의 서버를 한 편의 이야기로 만들어줍니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --cloud</div><a href="../p/snapshot-vs-image.html"><span class="g">&#10095;</span>스냅샷과 서버 이미지, 뭘 찍는 게 다른가 — 복구 시나리오로 가르기</a><a href="../p/alert-design.html"><span class="g">&#10095;</span>알람이 100개 오면 0개 온 것과 같다 — 알람 피로 없는 모니터링 설계</a><a href="../p/region-az.html"><span class="g">&#10095;</span>리전과 가용영역 — &#x27;어디까지 죽으면 우리도 죽나&#x27;를 정하는 일</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/strace.html"><span class="lbl">newer</span>프로세스가 뭘 하다 멈췄는지 훔쳐보기 — strace 입문</a><a href="../p/llm-gateway.html" style="text-align:right"><span class="lbl">older</span>LLM 호출을 한 문으로 모아라 — 게이트웨이(릴레이) 패턴</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

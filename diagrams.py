@@ -1513,3 +1513,80 @@ _add("lora-adapter", "LoRA — 원본은 얼리고 포스트잇만 학습",
 <text x="496" y="164" class="dg-ts">병합 or 다중 장착</text>
 <text x="14" y="254" class="dg-ts">r=16에서 시작 · QLoRA(원본 4bit)면 소비자용 GPU 1장 · 지식 주입은 여전히 RAG</text>
 </svg>""")
+
+
+# ── 8차 배치 ──────────────────────────────────────────────────
+_add("strace-tap", "strace — 프로세스와 커널 사이 도청",
+     "모든 실질적 행동은 시스템콜입니다. 멈춘 프로세스의 마지막 미완성 줄이 곧 진단서예요.",
+     "strace",
+     '<svg viewBox="0 0 640 250" role="img"><style>' + _COMMON + """
+.st-c{animation:st-c 3.6s ease-in-out infinite;}
+.st-tap{animation:st-t 3.6s ease-in-out infinite;}
+@keyframes st-c{0%{transform:translateX(0);opacity:0}10%{opacity:1}
+ 42%{transform:translateX(300px);opacity:1}50%{opacity:0}100%{opacity:0}}
+@keyframes st-t{0%,30%{opacity:.4}45%,70%{opacity:1}100%{opacity:.4}}
+</style>
+""" + _icon("box", 70, 76, 1.7, halo=True) + """
+<text x="36" y="126" class="dg-t">프로세스</text>
+<text x="36" y="142" class="dg-ts">pid 12345</text>
+""" + _icon("server", 566, 76, 1.7, halo=True) + """
+<text x="544" y="126" class="dg-t">커널</text>
+<line x1="112" y1="76" x2="522" y2="76" class="dg-arrow"/>
+<g class="dg-anim st-c"><circle cx="150" cy="76" r="7" fill="var(--dg-green)"/></g>
+<text x="200" y="60" class="dg-lab2">openat("config.yml") · read(7, ...) · connect(...)</text>
+<g class="dg-anim st-tap">
+<line x1="318" y1="80" x2="318" y2="140" stroke="var(--dg-red)" stroke-width="2" stroke-dasharray="5 4"/>
+""" + _icon("doc", 318, 168, 1.25, halo=True) + """
+<text x="348" y="164" class="dg-key" font-size="12.5">strace -p 12345</text>
+<text x="348" y="182" class="dg-ts">대화를 도청 — 마지막 미완성 줄이 진단서</text>
+</g>
+<text x="14" y="226" class="dg-ts">용법 셋: 멈춤 → -p 붙어 마지막 줄(+ /proc/PID/fd) · 파일 → -e trace=openat · 성능 → -c 집계</text>
+<text x="14" y="244" class="dg-ts">대상이 매 콜마다 정지·재개 — 운영에선 짧게 (timeout 10 strace ...)</text>
+</svg>""")
+
+_add("log-pipeline", "로그 중앙화 — 우체국 모델",
+     "앱은 쓰기만, 수집기가 부치고, 중앙에서 찾습니다. 서버가 죽어도 로그는 이미 밖에 있어요.",
+     "log-centralization",
+     _flow("lp", [("앱", "stdout/JSON 쓰기만", "box"),
+                  ("수집기", "tail → 전송·버퍼", "gateway"),
+                  ("중앙 저장", "관리형 · 보존 계층화", "database"),
+                  ("검색·알람", "trace_id 추적", "doc")],
+           "핫 7~30일 / 콜드는 Object Storage · 민감정보는 앱단 마스킹 · debug는 로컬만"))
+
+_add("llm-gateway", "LLM 게이트웨이 — 호출의 배스천",
+     "키는 게이트웨이만 알고, 앱은 base URL만 바꿉니다. 계측·폴백·정책이 한 문에서 처리돼요.",
+     "llm-gateway",
+     '<svg viewBox="0 0 640 300" role="img"><style>' + _COMMON + """
+.lg-a{animation:lg-a 4s ease-in-out infinite;}
+.lg-b{animation:lg-b 4s ease-in-out infinite;}
+.lg-fb{opacity:0;animation:lg-f 4s ease-in-out infinite;}
+@keyframes lg-a{0%{transform:translate(0,0);opacity:0}8%{opacity:1}
+ 38%{transform:translate(150px,0);opacity:1}46%{opacity:0}100%{opacity:0}}
+@keyframes lg-b{0%,48%{transform:translate(0,0);opacity:0}56%{opacity:1}
+ 84%{transform:translate(148px,-40px);opacity:1}92%{opacity:0}100%{opacity:0}}
+@keyframes lg-f{0%,58%{opacity:0}66%,90%{opacity:1}100%{opacity:0}}
+</style>
+""" + _icon("box", 46, 46, 1.2, halo=True) + """
+""" + _icon("box", 46, 116, 1.2, halo=True) + """
+""" + _icon("box", 46, 186, 1.2, halo=True) + """
+<text x="20" y="230" class="dg-ts">앱들 — 내부 토큰만</text>
+<line x1="78" y1="116" x2="230" y2="116" class="dg-arrow"/>
+<g class="dg-anim lg-a"><circle cx="110" cy="116" r="7" fill="var(--dg-green)"/></g>
+<rect x="230" y="56" width="180" height="130" rx="14" class="dg-box"/>
+""" + _icon("gateway", 268, 96, 1.5, halo=True) + """
+<text x="300" y="90" class="dg-tl" font-size="13">게이트웨이</text>
+<text x="300" y="108" class="dg-ts">/v1/messages</text>
+<text x="246" y="140" class="dg-lab2">키 보관 · 계측 · 정책</text>
+<text x="246" y="158" class="dg-lab2">마스킹 · 예산 · 폴백</text>
+<text x="240" y="230" class="dg-ts">무상태·2대 이상 · 우회는 이그레스로 차단</text>
+<line x1="410" y1="96" x2="530" y2="66" class="dg-arrow"/>
+<line x1="410" y1="136" x2="530" y2="166" class="dg-arrow"/>
+<g class="dg-anim lg-b"><circle cx="420" cy="106" r="7" fill="var(--dg-green)"/></g>
+""" + _icon("cloud", 566, 62, 1.4, halo=True) + """
+<text x="540" y="106" class="dg-ts">벤더 A</text>
+""" + _icon("cloud", 566, 162, 1.4, halo=True) + """
+<text x="524" y="206" class="dg-ts">벤더 B / 로컬</text>
+<g class="dg-anim lg-fb"><text x="452" y="152" class="dg-warn" font-size="11.5">429/5xx → 폴백</text></g>
+<text x="14" y="262" class="dg-ts">키 유출 반경 = 내부 토큰 하나 · 비용은 서비스별 대시보드 · 스트리밍은 통과시키며 계측</text>
+<text x="14" y="284" class="dg-ts">도입 신호: LLM 쓰는 서비스 2~3개 초과 + "비용 집계 좀 / 키 교체 좀"이 고통이 될 때</text>
+</svg>""")
