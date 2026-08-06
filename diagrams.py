@@ -1590,3 +1590,84 @@ _add("llm-gateway", "LLM 게이트웨이 — 호출의 배스천",
 <text x="14" y="262" class="dg-ts">키 유출 반경 = 내부 토큰 하나 · 비용은 서비스별 대시보드 · 스트리밍은 통과시키며 계측</text>
 <text x="14" y="284" class="dg-ts">도입 신호: LLM 쓰는 서비스 2~3개 초과 + "비용 집계 좀 / 키 교체 좀"이 고통이 될 때</text>
 </svg>""")
+
+
+# ── 9차 배치 ──────────────────────────────────────────────────
+_add("requests-limits", "requests는 예약석, limits는 천장",
+     "예약보다 덜 쓰는 건 자유, 천장을 치면 CPU는 감속·메모리는 즉사(137). 이 비대칭이 설정 요령의 전부입니다.",
+     "requests-limits",
+     _two("rl", "requests — 스케줄러의 예약", [
+         ("dot", "배치 기준은 '실사용'이 아니라 예약 합계"),
+         ("no", "과예약 → 노드 한가한데 Pending"),
+         ("no", "과소예약 → 다 쓰기 시작하면 퇴출 위험"),
+         ("ok", "적정값은 kubectl top (평상시 사용량)"),
+     ], "limits — 런타임의 천장", [
+         ("no", "CPU 도달 → 스로틀(감속) — p95 미스터리"),
+         ("no", "메모리 도달 → OOMKilled 137 (즉사)"),
+         ("ok", "메모리는 requests=limits (보호+예측)"),
+         ("ok", "CPU limits는 대개 생략 — 버스트 허용"),
+     ], "QoS: requests=limits → Guaranteed(마지막까지 보호) · 둘 다 없음 → BestEffort(1순위 퇴출)",
+        licon="doc", ricon="firewall"))
+
+_add("peering-vs-tgw", "직통선 그물 vs 중앙 교환기",
+     "피어링은 N×(N−1)/2개의 선과 전이 불가, TGW는 연결 N개와 중앙 통제. VPC가 늘면 답이 바뀝니다.",
+     "peering-vs-tgw",
+     '<svg viewBox="0 0 640 280" role="img"><style>' + _COMMON + """
+.pt-l{stroke:var(--dg-red);stroke-width:1.6;opacity:.55;}
+.pt-h{animation:pt-h 3.4s ease-in-out infinite;}
+@keyframes pt-h{0%,100%{opacity:.5}50%{opacity:1}}
+</style>
+<text x="14" y="24" class="dg-tl">피어링 — 완전 그물 (VPC 4개 = 선 6개)</text>
+<line x1="80" y1="70" x2="230" y2="70" class="pt-l"/>
+<line x1="80" y1="70" x2="80" y2="190" class="pt-l"/>
+<line x1="80" y1="70" x2="230" y2="190" class="pt-l"/>
+<line x1="230" y1="70" x2="80" y2="190" class="pt-l"/>
+<line x1="230" y1="70" x2="230" y2="190" class="pt-l"/>
+<line x1="80" y1="190" x2="230" y2="190" class="pt-l"/>
+""" + _icon("cloud", 80, 70, 1.25, halo=True) + _icon("cloud", 230, 70, 1.25, halo=True) + """
+""" + _icon("cloud", 80, 190, 1.25, halo=True) + _icon("cloud", 230, 190, 1.25, halo=True) + """
+<text x="60" y="236" class="dg-ts">10개면 45개 — 전이 불가(A–B–C 못 건너감)</text>
+<text x="356" y="24" class="dg-tl">TGW — 교환기 (연결 4개)</text>
+<line x1="420" y1="70" x2="500" y2="130" class="dg-arrow"/>
+<line x1="580" y1="70" x2="500" y2="130" class="dg-arrow"/>
+<line x1="420" y1="190" x2="500" y2="130" class="dg-arrow"/>
+<line x1="580" y1="190" x2="500" y2="130" class="dg-arrow"/>
+""" + _icon("cloud", 420, 70, 1.25, halo=True) + _icon("cloud", 580, 70, 1.25, halo=True) + """
+""" + _icon("cloud", 420, 190, 1.25, halo=True) + _icon("cloud", 580, 190, 1.25, halo=True) + """
+<g class="dg-anim pt-h">""" + _icon("gateway", 500, 130, 1.5, halo=True) + """</g>
+<text x="404" y="236" class="dg-ts">전이 가능 · VPN도 허브에 · GB당 요금</text>
+<text x="14" y="266" class="dg-ts">공통 전제: CIDR 중복이면 어느 쪽도 불가 — 대역 계획이 모든 것의 선행 조건</text>
+</svg>""")
+
+_add("sse-stream", "논스트리밍 vs SSE — 같은 30초, 다른 체감",
+     "생성은 원래 한 토큰씩입니다. 모아서 주면 30초 빈 화면, 흘리면 1초부터 글자가 흐르죠.",
+     "sse-streaming",
+     '<svg viewBox="0 0 640 250" role="img"><style>' + _COMMON + """
+.ss-w{animation:ss-w 5s linear infinite;}
+.ss-d1{animation:ss-d 5s linear infinite;}
+.ss-d2{animation:ss-d 5s linear infinite;animation-delay:.5s;}
+.ss-d3{animation:ss-d 5s linear infinite;animation-delay:1s;}
+.ss-d4{animation:ss-d 5s linear infinite;animation-delay:1.5s;}
+@keyframes ss-w{0%,78%{opacity:0}84%,96%{opacity:1}100%{opacity:0}}
+@keyframes ss-d{0%,8%{transform:translateX(0);opacity:0}12%{opacity:1}
+ 50%{transform:translateX(360px);opacity:1}56%{opacity:0}100%{opacity:0}}
+</style>
+<text x="14" y="24" class="dg-tl">논스트리밍 — 30초 빈 화면, 한 방에</text>
+<rect x="14" y="36" width="612" height="72" rx="12" class="dg-box"/>
+""" + _icon("brain", 60, 72, 1.3, halo=True) + """
+""" + _icon("laptop", 574, 72, 1.3, halo=True) + """
+<text x="120" y="66" class="dg-ts">........ 생성 완료까지 대기 ........</text>
+<g class="dg-anim ss-w"><rect x="470" y="58" width="70" height="28" rx="6" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.5"/>
+<text x="480" y="77" class="dg-ts" fill="var(--dg-red)">전문 도착</text></g>
+<text x="120" y="96" class="dg-ts">체감: 죽었나? (TTFT = 전체 시간)</text>
+<text x="14" y="146" class="dg-tl">SSE 스트리밍 — 만들어지는 대로 data: 로</text>
+<rect x="14" y="158" width="612" height="72" rx="12" class="dg-box"/>
+""" + _icon("brain", 60, 194, 1.3, halo=True) + """
+""" + _icon("laptop", 574, 194, 1.3, halo=True) + """
+<g class="dg-anim ss-d1"><circle cx="110" cy="186" r="6" fill="var(--dg-green)"/></g>
+<g class="dg-anim ss-d2"><circle cx="110" cy="186" r="6" fill="var(--dg-green)" opacity=".85"/></g>
+<g class="dg-anim ss-d3"><circle cx="110" cy="186" r="6" fill="var(--dg-green)" opacity=".7"/></g>
+<g class="dg-anim ss-d4"><circle cx="110" cy="186" r="6" fill="var(--dg-green)" opacity=".55"/></g>
+<text x="120" y="222" class="dg-ts">체감: 1초부터 글자가 흐름 (TTFT ↓ — 프롬프트 캐싱이 줄이는 그것)</text>
+<text x="14" y="246" class="dg-ts">안 흐르면 배관 수사: proxy_buffering off · gzip 제외 · LB idle 타임아웃</text>
+</svg>""")

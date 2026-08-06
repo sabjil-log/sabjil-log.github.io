@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>쿠버네티스 requests와 limits — 예약석과 천장은 다르다 · 삽질노트</title>
+<meta name="description" content="왜 둘 다 있고, 왜 다르게 잡으라는 걸까요. requests는 스케줄러의 예약, limits는 런타임의 천장 — 이 구분에서 OOMKilled와 스로틀링의 정체까지 풀립니다.">
+<meta property="og:title" content="쿠버네티스 requests와 limits — 예약석과 천장은 다르다 · 삽질노트">
+<meta property="og:description" content="왜 둘 다 있고, 왜 다르게 잡으라는 걸까요. requests는 스케줄러의 예약, limits는 런타임의 천장 — 이 구분에서 OOMKilled와 스로틀링의 정체까지 풀립니다.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/requests-limits.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/requests-limits.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/requests-limits.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/requests-limits.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html" class="on">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-08-07</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>쿠버네티스 requests와 limits — 예약석과 천장은 다르다</h1><blockquote>
+<p><strong>한 줄 요약:</strong> <strong>requests는 예약석</strong>(스케줄러가 "이만큼 빈 노드"를 찾는 기준), <strong>limits는 천장</strong>(런타임이 "여기까지만"을 집행하는 상한)입니다. 예약보다 덜 쓰는 건 자유, 천장을 치면 — <strong>CPU는 감속(스로틀), 메모리는 즉사(OOMKilled 137)</strong>. 이 비대칭이 설정 요령의 전부예요.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">requests는 예약석, limits는 천장</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><circle cx="48.0" cy="40.0" r="25.4" fill="var(--dg-blue-s)"/><g transform="translate(29.6,21.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="76" y="46" class="dg-tl">requests — 스케줄러의 예약</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--muted)">·</text><text x="44" y="76" class="dg-ts">배치 기준은 '실사용'이 아니라 예약 합계</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="100" class="dg-ts">과예약 → 노드 한가한데 Pending</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="124" class="dg-ts">과소예약 → 다 쓰기 시작하면 퇴출 위험</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="148" class="dg-ts">적정값은 kubectl top (평상시 사용량)</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><circle cx="362.0" cy="40.0" r="25.4" fill="var(--dg-red-s)"/><g transform="translate(343.6,21.6) scale(1.150)">
+<rect x="3" y="6" width="26" height="20" rx="2" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.7"/>
+<path d="M3 12.6 h26 M3 19.3 h26" stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M11 6 v6.6 M20 6 v6.6 M7 12.6 v6.7 M16 12.6 v6.7 M24.5 12.6 v6.7 M11 19.3 v6.7 M20 19.3 v6.7"
+      stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M16 13 c2.6 2.4 3.4 4.2 3.4 6 a3.4 3.4 0 0 1 -6.8 0 c0 -1.8 0.8 -3.6 3.4 -6 z"
+      fill="var(--dg-amber)" stroke="var(--dg-red)" stroke-width="1.3"/></g><text x="390" y="46" class="dg-tl">limits — 런타임의 천장</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="76" class="dg-ts">CPU 도달 → 스로틀(감속) — p95 미스터리</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="100" class="dg-ts">메모리 도달 → OOMKilled 137 (즉사)</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="124" class="dg-ts">메모리는 requests=limits (보호+예측)</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="148" class="dg-ts">CPU limits는 대개 생략 — 버스트 허용</text><text x="12" y="182" class="dg-ts">QoS: requests=limits → Guaranteed(마지막까지 보호) · 둘 다 없음 → BestEffort(1순위 퇴출)</text></svg><figcaption>예약보다 덜 쓰는 건 자유, 천장을 치면 CPU는 감속·메모리는 즉사(137). 이 비대칭이 설정 요령의 전부입니다.</figcaption></figure>
+<h2 id="_1">왜 두 개인가 — 극장 비유</h2>
+<p>Pod를 극장 관객이라 합시다.</p>
+<ul>
+<li><strong>requests</strong> = <strong>예매한 좌석 수.</strong> 극장(노드)은 예매 합계가 좌석 수를 넘지 않게만 입장시킵니다. 스케줄러가 보는 건 <strong>이 숫자뿐</strong> — 실제로 얼마나 쓰는지가 아니라, 얼마나 예약했는지로 배치를 결정해요.</li>
+<li><strong>limits</strong> = <strong>한 사람이 최대로 차지할 수 있는 좌석 수.</strong> 옆자리가 비면 팔걸이 넘어 넓게 앉아도 되는데(버스트), 이 천장까지만.</li>
+</ul>
+<p>둘을 나눈 이유가 여기 있습니다 — <strong>배치는 보수적으로(예약 기준), 실행은 유연하게(빈 자원 활용).</strong> 하나로 합치면 이 유연성이 사라지죠.</p>
+<h2 id="cpu">천장을 치면: CPU와 메모리의 결정적 차이</h2>
+<p><strong>CPU limits 도달 → 스로틀링(감속).</strong> CPU는 압축 가능한 자원이라, 천장을 치면 커널이 그 컨테이너를 <strong>잠깐씩 멈춰가며</strong> 할당량 안에 가둡니다. 죽지는 않는데 <strong>느려집니다</strong> — p95가 이유 없이 튀는데 CPU 사용률 그래프는 멀쩡해 보이는 미스터리의 단골 범인. 사용률이 아니라 <strong>스로틀 지표</strong>(<code>container_cpu_cfs_throttled_*</code>)를 봐야 잡힙니다.</p>
+<p><strong>메모리 limits 도달 → OOMKilled(즉사).</strong> 메모리는 뺏을 수 없는 자원이라 감속이 불가능 — 천장을 치는 순간 컨테이너가 죽습니다. CrashLoopBackOff 글의 <strong>Exit Code 137</strong>, OOM Killer 글의 cgroup 버전이 바로 이겁니다. describe에서 <code>Last State: OOMKilled</code>가 그 사망진단서고요.</p>
+<p>이 비대칭에서 실무 정석이 나옵니다.</p>
+<div class="highlight"><pre data-lang="yaml"><span></span><code><span class="nt">resources</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">requests</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">250m</span><span class="w">        </span><span class="c1"># 예약 — 평상시 사용량 기준</span>
+<span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512Mi</span>
+<span class="w">  </span><span class="nt">limits</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512Mi</span><span class="w">    </span><span class="c1"># 메모리: requests = limits (즉사 예방이 최우선)</span>
+<span class="w">    </span><span class="c1"># cpu limits는 생략 — 스로틀링 미스터리를 피하고 버스트 허용</span>
+</code></pre></div>
+
+<ul>
+<li><strong>메모리는 requests=limits</strong>로: 예약만큼은 확실히 보장받고, 천장 초과 즉사의 변수를 없앱니다.</li>
+<li><strong>CPU limits는 생략(또는 넉넉히)</strong>이 요즘 통설: 남는 CPU를 쓰는 건 공짜 성능이고, 필요하면 스로틀 대신 이웃의 requests가 보장선을 지켜줍니다. (멀티테넌트처럼 공평성이 계약인 환경은 예외.)</li>
+</ul>
+<h2 id="requests-pending">requests가 만드는 두 번째 문제: Pending과 과예약</h2>
+<p>requests는 스케줄링의 화폐라서, 잘못 잡으면 두 방향으로 사고가 납니다.</p>
+<ul>
+<li><strong>너무 크게</strong> → 노드가 실제론 한가한데 "예약 합계가 꽉 차서" 새 Pod가 <strong>Pending</strong>(kubectl 글의 describe Events에 <code>Insufficient cpu</code>). 극장이 텅 비었는데 예매가 매진인 상황 — 오토스케일링 비용도 이 허수 기준으로 불어납니다.</li>
+<li><strong>너무 작게</strong> → 배치는 잘 되는데 다 같이 진짜로 쓰기 시작하면 노드가 붐빕니다. 이때 누굴 먼저 쫓아내는가가 <strong>QoS 등급</strong> — requests=limits면 Guaranteed(마지막까지 보호), 아니면 Burstable, 둘 다 없으면 BestEffort(1순위 퇴출). 메모리 requests=limits 권장에는 이 보호 등급 확보의 의미도 있습니다.</li>
+</ul>
+<p>적정값은 관측에서 나옵니다 — <code>kubectl top pod</code>로 실제 사용량을 보고, <strong>requests는 평상시 사용량 근처, 메모리 limits는 피크+여유</strong>로. 감이 아니라 지표로 (평가 루프 글의 그 원칙이 리소스에도).</p>
+<h2 id="_2">진단 치트시트</h2>
+<div class="highlight"><pre><span></span><code>Pod가 Pending            → describe Events: Insufficient cpu/memory → requests 과예약 점검
+137 / OOMKilled          → 메모리 limits 도달 → 피크 관측 후 상향 (누수면 코드 — 우상향 판별법)
+느린데 CPU는 한가해 보임   → 스로틀 지표 확인 → cpu limits 제거/상향
+노드는 한가한데 배치 안 됨 → kubectl describe node: Allocated resources (예약 합계) 확인
+</code></pre></div>
+
+<h2 id="_3">한 줄 정리</h2>
+<p><strong>requests = 스케줄러의 예약, limits = 런타임의 천장.</strong> 천장의 결과는 CPU 감속 / 메모리 즉사로 다르니 — <strong>메모리는 requests=limits, CPU limits는 신중하게(대개 생략).</strong> 그리고 숫자는 감이 아니라 <code>kubectl top</code>과 스로틀 지표가 정해줍니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --troubleshooting</div><a href="../p/fd-limit.html"><span class="g">&#10095;</span>Too many open files — 파일도 안 여는데 왜 한도 초과일까</a><a href="../p/port-in-use.html"><span class="g">&#10095;</span>죽였는데 포트가 안 풀린다 — Address already in use 3분 수사</a><a href="../p/docker-volumes.html"><span class="g">&#10095;</span>컨테이너를 지웠더니 DB가 날아갔다 — 볼륨과 바인드 마운트 제대로 알기</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/sse-streaming.html"><span class="lbl">newer</span>글자가 흘러나오는 원리 — LLM 스트리밍(SSE) 제대로 다루기</a><a href="../p/peering-vs-tgw.html" style="text-align:right"><span class="lbl">older</span>VPC가 늘어나면 연결이 지옥이 된다 — 피어링 vs Transit Gateway</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

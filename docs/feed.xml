@@ -5,6 +5,27 @@
   <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
   <language>ko</language>
     <item>
+      <title>글자가 흘러나오는 원리 — LLM 스트리밍(SSE) 제대로 다루기</title>
+      <link>https://sabjil-log.github.io/p/sse-streaming.html</link>
+      <guid>https://sabjil-log.github.io/p/sse-streaming.html</guid>
+      <pubDate>Fri, 07 Aug 2026 00:00:00 -0000</pubDate>
+      <description>생성이 원래 한 토큰씩이라, 모아서 주는 쪽이 오히려 인위적입니다. SSE의 생김새, 체감 속도의 두 지표, 그리고 중간 프록시들이 스트림을 망치는 지점들.</description>
+    </item>
+    <item>
+      <title>쿠버네티스 requests와 limits — 예약석과 천장은 다르다</title>
+      <link>https://sabjil-log.github.io/p/requests-limits.html</link>
+      <guid>https://sabjil-log.github.io/p/requests-limits.html</guid>
+      <pubDate>Fri, 07 Aug 2026 00:00:00 -0000</pubDate>
+      <description>왜 둘 다 있고, 왜 다르게 잡으라는 걸까요. requests는 스케줄러의 예약, limits는 런타임의 천장 — 이 구분에서 OOMKilled와 스로틀링의 정체까지 풀립니다.</description>
+    </item>
+    <item>
+      <title>VPC가 늘어나면 연결이 지옥이 된다 — 피어링 vs Transit Gateway</title>
+      <link>https://sabjil-log.github.io/p/peering-vs-tgw.html</link>
+      <guid>https://sabjil-log.github.io/p/peering-vs-tgw.html</guid>
+      <pubDate>Fri, 07 Aug 2026 00:00:00 -0000</pubDate>
+      <description>VPC 두세 개까진 피어링이 답인데, 열 개가 되면 연결이 45개가 됩니다. 직통 전화선과 중앙 교환기 — 갈아탈 시점과 각각의 함정을 정리했어요.</description>
+    </item>
+    <item>
       <title>프로세스가 뭘 하다 멈췄는지 훔쳐보기 — strace 입문</title>
       <link>https://sabjil-log.github.io/p/strace.html</link>
       <guid>https://sabjil-log.github.io/p/strace.html</guid>
@@ -122,26 +143,5 @@
       <guid>https://sabjil-log.github.io/p/mtu-fragmentation.html</guid>
       <pubDate>Wed, 22 Jul 2026 00:00:00 -0000</pubDate>
       <description>핑은 되고 작은 페이지는 열리는데 큰 페이지만 멈춘다면 MTU 문제입니다. 봉투 크기 비유로 원인과 처방을 정리했어요.</description>
-    </item>
-    <item>
-      <title>프롬프트를 감으로 고치면 안 되는 이유 — LLM 앱 평가 만들기</title>
-      <link>https://sabjil-log.github.io/p/llm-eval.html</link>
-      <guid>https://sabjil-log.github.io/p/llm-eval.html</guid>
-      <pubDate>Wed, 22 Jul 2026 00:00:00 -0000</pubDate>
-      <description>어제 고친 게 오늘 깨져도 모르는 게 LLM 앱의 기본 상태입니다. 50문항 골든셋과 평가 루프만 있으면 감이 숫자로 바뀝니다.</description>
-    </item>
-    <item>
-      <title>[그림 한 장] 요청 한 번의 VPC 여정 — 클릭에서 응답까지 무슨 일이 벌어지나</title>
-      <link>https://sabjil-log.github.io/p/vpc-journey-visual.html</link>
-      <guid>https://sabjil-log.github.io/p/vpc-journey-visual.html</guid>
-      <pubDate>Tue, 21 Jul 2026 00:00:00 -0000</pubDate>
-      <description>사용자가 버튼을 누른 순간부터 응답이 돌아오기까지 — DNS, LB, 방화벽, private 서브넷, DB, NAT이 각자 무슨 일을 하는지 움직이는 그림 하나에 담았습니다.</description>
-    </item>
-    <item>
-      <title>[그림 한 장] 쿠버네티스 Service와 Ingress — 트래픽이 Pod까지 가는 길</title>
-      <link>https://sabjil-log.github.io/p/service-ingress-visual.html</link>
-      <guid>https://sabjil-log.github.io/p/service-ingress-visual.html</guid>
-      <pubDate>Tue, 21 Jul 2026 00:00:00 -0000</pubDate>
-      <description>Ingress는 도메인·경로를 보는 정문 안내판, Service는 갈아타는 Pod들의 고정 전화번호. 움직이는 그림 한 장으로 트래픽의 전체 여정을 담았어요.</description>
     </item>
 </channel></rss>

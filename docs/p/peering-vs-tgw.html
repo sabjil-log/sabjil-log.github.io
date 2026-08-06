@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VPC가 늘어나면 연결이 지옥이 된다 — 피어링 vs Transit Gateway · 삽질노트</title>
+<meta name="description" content="VPC 두세 개까진 피어링이 답인데, 열 개가 되면 연결이 45개가 됩니다. 직통 전화선과 중앙 교환기 — 갈아탈 시점과 각각의 함정을 정리했어요.">
+<meta property="og:title" content="VPC가 늘어나면 연결이 지옥이 된다 — 피어링 vs Transit Gateway · 삽질노트">
+<meta property="og:description" content="VPC 두세 개까진 피어링이 답인데, 열 개가 되면 연결이 45개가 됩니다. 직통 전화선과 중앙 교환기 — 갈아탈 시점과 각각의 함정을 정리했어요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/peering-vs-tgw.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/peering-vs-tgw.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/peering-vs-tgw.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/peering-vs-tgw.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html" class="on">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-08-07</span><a class="chip" href="../c/network.html">--network</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>VPC가 늘어나면 연결이 지옥이 된다 — 피어링 vs Transit Gateway</h1><blockquote>
+<p><strong>한 줄 요약:</strong> <strong>피어링은 VPC 둘 사이의 직통 전화선</strong>, <strong>Transit Gateway(TGW)는 모두가 꽂히는 중앙 교환기</strong>입니다. VPC가 N개면 피어링은 연결이 <strong>N×(N−1)/2개</strong>로 폭발하고(10개면 45개), TGW는 <strong>N개</strong>로 끝나죠 — MCP 글의 그 M×N 문제가 네트워크에서 재현되는 겁니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">직통선 그물 vs 중앙 교환기</div><svg viewBox="0 0 640 280" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.pt-l{stroke:var(--dg-red);stroke-width:1.6;opacity:.55;}
+.pt-h{animation:pt-h 3.4s ease-in-out infinite;}
+@keyframes pt-h{0%,100%{opacity:.5}50%{opacity:1}}
+</style>
+<text x="14" y="24" class="dg-tl">피어링 — 완전 그물 (VPC 4개 = 선 6개)</text>
+<line x1="80" y1="70" x2="230" y2="70" class="pt-l"/>
+<line x1="80" y1="70" x2="80" y2="190" class="pt-l"/>
+<line x1="80" y1="70" x2="230" y2="190" class="pt-l"/>
+<line x1="230" y1="70" x2="80" y2="190" class="pt-l"/>
+<line x1="230" y1="70" x2="230" y2="190" class="pt-l"/>
+<line x1="80" y1="190" x2="230" y2="190" class="pt-l"/>
+<circle cx="80.0" cy="70.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(60.0,50.0) scale(1.250)">
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g><circle cx="230.0" cy="70.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(210.0,50.0) scale(1.250)">
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g>
+<circle cx="80.0" cy="190.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(60.0,170.0) scale(1.250)">
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g><circle cx="230.0" cy="190.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(210.0,170.0) scale(1.250)">
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g>
+<text x="60" y="236" class="dg-ts">10개면 45개 — 전이 불가(A–B–C 못 건너감)</text>
+<text x="356" y="24" class="dg-tl">TGW — 교환기 (연결 4개)</text>
+<line x1="420" y1="70" x2="500" y2="130" class="dg-arrow"/>
+<line x1="580" y1="70" x2="500" y2="130" class="dg-arrow"/>
+<line x1="420" y1="190" x2="500" y2="130" class="dg-arrow"/>
+<line x1="580" y1="190" x2="500" y2="130" class="dg-arrow"/>
+<circle cx="420.0" cy="70.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(400.0,50.0) scale(1.250)">
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g><circle cx="580.0" cy="70.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(560.0,50.0) scale(1.250)">
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g>
+<circle cx="420.0" cy="190.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(400.0,170.0) scale(1.250)">
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g><circle cx="580.0" cy="190.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(560.0,170.0) scale(1.250)">
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g>
+<g class="dg-anim pt-h"><circle cx="500.0" cy="130.0" r="31.0" fill="var(--dg-blue-s)"/><g transform="translate(476.0,106.0) scale(1.500)">
+<path d="M5 29 V13 a11 11 0 0 1 22 0 v16 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.8"/>
+<path d="M11 29 V15 a5 5 0 0 1 10 0 v14 z" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.7"/>
+<circle cx="19" cy="22" r="1.2" fill="var(--dg-blue)"/></g></g>
+<text x="404" y="236" class="dg-ts">전이 가능 · VPN도 허브에 · GB당 요금</text>
+<text x="14" y="266" class="dg-ts">공통 전제: CIDR 중복이면 어느 쪽도 불가 — 대역 계획이 모든 것의 선행 조건</text>
+</svg><figcaption>피어링은 N×(N−1)/2개의 선과 전이 불가, TGW는 연결 N개와 중앙 통제. VPC가 늘면 답이 바뀝니다.</figcaption></figure>
+<h2 id="_1">피어링 — 직통선의 미덕과 한계</h2>
+<p>피어링은 VPC 두 개를 잇는 가장 단순한 방법입니다. 요청·수락 → <strong>양쪽 라우팅 테이블에 서로의 대역 추가</strong>(서브넷 글의 그 "경로가 정체를 정한다" 원칙) → 끝. 중간 장비가 없어 지연·비용 오버헤드도 최소죠.</p>
+<p>한계는 두 가지가 본질입니다.</p>
+<p><strong>① 전이 불가(non-transitive).</strong> A–B, B–C가 피어링돼 있어도 <strong>A에서 C로는 못 갑니다.</strong> 전화선은 건너 타지지 않아요 — B가 중계해주지 않습니다(그렇게 하라고 라우팅을 꺾어도 피어링은 남의 트래픽을 전달하지 않음). A–C가 필요하면 직통선을 또 놓아야 하죠.</p>
+<p><strong>② 그래서 연결 수 폭발.</strong> 모든 VPC가 서로 통해야 하면 완전 그물(full mesh)이 필요하고, 그 수가 N×(N−1)/2. VPC 4개면 6개 — 견딜 만합니다. 10개면 45개 — 각 연결마다 <strong>양쪽 라우팅 테이블 관리</strong>가 따라오니, 관리하는 건 연결 45개가 아니라 라우팅 항목 수백 개예요. VPC 하나 추가할 때마다 기존 전부와 선을 놓고 라우팅을 고치는 세상이 됩니다.</p>
+<h2 id="transit-gateway">Transit Gateway — 교환기 모델</h2>
+<p>TGW는 발상을 바꿉니다 — 서로 잇지 말고, <strong>전부 하나의 허브에 꽂아라.</strong></p>
+<ul>
+<li>VPC마다 TGW에 <strong>연결(attachment) 하나</strong>. N개 VPC = N개 연결. 새 VPC 추가 = 연결 1 + 라우팅 몇 줄.</li>
+<li><strong>전이가 됩니다</strong> — 허브니까요. A→TGW→C가 기본 동작.</li>
+<li>온프레미스 <strong>VPN·전용선도 같은 허브에</strong> 꽂혀서, "본사↔모든 VPC"가 연결 하나로 해결됩니다. 하이브리드가 얽히는 순간 TGW의 가치가 급등하는 이유.</li>
+<li><strong>TGW 자체의 라우팅 테이블</strong>로 "누가 누구와 통할 수 있는지"를 중앙에서 통제 — 개발 VPC들끼리는 차단하고 공용 서비스 VPC만 열어주는 식의 <strong>세그먼테이션</strong>이 표 하나로 됩니다. 전화선 45개 시절엔 불가능했던 관제죠.</li>
+</ul>
+<p>대가도 명확합니다 — <strong>시간당 + 처리 GB당 요금</strong>(NAT 글의 그 이중 과금 구조와 같은 문법)이 붙고, 홉이 하나 늘어 약간의 지연이 추가됩니다. 대량 트래픽이 상시 흐르는 두 VPC라면, TGW를 쓰더라도 그 구간만 피어링 직통선을 병행하는 하이브리드가 실전 답이 되기도 해요.</p>
+<h2 id="_2">갈아타는 시점 — 숫자보다 신호</h2>
+<p>경험칙은 "VPC 4~5개 또는 온프레미스 연동 등장"인데, 숫자보다 정직한 신호가 있습니다.</p>
+<ul>
+<li>새 VPC 붙이는 작업이 <strong>반나절짜리 라우팅 수술</strong>이 됐다</li>
+<li>"A에서 C 되나요?"에 <strong>그림을 그려봐야</strong> 답할 수 있다</li>
+<li>계정·조직이 나뉘어 VPC가 <strong>계속 늘어날 예정</strong>이다 (MSP라면 사실상 기본값)</li>
+<li>온프레미스/VPN이 <strong>여러 VPC와</strong> 통해야 한다</li>
+</ul>
+<p>NCP도 같은 그림입니다 — VPC Peering이 있고, 허브 역할의 Transit VPC/전용 연결 구성이 대응 개념(이름 지도 글의 원칙대로 세부 스펙은 문서 재확인). 개념 선택 기준은 벤더 불문 동일해요.</p>
+<h2 id="cidr">두 방식 공통의 함정: CIDR 중복</h2>
+<p>피어링이든 TGW든 <strong>대역이 겹치는 VPC는 못 잇습니다.</strong> 라우팅은 목적지 대역으로 길을 고르는데, 양쪽이 다 10.0.0.0/16이면 "10.0.0.5로 가라"가 우리 집인지 남의 집인지 구분이 안 되니까요. 그리고 이 문제는 <strong>나중에 못 고칩니다</strong> — VPC 대역 변경은 사실상 재구축이라서요.</p>
+<p>그래서 연결 계획이 조금이라도 있다면 <strong>처음부터 VPC별 대역 설계</strong>(예: VPC마다 /16을 겹치지 않게 배정, 환경별 대역 규칙)가 피어링/TGW 논쟁보다 먼저입니다. 오늘 글에서 하나만 가져간다면 이겁니다 — <strong>연결의 자유는 CIDR 계획에서 나온다.</strong></p>
+<h2 id="_3">한 줄 정리</h2>
+<p><strong>둘이면 피어링(직통선), 여럿이면 TGW(교환기).</strong> 피어링은 전이 불가 + N² 폭발, TGW는 연결 N개 + 중앙 통제 + GB당 요금. 갈아탈 신호는 "새 VPC 붙이기가 수술이 될 때" — 그리고 어느 쪽이든, <strong>겹치지 않는 CIDR 설계가 모든 것의 선행 조건</strong>입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --network</div><a href="../p/dns-records.html"><span class="g">&#10095;</span>A, CNAME, MX, TXT — 도메인 연결이 안 될 때 봐야 할 레코드들</a><a href="../p/mtu-fragmentation.html"><span class="g">&#10095;</span>VPN 붙이면 특정 사이트만 안 열린다 — MTU와 패킷 조각화</a><a href="../p/service-ingress-visual.html"><span class="g">&#10095;</span>[그림 한 장] 쿠버네티스 Service와 Ingress — 트래픽이 Pod까지 가는 길</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/requests-limits.html"><span class="lbl">newer</span>쿠버네티스 requests와 limits — 예약석과 천장은 다르다</a><a href="../p/strace.html" style="text-align:right"><span class="lbl">older</span>프로세스가 뭘 하다 멈췄는지 훔쳐보기 — strace 입문</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

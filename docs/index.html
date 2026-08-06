@@ -32,7 +32,19 @@
   <nav class="nav"><a href="index.html" class="on">home</a><a href="c/troubleshooting.html">--troubleshooting</a><a href="c/linux.html">--linux</a><a href="c/cloud.html">--cloud</a><a href="c/network.html">--network</a><a href="c/security.html">--security</a><a href="c/ai.html">--ai</a><a href="visual.html">--visual</a><a href="archive.html">--all</a></nav>
 </div></header>
 <div class="wrap"><section class="facade" aria-label="삽질노트"><div class="fac-bar"><span class="fac-dots"></span><span class="fac-title">sabjil-log — bash</span></div><div class="fac-body"><div class="fac-line"><span class="fac-p">$</span> whoami</div><div class="fac-name">삽질노트</div><div class="fac-line"><span class="fac-p">$</span> cat tagline.txt</div><div class="fac-out">삽질해서 배운 걸, 남은 안 삽질하게.<br>리눅스 · 클라우드 · AI — 매일 쌓는 실무 노트</div><div class="fac-line"><span class="fac-p">$</span><span class="cur"></span></div></div></section></div><main class="wrap">
-<section class="list"><div class="search"><span class="sig">grep -i</span><input id="q" type="search" placeholder="&quot;검색어&quot; — 제목·요약·태그" autocomplete="off" spellcheck="false"></div><div class="list-head">최근 글 · 70개</div><article class="entry" data-search="프로세스가 뭘 하다 멈췄는지 훔쳐보기 — strace 입문 로그도 없이 멈춘 프로세스, 소스도 없는 바이너리 — strace는 프로세스와 커널 사이의 대화를 도청해 &#x27;지금 뭘 기다리는지&#x27;를 보여줍니다. 리눅스 linux strace 시스템콜 디버깅 행 트러블슈팅">
+<section class="list"><div class="search"><span class="sig">grep -i</span><input id="q" type="search" placeholder="&quot;검색어&quot; — 제목·요약·태그" autocomplete="off" spellcheck="false"></div><div class="list-head">최근 글 · 73개</div><article class="entry" data-search="글자가 흘러나오는 원리 — llm 스트리밍(sse) 제대로 다루기 생성이 원래 한 토큰씩이라, 모아서 주는 쪽이 오히려 인위적입니다. sse의 생김새, 체감 속도의 두 지표, 그리고 중간 프록시들이 스트림을 망치는 지점들. ai/llm ai sse 스트리밍 ttft 프록시 llm">
+  <div class="meta"><span>2026-08-07</span><a class="chip" href="c/ai.html">--ai</a><span>3 min</span></div>
+  <h2><a href="p/sse-streaming.html"><span class="g">&#10095;</span>글자가 흘러나오는 원리 — LLM 스트리밍(SSE) 제대로 다루기</a></h2>
+  <p class="sum">생성이 원래 한 토큰씩이라, 모아서 주는 쪽이 오히려 인위적입니다. SSE의 생김새, 체감 속도의 두 지표, 그리고 중간 프록시들이 스트림을 망치는 지점들.</p>
+</article><article class="entry" data-search="쿠버네티스 requests와 limits — 예약석과 천장은 다르다 왜 둘 다 있고, 왜 다르게 잡으라는 걸까요. requests는 스케줄러의 예약, limits는 런타임의 천장 — 이 구분에서 oomkilled와 스로틀링의 정체까지 풀립니다. 트러블슈팅 troubleshooting kubernetes requests limits oomkilled 스로틀링 qos">
+  <div class="meta"><span>2026-08-07</span><a class="chip" href="c/troubleshooting.html">--troubleshooting</a><span>3 min</span></div>
+  <h2><a href="p/requests-limits.html"><span class="g">&#10095;</span>쿠버네티스 requests와 limits — 예약석과 천장은 다르다</a></h2>
+  <p class="sum">왜 둘 다 있고, 왜 다르게 잡으라는 걸까요. requests는 스케줄러의 예약, limits는 런타임의 천장 — 이 구분에서 OOMKilled와 스로틀링의 정체까지 풀립니다.</p>
+</article><article class="entry" data-search="vpc가 늘어나면 연결이 지옥이 된다 — 피어링 vs transit gateway vpc 두세 개까진 피어링이 답인데, 열 개가 되면 연결이 45개가 됩니다. 직통 전화선과 중앙 교환기 — 갈아탈 시점과 각각의 함정을 정리했어요. 네트워크 network vpc 피어링 transit gateway 네트워크 설계 허브 ncp aws">
+  <div class="meta"><span>2026-08-07</span><a class="chip" href="c/network.html">--network</a><span>2 min</span></div>
+  <h2><a href="p/peering-vs-tgw.html"><span class="g">&#10095;</span>VPC가 늘어나면 연결이 지옥이 된다 — 피어링 vs Transit Gateway</a></h2>
+  <p class="sum">VPC 두세 개까진 피어링이 답인데, 열 개가 되면 연결이 45개가 됩니다. 직통 전화선과 중앙 교환기 — 갈아탈 시점과 각각의 함정을 정리했어요.</p>
+</article><article class="entry" data-search="프로세스가 뭘 하다 멈췄는지 훔쳐보기 — strace 입문 로그도 없이 멈춘 프로세스, 소스도 없는 바이너리 — strace는 프로세스와 커널 사이의 대화를 도청해 &#x27;지금 뭘 기다리는지&#x27;를 보여줍니다. 리눅스 linux strace 시스템콜 디버깅 행 트러블슈팅">
   <div class="meta"><span>2026-08-05</span><a class="chip" href="c/linux.html">--linux</a><span>3 min</span></div>
   <h2><a href="p/strace.html"><span class="g">&#10095;</span>프로세스가 뭘 하다 멈췄는지 훔쳐보기 — strace 입문</a></h2>
   <p class="sum">로그도 없이 멈춘 프로세스, 소스도 없는 바이너리 — strace는 프로세스와 커널 사이의 대화를 도청해 &#x27;지금 뭘 기다리는지&#x27;를 보여줍니다.</p>

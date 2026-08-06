@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>글자가 흘러나오는 원리 — LLM 스트리밍(SSE) 제대로 다루기 · 삽질노트</title>
+<meta name="description" content="생성이 원래 한 토큰씩이라, 모아서 주는 쪽이 오히려 인위적입니다. SSE의 생김새, 체감 속도의 두 지표, 그리고 중간 프록시들이 스트림을 망치는 지점들.">
+<meta property="og:title" content="글자가 흘러나오는 원리 — LLM 스트리밍(SSE) 제대로 다루기 · 삽질노트">
+<meta property="og:description" content="생성이 원래 한 토큰씩이라, 모아서 주는 쪽이 오히려 인위적입니다. SSE의 생김새, 체감 속도의 두 지표, 그리고 중간 프록시들이 스트림을 망치는 지점들.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/sse-streaming.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/sse-streaming.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/sse-streaming.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/sse-streaming.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-08-07</span><a class="chip" href="../c/ai.html">--ai</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>글자가 흘러나오는 원리 — LLM 스트리밍(SSE) 제대로 다루기</h1><blockquote>
+<p><strong>한 줄 요약:</strong> LLM은 원래 <strong>한 토큰씩</strong> 만듭니다(다음 토큰 뽑기의 반복 — temperature 글의 그것). 스트리밍은 특별한 기능이 아니라 <strong>만들어지는 대로 흘려보내는 것</strong>이고, 그 표준 배관이 SSE(Server-Sent Events)예요. 체감 속도는 <strong>첫 토큰까지(TTFT)</strong>가 지배하고, 사고는 대부분 <strong>중간 프록시의 버퍼링</strong>에서 납니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">논스트리밍 vs SSE — 같은 30초, 다른 체감</div><svg viewBox="0 0 640 250" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.ss-w{animation:ss-w 5s linear infinite;}
+.ss-d1{animation:ss-d 5s linear infinite;}
+.ss-d2{animation:ss-d 5s linear infinite;animation-delay:.5s;}
+.ss-d3{animation:ss-d 5s linear infinite;animation-delay:1s;}
+.ss-d4{animation:ss-d 5s linear infinite;animation-delay:1.5s;}
+@keyframes ss-w{0%,78%{opacity:0}84%,96%{opacity:1}100%{opacity:0}}
+@keyframes ss-d{0%,8%{transform:translateX(0);opacity:0}12%{opacity:1}
+ 50%{transform:translateX(360px);opacity:1}56%{opacity:0}100%{opacity:0}}
+</style>
+<text x="14" y="24" class="dg-tl">논스트리밍 — 30초 빈 화면, 한 방에</text>
+<rect x="14" y="36" width="612" height="72" rx="12" class="dg-box"/>
+<circle cx="60.0" cy="72.0" r="27.8" fill="var(--dg-violet-s)"/><g transform="translate(39.2,51.2) scale(1.300)">
+<path d="M16 5 a6 6 0 0 0 -6 6 a5 5 0 0 0 -2 9 a5.5 5.5 0 0 0 8 6 a5.5 5.5 0 0 0 8 -6 a5 5 0 0 0 -2 -9 a6 6 0 0 0 -6 -6 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.8"/>
+<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.4" stroke-linecap="round"/></g>
+<circle cx="574.0" cy="72.0" r="27.8" fill="var(--dg-blue-s)"/><g transform="translate(553.2,51.2) scale(1.300)">
+<rect x="4" y="4" width="24" height="16" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="6.5" y="6.5" width="19" height="11" rx="1" fill="var(--dg-screen)"/>
+<path d="M1.5 22 h29 l-2.5 3.5 H4 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/></g>
+<text x="120" y="66" class="dg-ts">........ 생성 완료까지 대기 ........</text>
+<g class="dg-anim ss-w"><rect x="470" y="58" width="70" height="28" rx="6" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.5"/>
+<text x="480" y="77" class="dg-ts" fill="var(--dg-red)">전문 도착</text></g>
+<text x="120" y="96" class="dg-ts">체감: 죽었나? (TTFT = 전체 시간)</text>
+<text x="14" y="146" class="dg-tl">SSE 스트리밍 — 만들어지는 대로 data: 로</text>
+<rect x="14" y="158" width="612" height="72" rx="12" class="dg-box"/>
+<circle cx="60.0" cy="194.0" r="27.8" fill="var(--dg-violet-s)"/><g transform="translate(39.2,173.2) scale(1.300)">
+<path d="M16 5 a6 6 0 0 0 -6 6 a5 5 0 0 0 -2 9 a5.5 5.5 0 0 0 8 6 a5.5 5.5 0 0 0 8 -6 a5 5 0 0 0 -2 -9 a6 6 0 0 0 -6 -6 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.8"/>
+<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.4" stroke-linecap="round"/></g>
+<circle cx="574.0" cy="194.0" r="27.8" fill="var(--dg-blue-s)"/><g transform="translate(553.2,173.2) scale(1.300)">
+<rect x="4" y="4" width="24" height="16" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="6.5" y="6.5" width="19" height="11" rx="1" fill="var(--dg-screen)"/>
+<path d="M1.5 22 h29 l-2.5 3.5 H4 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/></g>
+<g class="dg-anim ss-d1"><circle cx="110" cy="186" r="6" fill="var(--dg-green)"/></g>
+<g class="dg-anim ss-d2"><circle cx="110" cy="186" r="6" fill="var(--dg-green)" opacity=".85"/></g>
+<g class="dg-anim ss-d3"><circle cx="110" cy="186" r="6" fill="var(--dg-green)" opacity=".7"/></g>
+<g class="dg-anim ss-d4"><circle cx="110" cy="186" r="6" fill="var(--dg-green)" opacity=".55"/></g>
+<text x="120" y="222" class="dg-ts">체감: 1초부터 글자가 흐름 (TTFT ↓ — 프롬프트 캐싱이 줄이는 그것)</text>
+<text x="14" y="246" class="dg-ts">안 흐르면 배관 수사: proxy_buffering off · gzip 제외 · LB idle 타임아웃</text>
+</svg><figcaption>생성은 원래 한 토큰씩입니다. 모아서 주면 30초 빈 화면, 흘리면 1초부터 글자가 흐르죠.</figcaption></figure>
+<h2 id="_1">왜 스트리밍이 자연스러운가</h2>
+<p>모델은 답을 다 써놓고 보여주는 게 아니라, <strong>토큰 하나 뽑고 → 그걸 입력에 붙여 다음 토큰 뽑고</strong>를 반복합니다. 즉 서버 입장에선 완성본을 기다렸다 주는 쪽이 오히려 <strong>인위적인 지연</strong>이에요. 30초짜리 긴 답변이면 — 논스트리밍은 30초간 빈 화면, 스트리밍은 1초쯤부터 글자가 흐릅니다. 총 시간은 같아도 체감은 하늘과 땅이죠.</p>
+<p>그래서 지표도 둘로 나뉩니다.</p>
+<ul>
+<li><strong>TTFT(첫 토큰까지)</strong> — 사용자가 "반응했다"고 느끼는 순간. 프롬프트 처리 시간이 지배하고, <strong>프롬프트 캐싱이 줄여주는 게 바로 이것</strong>입니다.</li>
+<li><strong>TPS(초당 토큰)</strong> — 흐르기 시작한 뒤의 속도. 모델 크기·양자화(그 글의 트레이드오프)가 지배.</li>
+</ul>
+<p>대시보드에 "응답 시간" 하나만 있다면 반쪽입니다 — 스트리밍 서비스는 TTFT를 따로 재세요.</p>
+<h2 id="sse">SSE의 생김새 — 생각보다 원시적이다</h2>
+<p>SSE는 그냥 <strong>안 끊는 HTTP 응답</strong>입니다. 헤더 <code>Content-Type: text/event-stream</code> 하나 걸고, 본문을 <code>data:</code> 줄 단위로 계속 흘려보내는 것.</p>
+<div class="highlight"><pre><span></span><code>data: {&quot;type&quot;:&quot;delta&quot;,&quot;text&quot;:&quot;안녕&quot;}
+
+data: {&quot;type&quot;:&quot;delta&quot;,&quot;text&quot;:&quot;하세요&quot;}
+
+data: [DONE]
+</code></pre></div>
+
+<p>빈 줄이 이벤트 구분자고, 벤더들의 LLM API 스트리밍이 전부 이 형식입니다. WebSocket과 비교하면 — SSE는 <strong>단방향(서버→클라)</strong>이고 그냥 HTTP라 프록시·인증·재시도가 평범하게 동작합니다. "답변을 흘려보내기"에는 양방향이 필요 없으니, LLM 응답 용도로는 SSE가 표준으로 굳었어요.</p>
+<p>받는 쪽 뼈대도 단순합니다.</p>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span><span class="o">,</span><span class="w"> </span><span class="nn">json</span>
+
+<span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="s2">&quot;POST&quot;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">body</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">h</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="k">as</span> <span class="n">r</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">r</span><span class="o">.</span><span class="n">iter_lines</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;data: &quot;</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">6</span><span class="p">:]</span>
+        <span class="k">if</span> <span class="n">payload</span> <span class="o">==</span> <span class="s2">&quot;[DONE]&quot;</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="n">chunk</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">chunk_text</span><span class="p">(</span><span class="n">chunk</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>   <span class="c1"># 오는 대로 흘리기</span>
+</code></pre></div>
+
+<p>주의 둘 — <strong>타임아웃을 '전체 응답' 기준으로 걸면 안 됩니다</strong>(긴 생성은 몇 분도 정상이니, idle 타임아웃 즉 '다음 청크까지'로). 그리고 줄 파싱은 직접 자르지 말고 가급적 SDK/라이브러리에 맡기세요 — <code>data:</code>가 여러 줄로 쪼개지는 등 가장자리 케이스가 있습니다.</p>
+<h2 id="_2">사고 다발 지점: 중간에 낀 것들이 스트림을 모은다</h2>
+<p>스트리밍 장애의 전형 — 로컬에선 흐르는데 <strong>운영에 올리면 한참 있다 한 방에 옵니다.</strong> 범인은 거의 항상 중간 계층의 <strong>버퍼링</strong>이에요.</p>
+<ul>
+<li><strong>nginx 리버스 프록시</strong> — 기본이 응답 버퍼링입니다. 스트리밍 경로에 <code>proxy_buffering off;</code> (또는 앱이 <code>X-Accel-Buffering: no</code> 헤더로 요청). LLM 게이트웨이 글의 "통과시키며 계측" 원칙이 nginx 설정으로는 이 한 줄입니다.</li>
+<li><strong>압축</strong> — gzip이 청크를 모아서 압축하려 듭니다. 스트리밍 응답은 압축 제외.</li>
+<li><strong>LB/CDN</strong> — L7 장비(ALB 글의 그 "뜯어 읽는" 계층)의 idle 타임아웃이 조용한 스트림을 끊습니다. 생성이 길어질 수 있으면 타임아웃 상향 + 주기적 keep-alive 코멘트(<code>: ping</code>) 전송이 정석. CDN은 스트리밍 경로를 캐시·버퍼 대상에서 빼고요.</li>
+<li><strong>직접 만든 게이트웨이</strong> — 응답을 다 모아 검사한 뒤 전달하면 스트리밍이 죽습니다. 청크 단위로 통과시키며 필요한 것(토큰 집계, 마스킹)만 흐름 위에서 처리해야 해요.</li>
+</ul>
+<p>증상으로 역추적하면: <strong>한 방에 옴</strong> = 어딘가의 버퍼, <strong>중간에 뚝 끊김</strong> = 어딘가의 idle 타임아웃. curl로 계층을 하나씩 벗겨가며(<code>curl -N 앱직접</code> → LB 경유 → 도메인 경유) 어느 층에서 뭉치는지 찾는 것 — 계층 진단 그대로입니다.</p>
+<h2 id="_3">설계 디테일 둘</h2>
+<p><strong>끊김 처리.</strong> 모바일 환경에서 스트림은 자주 끊깁니다. "이어서 생성"은 지원이 제한적이니, 실전은 <strong>재요청 + 이미 받은 부분 활용</strong>(대화 이력에 붙여 "이어서") 또는 짧은 응답 유도. 결제·기록성 작업이라면 스트림 완료 이벤트를 기준으로 확정하는 습관이 필요하고요.</p>
+<p><strong>구조화 출력과의 긴장.</strong> JSON을 스트리밍하면 <strong>중간엔 항상 깨진 JSON</strong>입니다(닫는 괄호가 아직 안 옴). 화면 표시는 텍스트 델타로 하되, 파싱은 완료 후에 — 또는 부분 파싱 지원 라이브러리를 쓰거나, 도구 호출 스트리밍이면 SDK의 누적 파서에 맡기세요. 구조화 출력 글의 사다리가 스트리밍과 만나면 이 한 가지 규칙이 추가되는 셈입니다.</p>
+<h2 id="_4">한 줄 정리</h2>
+<p>스트리밍은 <strong>생성의 자연스러운 형태</strong>고, SSE는 그걸 나르는 단순한 HTTP 배관입니다. TTFT를 따로 재고(캐싱이 여길 줄임), <strong>중간 계층의 버퍼·타임아웃</strong>(nginx <code>proxy_buffering off</code>, LB idle, gzip 제외)을 청소하고, JSON은 완료 후 파싱 — 글자가 안 흐르면 범인은 모델이 아니라 배관입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/llm-gateway.html"><span class="g">&#10095;</span>LLM 호출을 한 문으로 모아라 — 게이트웨이(릴레이) 패턴</a><a href="../p/lora.html"><span class="g">&#10095;</span>LoRA — 파인튜닝을 가난하게 하는 법</a><a href="../p/structured-output.html"><span class="g">&#10095;</span>LLM 응답 파싱 지옥에서 탈출하기 — 구조화 출력 제대로 쓰는 법</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><span></span><a href="../p/requests-limits.html" style="text-align:right"><span class="lbl">older</span>쿠버네티스 requests와 limits — 예약석과 천장은 다르다</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
