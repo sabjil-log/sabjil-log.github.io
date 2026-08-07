@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>대화가 끝나면 다 잊는 에이전트에게 기억을 달아주기 — 메모리 패턴 4종 · 삽질노트</title>
+<meta name="description" content="LLM의 기억은 컨텍스트 창이 전부고, 창은 닫히면 사라집니다. 이력 유지·요약 접기·외부 저장+검색·작업 노트 — 네 가지 패턴과 각자의 함정.">
+<meta property="og:title" content="대화가 끝나면 다 잊는 에이전트에게 기억을 달아주기 — 메모리 패턴 4종 · 삽질노트">
+<meta property="og:description" content="LLM의 기억은 컨텍스트 창이 전부고, 창은 닫히면 사라집니다. 이력 유지·요약 접기·외부 저장+검색·작업 노트 — 네 가지 패턴과 각자의 함정.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/agent-memory.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/agent-memory.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/agent-memory.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/agent-memory.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-08-08</span><a class="chip" href="../c/ai.html">--ai</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>대화가 끝나면 다 잊는 에이전트에게 기억을 달아주기 — 메모리 패턴 4종</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 모델에게는 저장 버튼이 없습니다 — <strong>기억처럼 보이는 모든 것은 "다음 요청의 프롬프트에 뭘 다시 넣어주느냐"의 설계</strong>예요. 실전 패턴은 넷: <strong>① 이력 그대로 유지 ② 요약으로 접기 ③ 외부 저장 + 검색(장기 기억) ④ 작업 노트(스크래치패드).</strong> 순서대로 수명이 길어지고, 각자 값이 있습니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">에이전트 메모리 패턴 4종</div><svg viewBox="0 0 640 238" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.am-0{animation:am-h 4.0s ease-in-out infinite;animation-delay:0.0s;}
+.am-1{animation:am-h 4.0s ease-in-out infinite;animation-delay:1.0s;}
+.am-2{animation:am-h 4.0s ease-in-out infinite;animation-delay:2.0s;}
+.am-3{animation:am-h 4.0s ease-in-out infinite;animation-delay:3.0s;}
+@keyframes am-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim am-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="60" y="36" class="dg-t">① 이력 유지</text><text x="216" y="36" class="dg-lab2">대화 전체 재전송</text><text x="396" y="36" class="dg-ts">세션 안 · 캐시로 비용 관리</text><rect class="dg-box dg-anim am-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="60" y="84" class="dg-t">② 요약 접기</text><text x="216" y="84" class="dg-lab2">옛 턴 → 요약 교체</text><text x="396" y="84" class="dg-ts">결정·수치는 보존 지정</text><rect class="dg-box dg-anim am-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="60" y="132" class="dg-t">③ 외부 저장+검색</text><text x="216" y="132" class="dg-lab2">사실 추출 → RAG식 주입</text><text x="396" y="132" class="dg-ts">모순 갱신 로직 필수</text><rect class="dg-box dg-anim am-3" x="12" y="156" width="616" height="38" rx="9"/><g transform="translate(17.6,156.6) scale(1.150)">
+<path d="M16 5 a6 6 0 0 0 -6 6 a5 5 0 0 0 -2 9 a5.5 5.5 0 0 0 8 6 a5.5 5.5 0 0 0 8 -6 a5 5 0 0 0 -2 -9 a6 6 0 0 0 -6 -6 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.8"/>
+<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.4" stroke-linecap="round"/></g><text x="60" y="180" class="dg-t">④ 작업 노트</text><text x="216" y="180" class="dg-lab2">상태를 파일로 · 매 스텝 갱신</text><text x="396" y="180" class="dg-ts">리셋돼도 노트로 재개</text><text x="12" y="230" class="dg-ts">저장소는 곧 사용자 프로파일 — 민감정보 필터 + 열람·삭제 수단까지가 설계입니다</text></svg><figcaption>기억처럼 보이는 모든 것은 '다음 프롬프트에 뭘 다시 넣느냐'의 설계입니다. 수명 순서대로 네 가지.</figcaption></figure>
+<h2 id="_1">전제부터 정확히</h2>
+<p>컨텍스트 윈도우 글의 그 책상 — 모델의 "기억"은 그 책상 위가 전부입니다. 대화가 끝나면(창이 닫히면) 책상은 치워지고, 다음 대화의 모델은 <strong>당신을 처음 봅니다.</strong> 챗 서비스가 기억하는 것처럼 보이는 건 전부 애플리케이션이 밖에 저장해뒀다가 <strong>다시 올려주는</strong> 것이고요. 그러니 "에이전트 메모리"는 신비한 기능이 아니라 저장·선별·재주입의 <strong>파이프라인 설계 문제</strong>입니다.</p>
+<h2 id="1">패턴 ① — 이력 그대로: 세션 안의 기본기</h2>
+<p>가장 단순하게, 대화 전체를 매 턴 다시 보냅니다. 프롬프트 캐싱 글에서 봤듯 [시스템+이력] 프리픽스가 캐시를 타니 비용도 생각보다 관리됩니다.</p>
+<p>한계는 둘 — <strong>책상이 참</strong>(긴 세션에서 한도 도달 + 가운데 흐림), 그리고 <strong>세션이 끝나면 끝</strong>. 그래서 나머지 패턴들이 필요해요.</p>
+<h2 id="2">패턴 ② — 요약으로 접기: 세션 늘리기</h2>
+<p>이력이 길어지면 오래된 부분을 요약으로 교체합니다.</p>
+<div class="highlight"><pre><span></span><code>[시스템] + [지난 대화 요약: 사용자는 NCP 마이그레이션 중, VPC 설계는 확정, DB는 미정...]
+        + [최근 원문 10턴] + [새 질문]
+</code></pre></div>
+
+<p>요령 둘 — <strong>최근 몇 턴은 원문 유지</strong>(요약은 뉘앙스를 잃으니 현재 흐름은 생으로), 그리고 <strong>큰 단위로 가끔 접기</strong>(캐싱 글의 경고: 중간을 바꾸면 그 지점부터 캐시가 깨지니, 매 턴 재요약은 최악의 비용 패턴). 함정은 <strong>요약 손실</strong> — "포트는 8080 말고 8443으로 하기로 했잖아요"의 그 결정이 요약에서 빠지면 에이전트는 당당하게 8080으로 돌아갑니다. 결정·제약·수치는 요약 프롬프트에서 명시적으로 보존 대상으로 지정하세요.</p>
+<h2 id="3">패턴 ③ — 외부 저장 + 검색: 진짜 장기 기억</h2>
+<p>세션을 넘는 기억은 결국 <strong>밖에 쓰고, 다음에 골라 넣는 것</strong>입니다. 구조가 익숙할 거예요 —</p>
+<div class="highlight"><pre><span></span><code>대화 중: 기억할 것을 추출 → 저장소에 기록 (사실·선호·결정)
+다음 대화: 현재 질문과 관련된 기억을 검색 → 프롬프트에 주입
+</code></pre></div>
+
+<p><strong>이건 RAG입니다.</strong> 문서 대신 "과거 대화에서 추출한 사실"이 코퍼스일 뿐 — 임베딩 검색, top-k, 근거 주입까지 그 파이프라인 그대로예요. 그래서 RAG의 숙제들이 전부 따라옵니다.</p>
+<ul>
+<li><strong>뭘 저장하나:</strong> 원문 전체 저장은 검색 품질도 비용도 나쁩니다. "사용자는 Rocky Linux 선호", "결제 모듈은 A안 확정" 같은 <strong>원자적 사실 단위</strong>로 추출해 저장 (청킹 글의 "한 조각 = 한 생각").</li>
+<li><strong>갱신과 모순:</strong> "이사했어요" 이후에도 옛 주소 기억이 검색되면? 단순 추가만 하는 메모리는 <strong>모순의 저장소</strong>가 됩니다. 새 사실이 옛 사실과 충돌하면 덮어쓰기/무효화하는 로직이 필요해요 — 시간 메타데이터와 "최신 우선" 규칙이 최소한의 장치.</li>
+<li><strong>주입 예산:</strong> 기억이라고 다 넣으면 책상이 붐빕니다(그리고 이번 질문과 무관한 기억이 답변을 오염). 관련도 상위 몇 개만, 명확한 구분자 안에.</li>
+<li><strong>프라이버시:</strong> 메모리 저장소는 시간이 지나면 <strong>그 사용자에 대한 프로파일</strong>이 됩니다. 로그 중앙화 글의 그 경고가 더 강하게 적용돼요 — 민감정보는 저장 전에 거르고, 사용자가 볼·지울 수 있게.</li>
+</ul>
+<h2 id="4">패턴 ④ — 작업 노트(스크래치패드): 에이전트의 손 메모</h2>
+<p>긴 작업을 수행하는 에이전트에겐 대화 기억과 별개로 <strong>현재 작업의 상태 노트</strong>가 필요합니다 — "지금까지 확인한 것, 남은 할 일, 막힌 지점"을 파일이나 구조화된 텍스트로 두고, 매 스텝 갱신하며 참조하는 패턴. 멀티에이전트 글의 오케스트레이터가 작업자에게 넘기는 "구조화된 전달물"과 같은 계열이고, 컨텍스트가 리셋돼도(긴 작업 도중 창이 차서 접더라도) <strong>노트만 다시 읽으면 이어갈 수 있다</strong>는 게 핵심 가치입니다. 도구를 가진 에이전트라면 "노트 읽기/쓰기"를 도구로 주는 것으로 구현돼요.</p>
+<h2 id="_2">조합의 감각</h2>
+<p>실전은 넷의 조합입니다 — <strong>세션 안은 ①+②</strong>(원문 최근 + 요약 과거), <strong>세션을 넘는 사실은 ③</strong>(추출→검색 주입), <strong>긴 작업 상태는 ④</strong>(노트). 그리고 설계 순서는 언제나처럼 사다리로: 이력 유지로 충분한지 → 접기가 필요한지 → 진짜 장기 기억이 필요한지. "메모리 시스템부터 만들자"는 멀티에이전트 글의 그 유혹과 같은 냄새가 납니다 — <strong>필요가 증명되기 전의 기억 장치는 모순 쌓이는 창고</strong>가 되기 쉬워요.</p>
+<h2 id="_3">한 줄 정리</h2>
+<p>에이전트 메모리 = <strong>저장할 것 고르기 + 다음 프롬프트에 뭘 다시 넣을지 정하기.</strong> 세션 안은 이력+요약 접기(결정·수치는 보존 지정), 세션 밖은 사실 추출+RAG식 검색(모순 갱신 로직 필수), 긴 작업은 스크래치패드 — 그리고 기억 저장소는 곧 개인 프로파일이라는 무게까지 설계에 넣으세요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/sse-streaming.html"><span class="g">&#10095;</span>글자가 흘러나오는 원리 — LLM 스트리밍(SSE) 제대로 다루기</a><a href="../p/llm-gateway.html"><span class="g">&#10095;</span>LLM 호출을 한 문으로 모아라 — 게이트웨이(릴레이) 패턴</a><a href="../p/lora.html"><span class="g">&#10095;</span>LoRA — 파인튜닝을 가난하게 하는 법</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/multi-stage-build.html"><span class="lbl">newer</span>1.2GB 이미지가 80MB가 되기까지 — 멀티스테이지 빌드</a><a href="../p/sse-streaming.html" style="text-align:right"><span class="lbl">older</span>글자가 흘러나오는 원리 — LLM 스트리밍(SSE) 제대로 다루기</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

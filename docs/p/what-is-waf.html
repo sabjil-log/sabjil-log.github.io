@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>방화벽이 있는데 왜 WAF가 또 필요하죠 — 겉봉투 검사와 내용물 검사 · 삽질노트</title>
+<meta name="description" content="ACG·NACL은 &#x27;누가 어느 문으로&#x27;를 검사하고, WAF는 &#x27;들고 온 내용물&#x27;을 검사합니다. 정상적으로 열린 443 포트로 들어오는 공격은 WAF의 영역이에요.">
+<meta property="og:title" content="방화벽이 있는데 왜 WAF가 또 필요하죠 — 겉봉투 검사와 내용물 검사 · 삽질노트">
+<meta property="og:description" content="ACG·NACL은 &#x27;누가 어느 문으로&#x27;를 검사하고, WAF는 &#x27;들고 온 내용물&#x27;을 검사합니다. 정상적으로 열린 443 포트로 들어오는 공격은 WAF의 영역이에요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/what-is-waf.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/what-is-waf.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/what-is-waf.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/what-is-waf.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html" class="on">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-08-08</span><a class="chip" href="../c/security.html">--security</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>방화벽이 있는데 왜 WAF가 또 필요하죠 — 겉봉투 검사와 내용물 검사</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 네트워크 방화벽(ACG·NACL)은 <strong>겉봉투(IP·포트)</strong> 검사라, 정식으로 열어둔 443으로 들어오는 <strong>내용물 공격</strong>(SQL 인젝션, XSS)은 통과시킵니다. 그 층을 맡는 게 <strong>WAF — HTTP 요청의 내용을 읽고 공격 패턴을 거르는 L7 검문소</strong>입니다. 위치도 딱 그래서, ALB처럼 "뜯어 읽는" 계층에 붙어요.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">겉봉투 검사 vs 내용물 검사</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><circle cx="48.0" cy="40.0" r="25.4" fill="var(--dg-red-s)"/><g transform="translate(29.6,21.6) scale(1.150)">
+<rect x="3" y="6" width="26" height="20" rx="2" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.7"/>
+<path d="M3 12.6 h26 M3 19.3 h26" stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M11 6 v6.6 M20 6 v6.6 M7 12.6 v6.7 M16 12.6 v6.7 M24.5 12.6 v6.7 M11 19.3 v6.7 M20 19.3 v6.7"
+      stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M16 13 c2.6 2.4 3.4 4.2 3.4 6 a3.4 3.4 0 0 1 -6.8 0 c0 -1.8 0.8 -3.6 3.4 -6 z"
+      fill="var(--dg-amber)" stroke="var(--dg-red)" stroke-width="1.3"/></g><text x="76" y="46" class="dg-tl">네트워크 방화벽 — 겉봉투</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="76" class="dg-ts">IP · 포트 · 대역 검사 (ACG·NACL)</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="100" class="dg-ts">"전 세계 → 443 허용"을 성실 집행</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="124" class="dg-ts">?id=1' OR '1'='1 — 같은 봉투라 통과</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--muted)">·</text><text x="44" y="148" class="dg-ts">역할이 아닌 것 — 못 하는 게 아니라</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><circle cx="362.0" cy="40.0" r="25.4" fill="var(--dg-blue-s)"/><g transform="translate(343.6,21.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="390" y="46" class="dg-tl">WAF — 내용물 (L7)</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">URL·파라미터·바디의 공격 패턴</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">인젝션 · XSS · 경로조작 · 봇/레이트</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="124" class="dg-ts">가상 패치 — 코드 패치 전 급한 불</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="148" class="dg-ts">완치는 아님 — 바인딩·검증은 코드에서</text><text x="12" y="182" class="dg-ts">위치: TLS가 풀리는 층(ALB·CDN)에 부착 · 도입은 감지 모드 → 오탐 다듬기 → 단계적 차단</text></svg><figcaption>정상적으로 열어둔 443으로 들어오는 인젝션은 방화벽이 못 봅니다. 그 층이 WAF의 자리예요.</figcaption></figure>
+<h2 id="_1">방화벽이 못 보는 것</h2>
+<p>ACG 글의 그 경비를 다시 소환하면 — 방 앞 경비(ACG)는 <strong>"어디서 온 누가, 몇 번 문으로"</strong>만 봅니다. 웹서비스라면 "전 세계 → 443 허용"이 정상 설정이고, 경비는 그 규칙대로 성실하게 통과시키죠. 문제는 공격자도 <strong>정문으로, 정장을 입고</strong> 들어온다는 것.</p>
+<div class="highlight"><pre><span></span><code>GET /products?id=1              ← 정상 손님
+GET /products?id=1&#39; OR &#39;1&#39;=&#39;1   ← 같은 문, 같은 포트 — 내용물만 흉기
+</code></pre></div>
+
+<p>겉봉투 기준으로 두 요청은 <strong>완전히 동일</strong>합니다. 이 차이는 편지를 뜯어 읽어야만 보여요 — ALB vs NLB 글의 그 구분이 보안에서 반복되는 겁니다. L3/4 방화벽은 구조적으로 이 층을 못 봅니다. 못 하는 게 아니라 <strong>역할이 아닌</strong> 거죠.</p>
+<h2 id="waf">WAF가 거르는 것들</h2>
+<p>WAF는 HTTP 요청의 URL·파라미터·헤더·바디를 읽고 패턴을 검사합니다. 대표 표적 —</p>
+<ul>
+<li><strong>SQL 인젝션</strong> — 파라미터에 쿼리 조각(<code>' OR 1=1</code>, <code>UNION SELECT</code>)을 심어 DB를 조작. 프롬프트 주입 글에서 "SQL 인젝션엔 완치법이 있다"고 했던 바로 그 공격의 현장입니다. (완치는 코드의 파라미터 바인딩이고, WAF는 그 앞의 검문 — 뒤에서 다시.)</li>
+<li><strong>XSS</strong> — 입력에 <code>&lt;script&gt;</code>를 심어 다른 사용자 브라우저에서 실행시키기.</li>
+<li><strong>경로 조작·파일 포함</strong> — <code>../../etc/passwd</code> 류.</li>
+<li><strong>알려진 취약점 시그니처</strong> — 특정 프레임워크 CVE를 노리는 정형화된 요청. 패치 배포 전까지 WAF 규칙으로 급한 불을 끄는 <strong>가상 패치</strong>가 실무에서 꽤 요긴합니다.</li>
+<li><strong>비정상 트래픽 행태</strong> — 한 IP의 과도한 요청(레이트리밋), 봇 시그니처, 크리덴셜 스터핑 패턴.</li>
+</ul>
+<p>관리형 WAF(NCP Web Security Checker/WAF 계열, AWS WAF)는 이런 것들이 <strong>관리형 규칙 세트</strong>로 제공돼서, 켜는 것 자체는 어렵지 않습니다. 어려운 건 운영이에요 — 다음 얘기.</p>
+<h2 id="_2">실전의 진짜 문제: 오탐</h2>
+<p>WAF 도입 후 단골 사고 — <strong>정상 요청이 차단됩니다.</strong> 게시판에 SQL 강의 글을 쓰는 사용자(본문에 <code>SELECT * FROM</code>이…), JSON 바디에 HTML을 담는 에디터, 특수문자가 많은 검색어. 규칙 입장에선 전부 공격처럼 생겼거든요.</p>
+<p>그래서 정석 도입 순서는 알람 설계 글의 감각과 같습니다.</p>
+<div class="highlight"><pre><span></span><code>1. 감지 모드(Count/Detection)로 시작 — 차단하지 않고 기록만
+2. 몇 주간 로그 검토 — 뭐가 걸리는지, 오탐이 어디서 나는지
+3. 오탐 경로는 예외 규칙(특정 경로·파라미터 제외)으로 다듬고
+4. 차단 모드 전환 — 그것도 위험도 높은 규칙군부터 단계적으로
+</code></pre></div>
+
+<p>첫날부터 전체 차단 모드는 "보안 켰더니 서비스가 죽었다"의 지름길입니다. 그리고 차단 로그는 반드시 중앙 로그로 — 어떤 규칙이 뭘 막았는지가 남아야 오탐 수사가 됩니다(로그 중앙화 글의 그 이유).</p>
+<h2 id="waf_1">WAF는 어디에 서나</h2>
+<p>내용을 읽어야 하니 <strong>암호화가 풀리는 지점</strong> 뒤에 서야 합니다 — 즉 TLS를 종료하는 ALB/CDN 층. 그래서 클라우드 WAF들이 ALB·CloudFront·API Gateway에 "부착"하는 형태인 거예요. NLB(안 뜯는 계층)에는 붙일 수 없는 이유이기도 하고요.</p>
+<p>방어선 전체를 겹쳐 보면:</p>
+<div class="highlight"><pre><span></span><code>[네트워크 방화벽] 겉봉투 — 포트·IP·대역        (ACG·NACL)
+[WAF]           내용물 — HTTP 패턴·행태        (ALB/CDN 층)
+[애플리케이션]    근본 — 파라미터 바인딩·이스케이프·검증
+</code></pre></div>
+
+<p>중요한 순서 감각: <strong>WAF는 코드 수정을 대체하지 않습니다.</strong> 인젝션의 완치는 여전히 파라미터 바인딩(코드)이고, WAF는 ① 패치 전 가상 패치, ② 알려진 패턴의 대량 소음 제거, ③ 심층 방어의 한 겹입니다. "WAF 있으니 코드는 대충"이 되는 순간, 우회 기법 하나에 전 층이 뚫려요 — 프롬프트 주입 글의 "1층은 완화, 2층이 본선" 구조가 여기서도 그대로입니다.</p>
+<h2 id="_3">한 줄 정리</h2>
+<p>방화벽은 <strong>겉봉투</strong>, WAF는 <strong>내용물</strong> — 정상 포트로 들어오는 인젝션·XSS는 WAF의 영역입니다. TLS가 풀리는 층(ALB/CDN)에 붙이고, <strong>감지 모드→오탐 다듬기→단계적 차단</strong>으로 들이며, 완치(코드의 바인딩·검증)를 대체하는 게 아니라 그 앞의 검문이라는 위치 감각까지 — 이게 WAF의 전부입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --security</div><a href="../p/bastion-host.html"><span class="g">&#10095;</span>서버마다 SSH 문을 내지 마세요 — 배스천 호스트 설계</a><a href="../p/iam-least-privilege.html"><span class="g">&#10095;</span>일단 관리자 권한 주세요 — 클라우드 IAM 최소권한, 현실적으로 시작하기</a><a href="../p/envelope-encryption.html"><span class="g">&#10095;</span>KMS의 봉투암호화 — 금고 열쇠로 데이터를 직접 잠그지 않는 이유</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><span></span><a href="../p/multi-stage-build.html" style="text-align:right"><span class="lbl">older</span>1.2GB 이미지가 80MB가 되기까지 — 멀티스테이지 빌드</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

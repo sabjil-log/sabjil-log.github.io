@@ -1671,3 +1671,60 @@ _add("sse-stream", "논스트리밍 vs SSE — 같은 30초, 다른 체감",
 <text x="120" y="222" class="dg-ts">체감: 1초부터 글자가 흐름 (TTFT ↓ — 프롬프트 캐싱이 줄이는 그것)</text>
 <text x="14" y="246" class="dg-ts">안 흐르면 배관 수사: proxy_buffering off · gzip 제외 · LB idle 타임아웃</text>
 </svg>""")
+
+
+# ── 10차 배치 ─────────────────────────────────────────────────
+_add("multi-stage", "공장에서 만들고, 매장엔 완성품만",
+     "빌드 도구·소스·캐시는 공장 스테이지에 두고 COPY --from으로 결과물만 반입 — 용량과 공격 표면이 같이 줄어요.",
+     "multi-stage-build",
+     '<svg viewBox="0 0 640 260" role="img"><style>' + _COMMON + """
+.ms-c{animation:ms-c 3.6s ease-in-out infinite;}
+@keyframes ms-c{0%,12%{transform:translateX(0);opacity:0}18%{opacity:1}
+ 58%{transform:translateX(206px);opacity:1}66%{opacity:0}100%{opacity:0}}
+</style>
+<rect x="20" y="36" width="270" height="168" rx="14" fill="var(--dg-amber-s)" stroke="var(--dg-amber)" stroke-width="1.6"/>
+""" + _icon("box", 56, 66, 1.3, halo=True) + """
+<text x="86" y="72" class="dg-tl" font-size="13">스테이지 1 — 공장</text>
+<text x="40" y="106" class="dg-lab2">FROM node:20 AS builder</text>
+<text x="40" y="128" class="dg-ts">컴파일러 · devDeps · 소스 · 캐시</text>
+<text x="40" y="150" class="dg-ts">npm ci → build</text>
+<text x="40" y="184" class="dg-key" font-size="13">1.2 GB</text>
+<rect x="384" y="60" width="236" height="120" rx="14" fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8"/>
+""" + _icon("shield", 420, 90, 1.2, halo=True) + """
+<text x="448" y="96" class="dg-tl" font-size="13">스테이지 2 — 매장</text>
+<text x="404" y="126" class="dg-lab2">FROM node:20-slim</text>
+<text x="404" y="148" class="dg-ts">dist + 실행 의존성만</text>
+<text x="404" y="170" class="dg-key" font-size="13" fill="var(--dg-green)">80 MB</text>
+<line x1="290" y1="120" x2="384" y2="120" class="dg-arrow"/>
+<g class="dg-anim ms-c"><rect x="300" y="106" width="60" height="26" rx="6" fill="var(--dg-green)" opacity=".85"/>
+<text x="308" y="124" font-size="10.5" fill="#fff" font-family="var(--mono)">dist/</text></g>
+<text x="300" y="98" class="dg-lab2">COPY --from=builder</text>
+<text x="20" y="232" class="dg-ts">최종 이미지 = 마지막 스테이지만 — 공장의 연장은 존재한 적도 없음 (공격 표면·pull 시간·스캐너 경고 ↓)</text>
+<text x="20" y="252" class="dg-ts">매장 베이스: slim(무난) · distroless(쉘 없음 — kubectl debug 전제) · 빌드 시크릿은 --mount=type=secret</text>
+</svg>""")
+
+_add("waf-layers", "겉봉투 검사 vs 내용물 검사",
+     "정상적으로 열어둔 443으로 들어오는 인젝션은 방화벽이 못 봅니다. 그 층이 WAF의 자리예요.",
+     "what-is-waf",
+     _two("wf", "네트워크 방화벽 — 겉봉투", [
+         ("ok", "IP · 포트 · 대역 검사 (ACG·NACL)"),
+         ("ok", "\"전 세계 → 443 허용\"을 성실 집행"),
+         ("no", "?id=1' OR '1'='1 — 같은 봉투라 통과"),
+         ("dot", "역할이 아닌 것 — 못 하는 게 아니라"),
+     ], "WAF — 내용물 (L7)", [
+         ("ok", "URL·파라미터·바디의 공격 패턴"),
+         ("ok", "인젝션 · XSS · 경로조작 · 봇/레이트"),
+         ("ok", "가상 패치 — 코드 패치 전 급한 불"),
+         ("no", "완치는 아님 — 바인딩·검증은 코드에서"),
+     ], "위치: TLS가 풀리는 층(ALB·CDN)에 부착 · 도입은 감지 모드 → 오탐 다듬기 → 단계적 차단",
+        licon="firewall", ricon="doc"))
+
+_add("agent-memory", "에이전트 메모리 패턴 4종",
+     "기억처럼 보이는 모든 것은 '다음 프롬프트에 뭘 다시 넣느냐'의 설계입니다. 수명 순서대로 네 가지.",
+     "agent-memory",
+     _ladder("am", [
+         ("① 이력 유지", "대화 전체 재전송", "세션 안 · 캐시로 비용 관리", "doc"),
+         ("② 요약 접기", "옛 턴 → 요약 교체", "결정·수치는 보존 지정", "box"),
+         ("③ 외부 저장+검색", "사실 추출 → RAG식 주입", "모순 갱신 로직 필수", "database"),
+         ("④ 작업 노트", "상태를 파일로 · 매 스텝 갱신", "리셋돼도 노트로 재개", "brain"),
+     ], "저장소는 곧 사용자 프로파일 — 민감정보 필터 + 열람·삭제 수단까지가 설계입니다"))

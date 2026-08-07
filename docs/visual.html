@@ -2735,7 +2735,116 @@
 <g class="dg-anim ss-d4"><circle cx="110" cy="186" r="6" fill="var(--dg-green)" opacity=".55"/></g>
 <text x="120" y="222" class="dg-ts">체감: 1초부터 글자가 흐름 (TTFT ↓ — 프롬프트 캐싱이 줄이는 그것)</text>
 <text x="14" y="246" class="dg-ts">안 흐르면 배관 수사: proxy_buffering off · gzip 제외 · LB idle 타임아웃</text>
-</svg><figcaption>생성은 원래 한 토큰씩입니다. 모아서 주면 30초 빈 화면, 흘리면 1초부터 글자가 흐르죠.</figcaption></figure><div class="dg-more"><a href="p/sse-streaming.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><div class="dg-cap-out">[그림 한 장] 요청 한 번의 VPC 여정 — 클릭에서 응답까지 무슨 일이 벌어지나</div><div class="viz">
+</svg><figcaption>생성은 원래 한 토큰씩입니다. 모아서 주면 30초 빈 화면, 흘리면 1초부터 글자가 흐르죠.</figcaption></figure><div class="dg-more"><a href="p/sse-streaming.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">공장에서 만들고, 매장엔 완성품만</div><svg viewBox="0 0 640 260" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.ms-c{animation:ms-c 3.6s ease-in-out infinite;}
+@keyframes ms-c{0%,12%{transform:translateX(0);opacity:0}18%{opacity:1}
+ 58%{transform:translateX(206px);opacity:1}66%{opacity:0}100%{opacity:0}}
+</style>
+<rect x="20" y="36" width="270" height="168" rx="14" fill="var(--dg-amber-s)" stroke="var(--dg-amber)" stroke-width="1.6"/>
+<circle cx="56.0" cy="66.0" r="27.8" fill="var(--dg-green-s)"/><g transform="translate(35.2,45.2) scale(1.300)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g>
+<text x="86" y="72" class="dg-tl" font-size="13">스테이지 1 — 공장</text>
+<text x="40" y="106" class="dg-lab2">FROM node:20 AS builder</text>
+<text x="40" y="128" class="dg-ts">컴파일러 · devDeps · 소스 · 캐시</text>
+<text x="40" y="150" class="dg-ts">npm ci → build</text>
+<text x="40" y="184" class="dg-key" font-size="13">1.2 GB</text>
+<rect x="384" y="60" width="236" height="120" rx="14" fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8"/>
+<circle cx="420.0" cy="90.0" r="26.2" fill="var(--dg-green-s)"/><g transform="translate(400.8,70.8) scale(1.200)">
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
+      stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="448" y="96" class="dg-tl" font-size="13">스테이지 2 — 매장</text>
+<text x="404" y="126" class="dg-lab2">FROM node:20-slim</text>
+<text x="404" y="148" class="dg-ts">dist + 실행 의존성만</text>
+<text x="404" y="170" class="dg-key" font-size="13" fill="var(--dg-green)">80 MB</text>
+<line x1="290" y1="120" x2="384" y2="120" class="dg-arrow"/>
+<g class="dg-anim ms-c"><rect x="300" y="106" width="60" height="26" rx="6" fill="var(--dg-green)" opacity=".85"/>
+<text x="308" y="124" font-size="10.5" fill="#fff" font-family="var(--mono)">dist/</text></g>
+<text x="300" y="98" class="dg-lab2">COPY --from=builder</text>
+<text x="20" y="232" class="dg-ts">최종 이미지 = 마지막 스테이지만 — 공장의 연장은 존재한 적도 없음 (공격 표면·pull 시간·스캐너 경고 ↓)</text>
+<text x="20" y="252" class="dg-ts">매장 베이스: slim(무난) · distroless(쉘 없음 — kubectl debug 전제) · 빌드 시크릿은 --mount=type=secret</text>
+</svg><figcaption>빌드 도구·소스·캐시는 공장 스테이지에 두고 COPY --from으로 결과물만 반입 — 용량과 공격 표면이 같이 줄어요.</figcaption></figure><div class="dg-more"><a href="p/multi-stage-build.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">겉봉투 검사 vs 내용물 검사</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><circle cx="48.0" cy="40.0" r="25.4" fill="var(--dg-red-s)"/><g transform="translate(29.6,21.6) scale(1.150)">
+<rect x="3" y="6" width="26" height="20" rx="2" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.7"/>
+<path d="M3 12.6 h26 M3 19.3 h26" stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M11 6 v6.6 M20 6 v6.6 M7 12.6 v6.7 M16 12.6 v6.7 M24.5 12.6 v6.7 M11 19.3 v6.7 M20 19.3 v6.7"
+      stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M16 13 c2.6 2.4 3.4 4.2 3.4 6 a3.4 3.4 0 0 1 -6.8 0 c0 -1.8 0.8 -3.6 3.4 -6 z"
+      fill="var(--dg-amber)" stroke="var(--dg-red)" stroke-width="1.3"/></g><text x="76" y="46" class="dg-tl">네트워크 방화벽 — 겉봉투</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="76" class="dg-ts">IP · 포트 · 대역 검사 (ACG·NACL)</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="100" class="dg-ts">"전 세계 → 443 허용"을 성실 집행</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="124" class="dg-ts">?id=1' OR '1'='1 — 같은 봉투라 통과</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--muted)">·</text><text x="44" y="148" class="dg-ts">역할이 아닌 것 — 못 하는 게 아니라</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><circle cx="362.0" cy="40.0" r="25.4" fill="var(--dg-blue-s)"/><g transform="translate(343.6,21.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="390" y="46" class="dg-tl">WAF — 내용물 (L7)</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">URL·파라미터·바디의 공격 패턴</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">인젝션 · XSS · 경로조작 · 봇/레이트</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="124" class="dg-ts">가상 패치 — 코드 패치 전 급한 불</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="148" class="dg-ts">완치는 아님 — 바인딩·검증은 코드에서</text><text x="12" y="182" class="dg-ts">위치: TLS가 풀리는 층(ALB·CDN)에 부착 · 도입은 감지 모드 → 오탐 다듬기 → 단계적 차단</text></svg><figcaption>정상적으로 열어둔 443으로 들어오는 인젝션은 방화벽이 못 봅니다. 그 층이 WAF의 자리예요.</figcaption></figure><div class="dg-more"><a href="p/what-is-waf.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">에이전트 메모리 패턴 4종</div><svg viewBox="0 0 640 238" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.am-0{animation:am-h 4.0s ease-in-out infinite;animation-delay:0.0s;}
+.am-1{animation:am-h 4.0s ease-in-out infinite;animation-delay:1.0s;}
+.am-2{animation:am-h 4.0s ease-in-out infinite;animation-delay:2.0s;}
+.am-3{animation:am-h 4.0s ease-in-out infinite;animation-delay:3.0s;}
+@keyframes am-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim am-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="60" y="36" class="dg-t">① 이력 유지</text><text x="216" y="36" class="dg-lab2">대화 전체 재전송</text><text x="396" y="36" class="dg-ts">세션 안 · 캐시로 비용 관리</text><rect class="dg-box dg-anim am-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="60" y="84" class="dg-t">② 요약 접기</text><text x="216" y="84" class="dg-lab2">옛 턴 → 요약 교체</text><text x="396" y="84" class="dg-ts">결정·수치는 보존 지정</text><rect class="dg-box dg-anim am-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="60" y="132" class="dg-t">③ 외부 저장+검색</text><text x="216" y="132" class="dg-lab2">사실 추출 → RAG식 주입</text><text x="396" y="132" class="dg-ts">모순 갱신 로직 필수</text><rect class="dg-box dg-anim am-3" x="12" y="156" width="616" height="38" rx="9"/><g transform="translate(17.6,156.6) scale(1.150)">
+<path d="M16 5 a6 6 0 0 0 -6 6 a5 5 0 0 0 -2 9 a5.5 5.5 0 0 0 8 6 a5.5 5.5 0 0 0 8 -6 a5 5 0 0 0 -2 -9 a6 6 0 0 0 -6 -6 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.8"/>
+<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.4" stroke-linecap="round"/></g><text x="60" y="180" class="dg-t">④ 작업 노트</text><text x="216" y="180" class="dg-lab2">상태를 파일로 · 매 스텝 갱신</text><text x="396" y="180" class="dg-ts">리셋돼도 노트로 재개</text><text x="12" y="230" class="dg-ts">저장소는 곧 사용자 프로파일 — 민감정보 필터 + 열람·삭제 수단까지가 설계입니다</text></svg><figcaption>기억처럼 보이는 모든 것은 '다음 프롬프트에 뭘 다시 넣느냐'의 설계입니다. 수명 순서대로 네 가지.</figcaption></figure><div class="dg-more"><a href="p/agent-memory.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><div class="dg-cap-out">[그림 한 장] 요청 한 번의 VPC 여정 — 클릭에서 응답까지 무슨 일이 벌어지나</div><div class="viz">
 <svg viewBox="0 0 660 300" xmlns="http://www.w3.org/2000/svg">
   <text x="10" y="16" class="vz-cap">초록 점: 사용자 요청→응답 왕복 · 주황 점: 서버가 외부 API로 나가는 길(NAT)</text>
 

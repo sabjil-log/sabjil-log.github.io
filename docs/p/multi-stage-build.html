@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1.2GB 이미지가 80MB가 되기까지 — 멀티스테이지 빌드 · 삽질노트</title>
+<meta name="description" content="빌드 도구는 짐 싸는 데만 필요하고 여행엔 필요 없습니다. 공장(빌드 스테이지)과 매장(런타임 스테이지)을 분리하는 멀티스테이지의 원리와 함정.">
+<meta property="og:title" content="1.2GB 이미지가 80MB가 되기까지 — 멀티스테이지 빌드 · 삽질노트">
+<meta property="og:description" content="빌드 도구는 짐 싸는 데만 필요하고 여행엔 필요 없습니다. 공장(빌드 스테이지)과 매장(런타임 스테이지)을 분리하는 멀티스테이지의 원리와 함정.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/multi-stage-build.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/multi-stage-build.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/multi-stage-build.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/multi-stage-build.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html" class="on">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-08-08</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>4 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>1.2GB 이미지가 80MB가 되기까지 — 멀티스테이지 빌드</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 이미지가 무거운 이유는 대부분 <strong>빌드에만 필요했던 것들</strong>(컴파일러, 헤더, node_modules, 소스)이 결과물과 함께 실려 있어서입니다. 멀티스테이지는 <strong>공장 스테이지에서 만들고, 매장 스테이지엔 완성품만 COPY</strong>하는 것 — 용량과 공격 표면이 같이 줄어요.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">공장에서 만들고, 매장엔 완성품만</div><svg viewBox="0 0 640 260" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.ms-c{animation:ms-c 3.6s ease-in-out infinite;}
+@keyframes ms-c{0%,12%{transform:translateX(0);opacity:0}18%{opacity:1}
+ 58%{transform:translateX(206px);opacity:1}66%{opacity:0}100%{opacity:0}}
+</style>
+<rect x="20" y="36" width="270" height="168" rx="14" fill="var(--dg-amber-s)" stroke="var(--dg-amber)" stroke-width="1.6"/>
+<circle cx="56.0" cy="66.0" r="27.8" fill="var(--dg-green-s)"/><g transform="translate(35.2,45.2) scale(1.300)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g>
+<text x="86" y="72" class="dg-tl" font-size="13">스테이지 1 — 공장</text>
+<text x="40" y="106" class="dg-lab2">FROM node:20 AS builder</text>
+<text x="40" y="128" class="dg-ts">컴파일러 · devDeps · 소스 · 캐시</text>
+<text x="40" y="150" class="dg-ts">npm ci → build</text>
+<text x="40" y="184" class="dg-key" font-size="13">1.2 GB</text>
+<rect x="384" y="60" width="236" height="120" rx="14" fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8"/>
+<circle cx="420.0" cy="90.0" r="26.2" fill="var(--dg-green-s)"/><g transform="translate(400.8,70.8) scale(1.200)">
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
+      stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="448" y="96" class="dg-tl" font-size="13">스테이지 2 — 매장</text>
+<text x="404" y="126" class="dg-lab2">FROM node:20-slim</text>
+<text x="404" y="148" class="dg-ts">dist + 실행 의존성만</text>
+<text x="404" y="170" class="dg-key" font-size="13" fill="var(--dg-green)">80 MB</text>
+<line x1="290" y1="120" x2="384" y2="120" class="dg-arrow"/>
+<g class="dg-anim ms-c"><rect x="300" y="106" width="60" height="26" rx="6" fill="var(--dg-green)" opacity=".85"/>
+<text x="308" y="124" font-size="10.5" fill="#fff" font-family="var(--mono)">dist/</text></g>
+<text x="300" y="98" class="dg-lab2">COPY --from=builder</text>
+<text x="20" y="232" class="dg-ts">최종 이미지 = 마지막 스테이지만 — 공장의 연장은 존재한 적도 없음 (공격 표면·pull 시간·스캐너 경고 ↓)</text>
+<text x="20" y="252" class="dg-ts">매장 베이스: slim(무난) · distroless(쉘 없음 — kubectl debug 전제) · 빌드 시크릿은 --mount=type=secret</text>
+</svg><figcaption>빌드 도구·소스·캐시는 공장 스테이지에 두고 COPY --from으로 결과물만 반입 — 용량과 공격 표면이 같이 줄어요.</figcaption></figure>
+<h2 id="_1">왜 이렇게 무거워졌나</h2>
+<div class="highlight"><pre data-lang="dockerfile"><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="s">node:20</span>
+<span class="k">COPY</span><span class="w"> </span>.<span class="w"> </span>.
+<span class="k">RUN</span><span class="w"> </span>npm<span class="w"> </span>install<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span>run<span class="w"> </span>build
+<span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;node&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;dist/server.js&quot;</span><span class="p">]</span>
+</code></pre></div>
+
+<p>이 평범한 Dockerfile의 최종 이미지에는 — 실행에 필요한 <code>dist/</code> 말고도 <strong>node_modules 전체(devDependencies 포함), 소스 원본, npm 캐시, 그리고 base 이미지의 빌드 도구들</strong>이 전부 들어 있습니다. 레이어 캐시 글에서 봤듯 이미지는 겹겹의 필름이라, <code>RUN rm -rf</code>로 나중에 지워도 <strong>아래 필름에는 남아</strong> 용량이 안 줄어요. 애초에 <strong>안 싣는 것</strong>만이 답입니다.</p>
+<p>컴파일 언어(Go, Java)는 더 극단적입니다 — 결과물은 바이너리/jar 하나인데, 그걸 만들려고 SDK 전체를 실은 채 배포하는 셈이니까요.</p>
+<h2 id="_2">멀티스테이지: 공장과 매장</h2>
+<p>Dockerfile 하나에 <code>FROM</code>을 여러 번 — 각 FROM이 독립된 스테이지고, <strong>최종 이미지는 마지막 스테이지만</strong> 남습니다.</p>
+<div class="highlight"><pre data-lang="dockerfile"><span></span><code><span class="c"># ── 스테이지 1: 공장 (이름을 붙인다) ──</span>
+<span class="k">FROM</span><span class="w"> </span><span class="s">node:20</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s">builder</span>
+<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span>
+<span class="k">COPY</span><span class="w"> </span>package*.json<span class="w"> </span>./
+<span class="k">RUN</span><span class="w"> </span>npm<span class="w"> </span>ci<span class="w">                      </span>#<span class="w"> </span>캐시<span class="w"> </span>글의<span class="w"> </span>그<span class="w"> </span>순서<span class="w"> </span>최적화<span class="w"> </span>그대로
+<span class="k">COPY</span><span class="w"> </span>.<span class="w"> </span>.
+<span class="k">RUN</span><span class="w"> </span>npm<span class="w"> </span>run<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span>prune<span class="w"> </span>--omit<span class="o">=</span>dev<span class="w">   </span>#<span class="w"> </span>실행용<span class="w"> </span>의존성만<span class="w"> </span>남기기
+
+<span class="c"># ── 스테이지 2: 매장 (가볍고 깨끗하게) ──</span>
+<span class="k">FROM</span><span class="w"> </span><span class="s">node:20-slim</span>
+<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span>
+<span class="k">COPY</span><span class="w"> </span>--from<span class="o">=</span>builder<span class="w"> </span>/app/dist<span class="w"> </span>./dist<span class="w">              </span>#<span class="w"> </span>★<span class="w"> </span>공장에서<span class="w"> </span>완성품만<span class="w"> </span>반입
+<span class="k">COPY</span><span class="w"> </span>--from<span class="o">=</span>builder<span class="w"> </span>/app/node_modules<span class="w"> </span>./node_modules
+<span class="k">COPY</span><span class="w"> </span>--from<span class="o">=</span>builder<span class="w"> </span>/app/package.json<span class="w"> </span>.
+<span class="k">USER</span><span class="w"> </span><span class="s">node</span>
+<span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;node&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;dist/server.js&quot;</span><span class="p">]</span>
+</code></pre></div>
+
+<p>핵심은 <code>COPY --from=builder</code> 한 줄 — <strong>다른 스테이지의 파일시스템에서 필요한 것만 집어오는</strong> 문법입니다. 공장의 컴파일러·소스·캐시는 최종 이미지에 존재한 적조차 없게 되죠.</p>
+<p>Go라면 결과가 더 극적입니다.</p>
+<div class="highlight"><pre data-lang="dockerfile"><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="s">golang:1.22</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s">builder</span>
+<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/src</span>
+<span class="k">COPY</span><span class="w"> </span>.<span class="w"> </span>.
+<span class="k">RUN</span><span class="w"> </span><span class="nv">CGO_ENABLED</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>go<span class="w"> </span>build<span class="w"> </span>-o<span class="w"> </span>/app<span class="w"> </span>./cmd/server
+
+<span class="k">FROM</span><span class="w"> </span><span class="s">gcr.io/distroless/static</span><span class="w">     </span><span class="c"># 쉘도 패키지 매니저도 없는 초경량 베이스</span>
+<span class="k">COPY</span><span class="w"> </span>--from<span class="o">=</span>builder<span class="w"> </span>/app<span class="w"> </span>/app
+<span class="k">ENTRYPOINT</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;/app&quot;</span><span class="p">]</span>
+</code></pre></div>
+
+<p>golang 베이스 800MB+ → 최종 <strong>수십 MB</strong>. 이게 제목의 그 다이어트입니다.</p>
+<h2 id="_3">용량만이 아니다 — 보안과 속도</h2>
+<ul>
+<li><strong>공격 표면 축소.</strong> 최종 이미지에 컴파일러·쉘·curl이 없으면, 뚫린 뒤에 공격자가 쓸 연장도 없습니다(배스천을 빈 껍데기로 두는 그 논리). 취약점 스캐너 경고 수가 뚝 떨어지는 부수 효과는 컴플라이언스 대응에서 실질적인 시간 절약이고요.</li>
+<li><strong>배포 속도.</strong> 이미지 크기는 곧 pull 시간 — 오토스케일링으로 새 노드가 뜰 때, 80MB와 1.2GB는 첫 응답까지의 시간이 다릅니다. NAT 글에서 본 "이미지 pull이 NAT를 지나며 GB당 과금"까지 생각하면 돈 문제이기도 하죠.</li>
+</ul>
+<h2 id="_4">함정과 요령 넷</h2>
+<p><strong>① 매장 베이스 선택.</strong> <code>slim</code>(최소 데비안)이 무난한 기본값, <code>distroless</code>는 더 작고 안전하지만 <strong>쉘이 없어 <code>kubectl exec</code>류 현장 진입이 안 됩니다</strong> — 그 글에서 언급한 <code>kubectl debug</code>(임시 컨테이너)가 전제돼야 해요. alpine은 작지만 musl 호환성 이슈가 언어에 따라 있으니 "작다"만 보고 고르지 마세요.</p>
+<p><strong>② 런타임 의존성 실수.</strong> 공장에서 다 만들었다고 매장에 아무것도 없으면 안 되는 경우 — 예를 들어 이미지 처리 앱은 매장에도 해당 공유 라이브러리가 필요합니다. "로컬(공장 풀셋)에선 되는데 배포하면 라이브러리 없다고 죽어요"가 이 함정의 증상.</p>
+<p><strong>③ 캐시와의 합주.</strong> 스테이지 분리는 레이어 캐시 글의 순서 원칙과 곱연산입니다 — 공장 스테이지 안에서도 <code>package.json 먼저 COPY → npm ci → 소스 COPY</code> 순서를 지켜야 의존성 캐시가 삽니다. CI에서는 이전 이미지를 캐시 소스로 지정하는 옵션(<code>--cache-from</code> 계열)까지 챙기면 빌드 시간도 다이어트돼요.</p>
+<p><strong>④ 빌드 시크릿.</strong> 공장에서 사설 저장소 토큰이 필요할 때 <code>COPY .npmrc</code> / <code>ENV TOKEN=...</code>은 레이어에 박제됩니다(Secret 글의 그 사고). <code>RUN --mount=type=secret</code>으로 <strong>빌드 순간에만 주입</strong>하는 게 정석 — 멀티스테이지라 최종엔 안 남는다 해도, 공장 스테이지 캐시가 레지스트리에 올라가는 구성이면 새는 경로가 됩니다.</p>
+<h2 id="_5">확인</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>docker<span class="w"> </span>images<span class="w"> </span>myapp<span class="w">                      </span><span class="c1"># before/after 용량</span>
+docker<span class="w"> </span><span class="nb">history</span><span class="w"> </span>myapp:latest<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w">       </span><span class="c1"># 최종 이미지에 뭐가 실렸나 (레이어별)</span>
+docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>myapp<span class="w"> </span>ls<span class="w"> </span>/usr/bin<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l<span class="w">   </span><span class="c1"># 매장에 연장이 얼마나 남았나 (distroless면 이것도 안 됨 — 그게 정상)</span>
+</code></pre></div>
+
+<h2 id="_6">한 줄 정리</h2>
+<p><strong>빌드에 필요한 것과 실행에 필요한 것은 다릅니다.</strong> 공장(builder)에서 만들고 매장(slim/distroless)엔 <code>COPY --from</code>으로 완성품만 — 용량·pull 시간·공격 표면·스캐너 경고가 한 번에 줄어요. 단, 매장의 런타임 의존성과 현장 진입 수단(kubectl debug)은 미리 챙기고요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --troubleshooting</div><a href="../p/requests-limits.html"><span class="g">&#10095;</span>쿠버네티스 requests와 limits — 예약석과 천장은 다르다</a><a href="../p/fd-limit.html"><span class="g">&#10095;</span>Too many open files — 파일도 안 여는데 왜 한도 초과일까</a><a href="../p/port-in-use.html"><span class="g">&#10095;</span>죽였는데 포트가 안 풀린다 — Address already in use 3분 수사</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/what-is-waf.html"><span class="lbl">newer</span>방화벽이 있는데 왜 WAF가 또 필요하죠 — 겉봉투 검사와 내용물 검사</a><a href="../p/agent-memory.html" style="text-align:right"><span class="lbl">older</span>대화가 끝나면 다 잊는 에이전트에게 기억을 달아주기 — 메모리 패턴 4종</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

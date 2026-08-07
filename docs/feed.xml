@@ -5,6 +5,27 @@
   <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
   <language>ko</language>
     <item>
+      <title>방화벽이 있는데 왜 WAF가 또 필요하죠 — 겉봉투 검사와 내용물 검사</title>
+      <link>https://sabjil-log.github.io/p/what-is-waf.html</link>
+      <guid>https://sabjil-log.github.io/p/what-is-waf.html</guid>
+      <pubDate>Sat, 08 Aug 2026 00:00:00 -0000</pubDate>
+      <description>ACG·NACL은 &#x27;누가 어느 문으로&#x27;를 검사하고, WAF는 &#x27;들고 온 내용물&#x27;을 검사합니다. 정상적으로 열린 443 포트로 들어오는 공격은 WAF의 영역이에요.</description>
+    </item>
+    <item>
+      <title>1.2GB 이미지가 80MB가 되기까지 — 멀티스테이지 빌드</title>
+      <link>https://sabjil-log.github.io/p/multi-stage-build.html</link>
+      <guid>https://sabjil-log.github.io/p/multi-stage-build.html</guid>
+      <pubDate>Sat, 08 Aug 2026 00:00:00 -0000</pubDate>
+      <description>빌드 도구는 짐 싸는 데만 필요하고 여행엔 필요 없습니다. 공장(빌드 스테이지)과 매장(런타임 스테이지)을 분리하는 멀티스테이지의 원리와 함정.</description>
+    </item>
+    <item>
+      <title>대화가 끝나면 다 잊는 에이전트에게 기억을 달아주기 — 메모리 패턴 4종</title>
+      <link>https://sabjil-log.github.io/p/agent-memory.html</link>
+      <guid>https://sabjil-log.github.io/p/agent-memory.html</guid>
+      <pubDate>Sat, 08 Aug 2026 00:00:00 -0000</pubDate>
+      <description>LLM의 기억은 컨텍스트 창이 전부고, 창은 닫히면 사라집니다. 이력 유지·요약 접기·외부 저장+검색·작업 노트 — 네 가지 패턴과 각자의 함정.</description>
+    </item>
+    <item>
       <title>글자가 흘러나오는 원리 — LLM 스트리밍(SSE) 제대로 다루기</title>
       <link>https://sabjil-log.github.io/p/sse-streaming.html</link>
       <guid>https://sabjil-log.github.io/p/sse-streaming.html</guid>
@@ -122,26 +143,5 @@
       <guid>https://sabjil-log.github.io/p/dns-records.html</guid>
       <pubDate>Wed, 29 Jul 2026 00:00:00 -0000</pubDate>
       <description>도메인을 서버·메일·인증에 연결하는 건 결국 레코드 몇 줄입니다. 종류별 역할과 TTL, 그리고 &#x27;반영이 안 돼요&#x27;의 진짜 원인까지.</description>
-    </item>
-    <item>
-      <title>chmod 755의 숫자는 어디서 왔나 — 읽기4 쓰기2 실행1</title>
-      <link>https://sabjil-log.github.io/p/chmod-755.html</link>
-      <guid>https://sabjil-log.github.io/p/chmod-755.html</guid>
-      <pubDate>Wed, 29 Jul 2026 00:00:00 -0000</pubDate>
-      <description>755, 644, 600... 외우고 다니는 그 숫자들은 사실 덧셈입니다. 비트 세 개의 합이라는 걸 알면 어떤 조합도 즉석에서 만들 수 있어요.</description>
-    </item>
-    <item>
-      <title>리전과 가용영역 — &#x27;어디까지 죽으면 우리도 죽나&#x27;를 정하는 일</title>
-      <link>https://sabjil-log.github.io/p/region-az.html</link>
-      <guid>https://sabjil-log.github.io/p/region-az.html</guid>
-      <pubDate>Wed, 22 Jul 2026 00:00:00 -0000</pubDate>
-      <description>멀티 AZ는 비용을 더 내고 사는 보험입니다. 무엇으로부터 우리를 지켜주고 무엇은 못 지켜주는지, 장애 반경으로 정리했어요.</description>
-    </item>
-    <item>
-      <title>VPN 붙이면 특정 사이트만 안 열린다 — MTU와 패킷 조각화</title>
-      <link>https://sabjil-log.github.io/p/mtu-fragmentation.html</link>
-      <guid>https://sabjil-log.github.io/p/mtu-fragmentation.html</guid>
-      <pubDate>Wed, 22 Jul 2026 00:00:00 -0000</pubDate>
-      <description>핑은 되고 작은 페이지는 열리는데 큰 페이지만 멈춘다면 MTU 문제입니다. 봉투 크기 비유로 원인과 처방을 정리했어요.</description>
     </item>
 </channel></rss>
