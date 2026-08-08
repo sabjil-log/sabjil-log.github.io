@@ -2844,7 +2844,88 @@
 <path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="60" y="132" class="dg-t">③ 외부 저장+검색</text><text x="216" y="132" class="dg-lab2">사실 추출 → RAG식 주입</text><text x="396" y="132" class="dg-ts">모순 갱신 로직 필수</text><rect class="dg-box dg-anim am-3" x="12" y="156" width="616" height="38" rx="9"/><g transform="translate(17.6,156.6) scale(1.150)">
 <path d="M16 5 a6 6 0 0 0 -6 6 a5 5 0 0 0 -2 9 a5.5 5.5 0 0 0 8 6 a5.5 5.5 0 0 0 8 -6 a5 5 0 0 0 -2 -9 a6 6 0 0 0 -6 -6 z"
       fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.8"/>
-<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.4" stroke-linecap="round"/></g><text x="60" y="180" class="dg-t">④ 작업 노트</text><text x="216" y="180" class="dg-lab2">상태를 파일로 · 매 스텝 갱신</text><text x="396" y="180" class="dg-ts">리셋돼도 노트로 재개</text><text x="12" y="230" class="dg-ts">저장소는 곧 사용자 프로파일 — 민감정보 필터 + 열람·삭제 수단까지가 설계입니다</text></svg><figcaption>기억처럼 보이는 모든 것은 '다음 프롬프트에 뭘 다시 넣느냐'의 설계입니다. 수명 순서대로 네 가지.</figcaption></figure><div class="dg-more"><a href="p/agent-memory.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><div class="dg-cap-out">[그림 한 장] 요청 한 번의 VPC 여정 — 클릭에서 응답까지 무슨 일이 벌어지나</div><div class="viz">
+<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.4" stroke-linecap="round"/></g><text x="60" y="180" class="dg-t">④ 작업 노트</text><text x="216" y="180" class="dg-lab2">상태를 파일로 · 매 스텝 갱신</text><text x="396" y="180" class="dg-ts">리셋돼도 노트로 재개</text><text x="12" y="230" class="dg-ts">저장소는 곧 사용자 프로파일 — 민감정보 필터 + 열람·삭제 수단까지가 설계입니다</text></svg><figcaption>기억처럼 보이는 모든 것은 '다음 프롬프트에 뭘 다시 넣느냐'의 설계입니다. 수명 순서대로 네 가지.</figcaption></figure><div class="dg-more"><a href="p/agent-memory.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">복사기 vs 교정 담당</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><circle cx="48.0" cy="40.0" r="25.4" fill="var(--dg-blue-s)"/><g transform="translate(29.6,21.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="76" y="46" class="dg-tl">scp — 복사기</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="76" class="dg-ts">상대편에 뭐가 있는지 안 봄</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="100" class="dg-ts">파일 3개 바뀌어도 10GB 전부 재전송</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="124" class="dg-ts">98%에서 끊기면 처음부터</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--muted)">·</text><text x="44" y="148" class="dg-ts">일회성 단순 전송엔 충분</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><circle cx="362.0" cy="40.0" r="25.4" fill="var(--dg-green-s)"/><g transform="translate(343.6,21.6) scale(1.150)">
+<rect x="2" y="11" width="28" height="11" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="5" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="10" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="15" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="20" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<circle cx="26.5" cy="16.5" r="1.2" fill="var(--dg-green)"/></g><text x="390" y="46" class="dg-tl">rsync — 비교 후 차액만</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">목록·시각 대조 → 다른 것만 전송</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">재실행 = 이어서 (--partial은 파일 내부도)</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="124" class="dg-ts">매일 cron = 증분 백업 파이프라인</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="148" class="dg-ts">끝 슬래시 = 뚜껑 열고 붓기 — -n 먼저!</text><text x="12" y="182" class="dg-ts">--delete는 dry-run 없이 절대 금지 · 이관은 '미리 1차 동기화 → 전환 창에 차액만'</text></svg><figcaption>scp는 매번 전체를 다시, rsync는 비교 후 바뀐 조각만. 끊겨도 이어서 — 매일 돌리면 그게 증분 백업입니다.</figcaption></figure><div class="dg-more"><a href="p/rsync.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">질문 세 개에 답하는 태그</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.tg-0{animation:tg-h 3.0s ease-in-out infinite;animation-delay:0.0s;}
+.tg-1{animation:tg-h 3.0s ease-in-out infinite;animation-delay:1.0s;}
+.tg-2{animation:tg-h 3.0s ease-in-out infinite;animation-delay:2.0s;}
+@keyframes tg-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,20.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim tg-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<circle cx="16" cy="10" r="6" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<path d="M4.5 29 c0 -6.6 5.2 -11 11.5 -11 s11.5 4.4 11.5 11" fill="var(--dg-blue-s)"
+      stroke="var(--dg-blue)" stroke-width="1.8" stroke-linecap="round"/></g><text x="60" y="36" class="dg-t">owner</text><text x="216" y="36" class="dg-lab2">owner=infra-team</text><text x="396" y="36" class="dg-ts">"누구한테 물어봐?" — 팀 단위로</text><rect class="dg-box dg-anim tg-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="60" y="84" class="dg-t">project</text><text x="216" y="84" class="dg-lab2">project=goil-sports</text><text x="396" y="84" class="dg-ts">"어디 예산이야?" — 비용 group-by</text><rect class="dg-box dg-anim tg-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
+      stroke-linecap="round" stroke-linejoin="round"/></g><text x="60" y="132" class="dg-t">expire</text><text x="216" y="132" class="dg-lab2">expire=2026-09-30</text><text x="396" y="132" class="dg-ts">"언제 지워?" — 고아 자원 백신</text><text x="12" y="182" class="dg-ts">권고 말고 강제: 생성 차단 정책 · 미태그 스캔+통첩 · IaC default_tags · 표기 규칙 고정</text></svg><figcaption>누구 거야, 무슨 일이야, 언제 지워 — 이 셋만 강제하면 비용 배분·고아 청소·장애 연락이 풀립니다.</figcaption></figure><div class="dg-more"><a href="p/tag-strategy.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">사장의 지침서 vs 손님의 주문</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><circle cx="48.0" cy="40.0" r="25.4" fill="var(--dg-green-s)"/><g transform="translate(29.6,21.6) scale(1.150)">
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
+      stroke-linecap="round" stroke-linejoin="round"/></g><text x="76" y="46" class="dg-tl">시스템 — 지침서 (고정·권위)</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="76" class="dg-ts">역할·불변 규칙·출력 규격</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="100" class="dg-ts">캐시 프리픽스 — 앞에 고정 배치</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="124" class="dg-ts">검색 결과를 여기 넣기 (주입+캐시 파괴)</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="148" class="dg-ts">비밀 넣기 — 프롬프트는 금고가 아님</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><circle cx="362.0" cy="40.0" r="25.4" fill="var(--dg-blue-s)"/><g transform="translate(343.6,21.6) scale(1.150)">
+<circle cx="16" cy="10" r="6" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<path d="M4.5 29 c0 -6.6 5.2 -11 11.5 -11 s11.5 4.4 11.5 11" fill="var(--dg-blue-s)"
+      stroke="var(--dg-blue)" stroke-width="1.8" stroke-linecap="round"/></g><text x="390" y="46" class="dg-tl">유저 — 요청과 재료 (동적)</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">이번 질문 · 대화 이력</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">RAG 결과·첨부 — 구분자로 감싸 '자료'로</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--muted)">·</text><text x="358" y="124" class="dg-ts">세션 설정 변경은 유저 턴 말고 시스템 갱신</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--muted)">·</text><text x="358" y="148" class="dg-ts">지침은 짧게 — 안 지켜지면 예시로</text><text x="12" y="182" class="dg-ts">기준 하나: 대화가 바뀌어도 유지돼야 하는가 · 바꿨으면 골든셋 회귀 테스트</text></svg><figcaption>모델은 시스템 지시에 더 높은 권위를 둡니다. 고정 규칙은 시스템(앞), 동적 재료는 유저(뒤)로.</figcaption></figure><div class="dg-more"><a href="p/system-vs-user-prompt.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><div class="dg-cap-out">[그림 한 장] 요청 한 번의 VPC 여정 — 클릭에서 응답까지 무슨 일이 벌어지나</div><div class="viz">
 <svg viewBox="0 0 660 300" xmlns="http://www.w3.org/2000/svg">
   <text x="10" y="16" class="vz-cap">초록 점: 사용자 요청→응답 왕복 · 주황 점: 서버가 외부 API로 나가는 길(NAT)</text>
 

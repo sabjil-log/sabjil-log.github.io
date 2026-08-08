@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>scp 쓰다가 rsync로 못 돌아오는 이유 — 델타 전송과 재개 · 삽질노트</title>
+<meta name="description" content="scp는 매번 전부 다시 보내고, 끊기면 처음부터입니다. rsync는 바뀐 조각만 보내고, 끊긴 곳부터 잇죠. 옵션 다섯 개와 함정(슬래시!)까지.">
+<meta property="og:title" content="scp 쓰다가 rsync로 못 돌아오는 이유 — 델타 전송과 재개 · 삽질노트">
+<meta property="og:description" content="scp는 매번 전부 다시 보내고, 끊기면 처음부터입니다. rsync는 바뀐 조각만 보내고, 끊긴 곳부터 잇죠. 옵션 다섯 개와 함정(슬래시!)까지.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/rsync.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/rsync.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/rsync.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/rsync.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html" class="on">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-08-08</span><a class="chip" href="../c/linux.html">--linux</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>scp 쓰다가 rsync로 못 돌아오는 이유 — 델타 전송과 재개</h1><blockquote>
+<p><strong>한 줄 요약:</strong> scp는 <strong>복사기</strong>(매번 전체를 다시), rsync는 <strong>교정 담당</strong>(양쪽을 비교해 <strong>바뀐 부분만</strong> 전송)입니다. 재실행하면 이어서 하고, 매일 돌리면 증분 백업이 되죠. 단 하나의 유명한 함정 — <strong>원본 경로 끝의 슬래시 유무</strong>가 결과를 바꿉니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">복사기 vs 교정 담당</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><circle cx="48.0" cy="40.0" r="25.4" fill="var(--dg-blue-s)"/><g transform="translate(29.6,21.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="76" y="46" class="dg-tl">scp — 복사기</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="76" class="dg-ts">상대편에 뭐가 있는지 안 봄</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="100" class="dg-ts">파일 3개 바뀌어도 10GB 전부 재전송</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="124" class="dg-ts">98%에서 끊기면 처음부터</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--muted)">·</text><text x="44" y="148" class="dg-ts">일회성 단순 전송엔 충분</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><circle cx="362.0" cy="40.0" r="25.4" fill="var(--dg-green-s)"/><g transform="translate(343.6,21.6) scale(1.150)">
+<rect x="2" y="11" width="28" height="11" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="5" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="10" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="15" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="20" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<circle cx="26.5" cy="16.5" r="1.2" fill="var(--dg-green)"/></g><text x="390" y="46" class="dg-tl">rsync — 비교 후 차액만</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">목록·시각 대조 → 다른 것만 전송</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">재실행 = 이어서 (--partial은 파일 내부도)</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="124" class="dg-ts">매일 cron = 증분 백업 파이프라인</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="148" class="dg-ts">끝 슬래시 = 뚜껑 열고 붓기 — -n 먼저!</text><text x="12" y="182" class="dg-ts">--delete는 dry-run 없이 절대 금지 · 이관은 '미리 1차 동기화 → 전환 창에 차액만'</text></svg><figcaption>scp는 매번 전체를 다시, rsync는 비교 후 바뀐 조각만. 끊겨도 이어서 — 매일 돌리면 그게 증분 백업입니다.</figcaption></figure>
+<h2 id="scp">scp의 한계는 구조적이다</h2>
+<p>10GB 디렉토리를 scp로 보내다 98%에서 끊기면 — <strong>처음부터</strong>입니다. 어제 보낸 디렉토리에서 파일 3개가 바뀌어 다시 보내면 — <strong>10GB 전부</strong> 다시 갑니다. scp는 "복사해서 붙여넣기"라서 상대편에 뭐가 있는지 안 봐요.</p>
+<p>rsync의 발상: <strong>보내기 전에 양쪽을 비교하자.</strong> 파일 목록·크기·수정시각(필요시 체크섬)을 대조해 <strong>다르거나 없는 것만</strong> 전송합니다. 큰 파일 하나 안에서도 바뀐 블록만 보내는 델타 알고리즘이 이름의 유래고요. 그래서 —</p>
+<ul>
+<li>어제 10GB 보냈고 오늘 30MB 바뀌었으면 → <strong>오늘은 30MB만</strong></li>
+<li>끊겨도 재실행하면 → 이미 간 파일은 건너뛰고 <strong>이어서</strong></li>
+<li>매일 cron으로 돌리면 → 그 자체가 증분 백업 파이프라인</li>
+</ul>
+<h2 id="_1">기본형과 옵션 다섯 개</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>rsync<span class="w"> </span>-avz<span class="w"> </span>--progress<span class="w"> </span>/data/<span class="w"> </span>user@server:/backup/data/
+</code></pre></div>
+
+<ul>
+<li><strong>-a</strong> (archive): 권한·시각·심볼릭링크·재귀를 통째로 보존 — 사실상 항상 켭니다. 수정시각 보존은 다음 실행의 비교 기준이 되므로 증분의 전제이기도 해요.</li>
+<li><strong>-v / --progress</strong>: 뭘 보내는지, 얼마나 남았는지.</li>
+<li><strong>-z</strong>: 전송 압축 — 텍스트·로그엔 효자, 이미 압축된 것(영상, gz)엔 CPU 낭비.</li>
+<li><strong>--partial</strong> (또는 -P = --partial --progress): 끊긴 <strong>대용량 파일 하나</strong>도 조각을 보존해 이어받기. 불안한 회선의 필수품.</li>
+<li><strong>-n</strong> (--dry-run): <strong>실행 없이 뭘 할지 미리보기.</strong> 특히 --delete와 함께라면 의무입니다 — 아래에서.</li>
+</ul>
+<p>전송은 SSH 위로 가니(배스천의 ProxyJump도 그대로: <code>rsync -e "ssh -J bastion" ...</code>) 방화벽·키 체계는 scp와 동일합니다.</p>
+<h2 id="_2">그 유명한 함정: 끝 슬래시</h2>
+<p>rsync 사고의 8할입니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>rsync<span class="w"> </span>-av<span class="w"> </span>/data<span class="w">  </span>server:/backup/<span class="w">    </span><span class="c1"># → /backup/data/...   (디렉토리째)</span>
+rsync<span class="w"> </span>-av<span class="w"> </span>/data/<span class="w"> </span>server:/backup/<span class="w">    </span><span class="c1"># → /backup/...        (알맹이만)</span>
+</code></pre></div>
+
+<p><strong>원본 끝에 슬래시가 있으면 "안의 내용물을", 없으면 "그 디렉토리 자체를"</strong> 보냅니다. 한 글자 차이로 한 단계 중첩되거나 풀리죠. 외우는 요령: <strong>슬래시 = 뚜껑 열고 붓기.</strong> 헷갈리면 -n으로 목적지 경로를 먼저 확인 — 이게 dry-run이 존재하는 이유입니다.</p>
+<h2 id="-delete">--delete: 미러링의 칼</h2>
+<p>기본 rsync는 원본에서 지워진 파일을 목적지에서 안 지웁니다(쌓이기만). 완전한 미러가 필요하면:</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>rsync<span class="w"> </span>-avn<span class="w"> </span>--delete<span class="w"> </span>/data/<span class="w"> </span>server:/backup/data/<span class="w">   </span><span class="c1"># 반드시 -n 먼저!</span>
+<span class="c1"># &quot;deleting old-report.pdf&quot; 목록을 눈으로 확인한 뒤</span>
+rsync<span class="w"> </span>-av<span class="w"> </span>--delete<span class="w"> </span>/data/<span class="w"> </span>server:/backup/data/
+</code></pre></div>
+
+<p>--delete + 슬래시 실수 + 오타 경로가 만나면 <strong>목적지를 통째로 비우는</strong> 대참사가 됩니다. 그래서 규칙: <strong>--delete는 dry-run 없이 절대 실행하지 않는다.</strong> 그리고 미러는 백업이 아니라는 것도 — 원본의 랜섬웨어·실수 삭제가 그대로 미러에 복제되니, 시점 보존(스냅샷 글의 그것)과는 역할이 다릅니다.</p>
+<h2 id="_3">실전 레시피</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># 매일 새벽 증분 백업 (cron — 그 글의 PATH·로그 원칙대로)</span>
+rsync<span class="w"> </span>-az<span class="w"> </span>--delete<span class="w"> </span>--exclude<span class="o">=</span><span class="s1">&#39;*.tmp&#39;</span><span class="w"> </span>--exclude<span class="o">=</span><span class="s1">&#39;cache/&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>/srv/app/<span class="w"> </span>backup@10.0.5.20:/backup/app/<span class="w"> </span>&gt;&gt;<span class="w"> </span>/var/log/rsync-app.log<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span>
+
+<span class="c1"># 대용량 이관: 서비스 중 1차 동기화 → 정지 → 차액만 2차 → 전환</span>
+rsync<span class="w"> </span>-avz<span class="w"> </span>--progress<span class="w"> </span>/var/lib/data/<span class="w"> </span>new-server:/var/lib/data/<span class="w">   </span><span class="c1"># 몇 시간 걸려도 OK (서비스 중)</span>
+<span class="c1"># 점검시간에 서비스 정지 후:</span>
+rsync<span class="w"> </span>-avz<span class="w"> </span>--delete<span class="w"> </span>/var/lib/data/<span class="w"> </span>new-server:/var/lib/data/<span class="w">     </span><span class="c1"># 차액 몇 분이면 끝</span>
+</code></pre></div>
+
+<p>두 번째가 관리형 DB 이관 글에서 말한 "복제 후 짧은 전환"의 파일 버전입니다 — <strong>큰 덩어리는 미리, 전환 창에는 차액만.</strong> 다운타임이 시간 단위에서 분 단위로 줄어요.</p>
+<h2 id="_4">한 줄 정리</h2>
+<p>rsync = <strong>비교 후 차액만 + 끊긴 곳부터.</strong> -a는 기본, --partial은 대용량, --delete는 dry-run 먼저, 그리고 <strong>끝 슬래시(뚜껑 열기)</strong>만 몸에 새기면 — 복사·백업·이관·미러링이 명령 하나로 통일됩니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --linux</div><a href="../p/strace.html"><span class="g">&#10095;</span>프로세스가 뭘 하다 멈췄는지 훔쳐보기 — strace 입문</a><a href="../p/zombie-process.html"><span class="g">&#10095;</span>좀비 프로세스는 kill -9로도 안 죽는다 — Z 상태의 정체</a><a href="../p/chmod-755.html"><span class="g">&#10095;</span>chmod 755의 숫자는 어디서 왔나 — 읽기4 쓰기2 실행1</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/system-vs-user-prompt.html"><span class="lbl">newer</span>시스템 프롬프트와 유저 프롬프트, 왜 굳이 나눠놨을까</a><a href="../p/multi-stage-build.html" style="text-align:right"><span class="lbl">older</span>1.2GB 이미지가 80MB가 되기까지 — 멀티스테이지 빌드</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

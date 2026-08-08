@@ -32,10 +32,22 @@
   <nav class="nav"><a href="index.html" class="on">home</a><a href="c/troubleshooting.html">--troubleshooting</a><a href="c/linux.html">--linux</a><a href="c/cloud.html">--cloud</a><a href="c/network.html">--network</a><a href="c/security.html">--security</a><a href="c/ai.html">--ai</a><a href="visual.html">--visual</a><a href="archive.html">--all</a></nav>
 </div></header>
 <div class="wrap"><section class="facade" aria-label="삽질노트"><div class="fac-bar"><span class="fac-dots"></span><span class="fac-title">sabjil-log — bash</span></div><div class="fac-body"><div class="fac-line"><span class="fac-p">$</span> whoami</div><div class="fac-name">삽질노트</div><div class="fac-line"><span class="fac-p">$</span> cat tagline.txt</div><div class="fac-out">삽질해서 배운 걸, 남은 안 삽질하게.<br>리눅스 · 클라우드 · AI — 매일 쌓는 실무 노트</div><div class="fac-line"><span class="fac-p">$</span><span class="cur"></span></div></div></section></div><main class="wrap">
-<section class="list"><div class="search"><span class="sig">grep -i</span><input id="q" type="search" placeholder="&quot;검색어&quot; — 제목·요약·태그" autocomplete="off" spellcheck="false"></div><div class="list-head">최근 글 · 76개</div><article class="entry" data-search="방화벽이 있는데 왜 waf가 또 필요하죠 — 겉봉투 검사와 내용물 검사 acg·nacl은 &#x27;누가 어느 문으로&#x27;를 검사하고, waf는 &#x27;들고 온 내용물&#x27;을 검사합니다. 정상적으로 열린 443 포트로 들어오는 공격은 waf의 영역이에요. 보안 security waf 방화벽 sql 인젝션 xss l7 보안">
+<section class="list"><div class="search"><span class="sig">grep -i</span><input id="q" type="search" placeholder="&quot;검색어&quot; — 제목·요약·태그" autocomplete="off" spellcheck="false"></div><div class="list-head">최근 글 · 79개</div><article class="entry" data-search="방화벽이 있는데 왜 waf가 또 필요하죠 — 겉봉투 검사와 내용물 검사 acg·nacl은 &#x27;누가 어느 문으로&#x27;를 검사하고, waf는 &#x27;들고 온 내용물&#x27;을 검사합니다. 정상적으로 열린 443 포트로 들어오는 공격은 waf의 영역이에요. 보안 security waf 방화벽 sql 인젝션 xss l7 보안">
   <div class="meta"><span>2026-08-08</span><a class="chip" href="c/security.html">--security</a><span>3 min</span></div>
   <h2><a href="p/what-is-waf.html"><span class="g">&#10095;</span>방화벽이 있는데 왜 WAF가 또 필요하죠 — 겉봉투 검사와 내용물 검사</a></h2>
   <p class="sum">ACG·NACL은 &#x27;누가 어느 문으로&#x27;를 검사하고, WAF는 &#x27;들고 온 내용물&#x27;을 검사합니다. 정상적으로 열린 443 포트로 들어오는 공격은 WAF의 영역이에요.</p>
+</article><article class="entry" data-search="태그 세 개면 충분하다 — owner, project, expire 태그 정책은 거창하게 시작하면 아무도 안 지킵니다. &#x27;누구 거냐, 무슨 일이냐, 언제 지우냐&#x27; — 질문 세 개에 답하는 최소 정책과 강제 장치. 클라우드 cloud 태그 거버넌스 비용배분 finops ncp aws">
+  <div class="meta"><span>2026-08-08</span><a class="chip" href="c/cloud.html">--cloud</a><span>2 min</span></div>
+  <h2><a href="p/tag-strategy.html"><span class="g">&#10095;</span>태그 세 개면 충분하다 — owner, project, expire</a></h2>
+  <p class="sum">태그 정책은 거창하게 시작하면 아무도 안 지킵니다. &#x27;누구 거냐, 무슨 일이냐, 언제 지우냐&#x27; — 질문 세 개에 답하는 최소 정책과 강제 장치.</p>
+</article><article class="entry" data-search="시스템 프롬프트와 유저 프롬프트, 왜 굳이 나눠놨을까 같은 텍스트인데 칸이 두 개인 이유 — 권위의 위계, 캐싱, 그리고 주입 방어까지. 무엇을 어느 칸에 넣을지의 기준을 정리했어요. ai/llm ai 시스템 프롬프트 역할 프롬프트 설계 프롬프트 주입 llm">
+  <div class="meta"><span>2026-08-08</span><a class="chip" href="c/ai.html">--ai</a><span>2 min</span></div>
+  <h2><a href="p/system-vs-user-prompt.html"><span class="g">&#10095;</span>시스템 프롬프트와 유저 프롬프트, 왜 굳이 나눠놨을까</a></h2>
+  <p class="sum">같은 텍스트인데 칸이 두 개인 이유 — 권위의 위계, 캐싱, 그리고 주입 방어까지. 무엇을 어느 칸에 넣을지의 기준을 정리했어요.</p>
+</article><article class="entry" data-search="scp 쓰다가 rsync로 못 돌아오는 이유 — 델타 전송과 재개 scp는 매번 전부 다시 보내고, 끊기면 처음부터입니다. rsync는 바뀐 조각만 보내고, 끊긴 곳부터 잇죠. 옵션 다섯 개와 함정(슬래시!)까지. 리눅스 linux rsync scp 델타 전송 백업 동기화">
+  <div class="meta"><span>2026-08-08</span><a class="chip" href="c/linux.html">--linux</a><span>3 min</span></div>
+  <h2><a href="p/rsync.html"><span class="g">&#10095;</span>scp 쓰다가 rsync로 못 돌아오는 이유 — 델타 전송과 재개</a></h2>
+  <p class="sum">scp는 매번 전부 다시 보내고, 끊기면 처음부터입니다. rsync는 바뀐 조각만 보내고, 끊긴 곳부터 잇죠. 옵션 다섯 개와 함정(슬래시!)까지.</p>
 </article><article class="entry" data-search="1.2gb 이미지가 80mb가 되기까지 — 멀티스테이지 빌드 빌드 도구는 짐 싸는 데만 필요하고 여행엔 필요 없습니다. 공장(빌드 스테이지)과 매장(런타임 스테이지)을 분리하는 멀티스테이지의 원리와 함정. 트러블슈팅 troubleshooting docker multi-stage 이미지 경량화 빌드 보안">
   <div class="meta"><span>2026-08-08</span><a class="chip" href="c/troubleshooting.html">--troubleshooting</a><span>4 min</span></div>
   <h2><a href="p/multi-stage-build.html"><span class="g">&#10095;</span>1.2GB 이미지가 80MB가 되기까지 — 멀티스테이지 빌드</a></h2>
