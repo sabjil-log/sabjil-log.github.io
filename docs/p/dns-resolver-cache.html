@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DNS는 맞는데 가끔만 느리다 — 리졸버 캐시 4층과 hosts 우선순위 · 삽질노트</title>
+<meta name="description" content="&#x27;첫 요청만 느리고 그다음은 빠른&#x27; 패턴은 DNS 캐시 미스의 지문입니다. 조회가 거치는 4층 구조, negative 캐시의 함정, hosts 파일이 이기는 이유까지.">
+<meta property="og:title" content="DNS는 맞는데 가끔만 느리다 — 리졸버 캐시 4층과 hosts 우선순위 · 삽질노트">
+<meta property="og:description" content="&#x27;첫 요청만 느리고 그다음은 빠른&#x27; 패턴은 DNS 캐시 미스의 지문입니다. 조회가 거치는 4층 구조, negative 캐시의 함정, hosts 파일이 이기는 이유까지.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/dns-resolver-cache.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/dns-resolver-cache.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/dns-resolver-cache.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/dns-resolver-cache.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html" class="on">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-08-12</span><a class="chip" href="../c/network.html">--network</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>DNS는 맞는데 가끔만 느리다 — 리졸버 캐시 4층과 hosts 우선순위</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 이름 하나를 푸는 데도 <strong>hosts 파일 → 로컬 캐시(systemd-resolved 등) → 리졸버 캐시 → 권위 서버</strong>의 4층을 거칩니다. "가끔만 느림"은 대개 <strong>캐시 미스의 순간</strong>(TTL 만료 직후, 첫 조회)이고, "고쳤는데 계속 안 됨"은 대개 <strong>어느 층의 낡은 캐시</strong>(특히 실패를 기억하는 negative 캐시)입니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">DNS 조회의 4층 계단</div><svg viewBox="0 0 640 238" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.dc-0{animation:dc-h 4.0s ease-in-out infinite;animation-delay:0.0s;}
+.dc-1{animation:dc-h 4.0s ease-in-out infinite;animation-delay:1.0s;}
+.dc-2{animation:dc-h 4.0s ease-in-out infinite;animation-delay:2.0s;}
+.dc-3{animation:dc-h 4.0s ease-in-out infinite;animation-delay:3.0s;}
+@keyframes dc-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim dc-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="60" y="36" class="dg-t">① /etc/hosts</text><text x="216" y="36" class="dg-lab2">조회 전에 먼저 봄</text><text x="396" y="36" class="dg-ts">캐시 아님 — 정답 강제 (잊힌 한 줄 주의)</text><rect class="dg-box dg-anim dc-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<rect x="4" y="4" width="24" height="16" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="6.5" y="6.5" width="19" height="11" rx="1" fill="var(--dg-screen)"/>
+<path d="M1.5 22 h29 l-2.5 3.5 H4 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/></g><text x="60" y="84" class="dg-t">② 로컬 스텁 캐시</text><text x="216" y="84" class="dg-lab2">systemd-resolved (127.0.0.53)</text><text x="396" y="84" class="dg-ts">resolvectl flush-caches</text><rect class="dg-box dg-anim dc-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="60" y="132" class="dg-t">③ 리졸버 캐시</text><text x="216" y="132" class="dg-lab2">resolv.conf의 그 서버</text><text x="396" y="132" class="dg-ts">dig @8.8.8.8 로 판별</text><rect class="dg-box dg-anim dc-3" x="12" y="156" width="616" height="38" rx="9"/><g transform="translate(17.6,156.6) scale(1.150)">
+<circle cx="16" cy="16" r="13" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<ellipse cx="16" cy="16" rx="5.5" ry="13" fill="none" stroke="var(--dg-blue)" stroke-width="1.4"/>
+<path d="M3 16 h26 M5.2 9.5 h21.6 M5.2 22.5 h21.6" stroke="var(--dg-blue)" stroke-width="1.4"/></g><text x="60" y="180" class="dg-t">④ 권위 서버</text><text x="216" y="180" class="dg-lab2">진짜 원본</text><text x="396" y="180" class="dg-ts">여기까지 가는 순간이 '가끔 느림'</text><text x="12" y="230" class="dg-ts">실패(NXDOMAIN)도 캐시됩니다 — 새 레코드는 '만들고 나서' 조회 · 진단: getent → resolvectl → dig</text></svg><figcaption>평소엔 위층 캐시에서 끝나 0ms대, TTL 만료 직후만 바닥까지 내려갔다 옵니다. hosts는 캐시가 아니라 오버라이드예요.</figcaption></figure>
+<h2 id="_1">증상 두 가지, 원인은 한 구조</h2>
+<p><strong>증상 A:</strong> API 호출이 대부분 20ms인데 가끔 1초 넘게 튐 — 애플리케이션은 무죄, p95 그래프만 지저분함.
+<strong>증상 B:</strong> DNS 레코드를 고쳤는데(그 글의 TTL도 확인했는데) 특정 서버에서만 계속 옛 주소로 감.</p>
+<p>둘 다 같은 구조에서 나옵니다 — DNS 조회는 한 번의 질문이 아니라 <strong>캐시 계단</strong>을 내려가는 과정이라는 것.</p>
+<h2 id="4">4층 구조 — 질문이 여행하는 길</h2>
+<div class="highlight"><pre><span></span><code>① /etc/hosts          — 캐시 아님, &#39;정답 강제&#39; (조회 전에 먼저 봄)
+② 로컬 스텁 캐시       — systemd-resolved (127.0.0.53), nscd 등
+③ 리졸버 캐시          — /etc/resolv.conf의 그 서버 (사내 DNS, 8.8.8.8, VPC 리졸버)
+④ 권위 서버            — 진짜 원본 (dns-records 글의 그 안내판)
+</code></pre></div>
+
+<p>각 층은 답을 <strong>TTL만큼 기억</strong>합니다. 평소엔 ①~②에서 끝나 0ms대 — 그러다 TTL이 만료된 직후의 첫 조회만 ④까지 내려갔다 오느라 느린 거죠. 증상 A의 정체입니다. 특히 <strong>TTL을 아주 짧게(수십 초) 잡은 레코드</strong>나, 조회가 뜸해 캐시가 자주 식는 배치성 워크로드에서 도드라져요.</p>
+<p>한 층씩 캐시를 우회하며 어디가 느린지 재는 법:</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="nb">time</span><span class="w"> </span>getent<span class="w"> </span>hosts<span class="w"> </span>api.example.com<span class="w">     </span><span class="c1"># ①~② 포함한 실제 앱 경로의 시간</span>
+resolvectl<span class="w"> </span>query<span class="w"> </span>api.example.com<span class="w">      </span><span class="c1"># ② systemd-resolved 기준 (캐시 여부 표시)</span>
+dig<span class="w"> </span>api.example.com<span class="w">                   </span><span class="c1"># ②를 건너뛰고 ③에 직접 — resolv.conf의 서버로</span>
+dig<span class="w"> </span>@8.8.8.8<span class="w"> </span>api.example.com<span class="w">          </span><span class="c1"># ③도 바꿔서 — 사내 리졸버가 범인인지 판별</span>
+dig<span class="w"> </span>@권위서버<span class="w"> </span>api.example.com<span class="w"> </span>+norecurse<span class="w">   </span><span class="c1"># ④ 원본 직행</span>
+</code></pre></div>
+
+<p><code>dig</code>는 빠른데 앱은 느리다? — dig는 ②를 안 거치므로, <strong>로컬 스텁이나 앱 자체의 리졸버 설정</strong>(컨테이너의 DNS 설정, JVM의 자체 캐시처럼 앱 레벨 캐시가 또 있는 경우도!) 쪽으로 용의선이 좁혀집니다.</p>
+<h2 id="1-negative">함정 1 — 실패도 기억된다 (negative 캐시)</h2>
+<p>"서버 띄우기 전에 접속해봤다가 안 됐고, 서버 띄운 뒤에도 한동안 안 됨" — <strong>NXDOMAIN(그런 이름 없음)이라는 실패 응답도 캐시</strong>되기 때문입니다. 새 레코드를 만들자마자 조회하면, 방금의 "없음"이 각 층에 기억돼 있어서 생긴 지 한참 뒤까지 없다고 답해요. 새 서브도메인 배포 직후의 단골 미스터리 — 기다리거나, 아래 flush로 층을 비웁니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>sudo<span class="w"> </span>resolvectl<span class="w"> </span>flush-caches<span class="w">          </span><span class="c1"># ② systemd-resolved 비우기</span>
+resolvectl<span class="w"> </span>statistics<span class="w">                 </span><span class="c1"># 캐시 히트/미스 통계 — 진단에도 유용</span>
+</code></pre></div>
+
+<p>③(사내/벤더 리졸버)의 캐시는 우리가 못 비우는 경우가 많으니, <strong>negative TTL이 지나기를 기다리는 것</strong>까지 계획에 넣는 게 현실적입니다. 애초에 배포 절차를 "레코드 먼저, 조회는 나중"으로 잡는 게 백신이고요.</p>
+<h2 id="2-hosts">함정 2 — hosts 파일은 캐시보다 세다</h2>
+<p>①은 캐시가 아니라 <strong>오버라이드</strong>입니다. 조회 자체를 안 하고 그 값을 씁니다 — TTL도 만료도 없어요. 그래서 강력한 도구이자 시한폭탄입니다.</p>
+<ul>
+<li><strong>도구로:</strong> 이관 리허설 때 <code>10.0.9.99 api.example.com</code> 한 줄이면 DNS 전환 없이 새 서버를 테스트할 수 있죠 (curl 글의 <code>--resolve</code>와 같은 용도 — 그쪽이 더 안전하긴 합니다. 명령 하나에만 적용되니까).</li>
+<li><strong>폭탄으로:</strong> 그 한 줄을 <strong>지우는 걸 잊으면</strong>, 전 세계 DNS가 다 바뀌어도 그 서버만 영원히 옛 주소로 갑니다. 증상 B의 단골 범인 — "고쳤는데 이 서버만 안 돼요"는 <code>cat /etc/hosts</code>부터 보세요. 30초짜리 확인이 반나절 수사를 아낍니다.</li>
+</ul>
+<p>우선순위 자체도 설정입니다 — <code>/etc/nsswitch.conf</code>의 <code>hosts: files dns</code> 줄이 "① 먼저, 그다음 DNS"라는 규칙의 출처예요. 순서가 다르게 고쳐진 서버(드물지만 있습니다)는 이 상식이 안 통하니, 정말 미궁이면 여기까지 확인.</p>
+<h2 id="_2">운영 감각 — 캐시는 적이 아니다</h2>
+<p>증상만 보면 캐시를 끄고 싶어지는데, 캐시가 없으면 <strong>모든 조회가 ④행</strong>이라 지연·리졸버 부하·권위 서버 의존이 전부 나빠집니다(CDN 글의 그 논리 — 캐시는 성능의 뼈대). 실무 정석은 반대 방향이에요.</p>
+<ul>
+<li>자주 부르는 외부 API가 있다면 <strong>커넥션 재사용</strong>(TIME_WAIT 글의 keep-alive)으로 조회 횟수 자체를 줄이고</li>
+<li>마이크로서비스 간 호출이 많으면 로컬 캐시 데몬(②)이 제 역할을 하는지 <code>resolvectl statistics</code>로 확인하고</li>
+<li>TTL은 dns-records 글의 원칙대로 — 평상시 넉넉히, 변경 계획 시에만 미리 낮추기</li>
+</ul>
+<h2 id="_3">한 줄 정리</h2>
+<p>DNS 조회는 <strong>hosts → 로컬 캐시 → 리졸버 → 권위</strong>의 계단이고, "가끔 느림"은 TTL 만료 순간, "계속 옛 주소"는 낡은 캐시나 <strong>잊힌 hosts 한 줄</strong>입니다. <code>getent → resolvectl → dig → dig @8.8.8.8</code>로 층을 벗겨가며 재고, 실패도 캐시된다는 것(negative)까지 기억하면 — DNS 미스터리의 9할이 풀립니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --network</div><a href="../p/peering-vs-tgw.html"><span class="g">&#10095;</span>VPC가 늘어나면 연결이 지옥이 된다 — 피어링 vs Transit Gateway</a><a href="../p/dns-records.html"><span class="g">&#10095;</span>A, CNAME, MX, TXT — 도메인 연결이 안 될 때 봐야 할 레코드들</a><a href="../p/mtu-fragmentation.html"><span class="g">&#10095;</span>VPN 붙이면 특정 사이트만 안 열린다 — MTU와 패킷 조각화</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/embedding-choice.html"><span class="lbl">newer</span>임베딩 모델 고르기 — 리더보드 1등을 덥석 쓰면 안 되는 이유</a><a href="../p/what-is-waf.html" style="text-align:right"><span class="lbl">older</span>방화벽이 있는데 왜 WAF가 또 필요하죠 — 겉봉투 검사와 내용물 검사</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://sabjil-log.github.io/</loc><lastmod>2026-08-08</lastmod></url>
-  <url><loc>https://sabjil-log.github.io/archive.html</loc><lastmod>2026-08-08</lastmod></url>
-  <url><loc>https://sabjil-log.github.io/visual.html</loc><lastmod>2026-08-08</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/</loc><lastmod>2026-08-11</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/archive.html</loc><lastmod>2026-08-11</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/visual.html</loc><lastmod>2026-08-11</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/p/serverless-economics.html</loc><lastmod>2026-08-12</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/p/embedding-choice.html</loc><lastmod>2026-08-12</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/p/dns-resolver-cache.html</loc><lastmod>2026-08-12</lastmod></url>
   <url><loc>https://sabjil-log.github.io/p/what-is-waf.html</loc><lastmod>2026-08-08</lastmod></url>
   <url><loc>https://sabjil-log.github.io/p/tag-strategy.html</loc><lastmod>2026-08-08</lastmod></url>
   <url><loc>https://sabjil-log.github.io/p/system-vs-user-prompt.html</loc><lastmod>2026-08-08</lastmod></url>
@@ -82,10 +85,10 @@
   <url><loc>https://sabjil-log.github.io/p/onedrive-unicode.html</loc><lastmod>2026-07-09</lastmod></url>
   <url><loc>https://sabjil-log.github.io/p/network-triage.html</loc><lastmod>2026-07-09</lastmod></url>
   <url><loc>https://sabjil-log.github.io/p/ncp-aws-map.html</loc><lastmod>2026-07-09</lastmod></url>
-  <url><loc>https://sabjil-log.github.io/c/troubleshooting.html</loc><lastmod>2026-08-08</lastmod></url>
-  <url><loc>https://sabjil-log.github.io/c/linux.html</loc><lastmod>2026-08-08</lastmod></url>
-  <url><loc>https://sabjil-log.github.io/c/cloud.html</loc><lastmod>2026-08-08</lastmod></url>
-  <url><loc>https://sabjil-log.github.io/c/network.html</loc><lastmod>2026-08-08</lastmod></url>
-  <url><loc>https://sabjil-log.github.io/c/security.html</loc><lastmod>2026-08-08</lastmod></url>
-  <url><loc>https://sabjil-log.github.io/c/ai.html</loc><lastmod>2026-08-08</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/c/troubleshooting.html</loc><lastmod>2026-08-11</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/c/linux.html</loc><lastmod>2026-08-11</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/c/cloud.html</loc><lastmod>2026-08-11</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/c/network.html</loc><lastmod>2026-08-11</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/c/security.html</loc><lastmod>2026-08-11</lastmod></url>
+  <url><loc>https://sabjil-log.github.io/c/ai.html</loc><lastmod>2026-08-11</lastmod></url>
 </urlset>

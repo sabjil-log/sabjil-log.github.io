@@ -5,6 +5,27 @@
   <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
   <language>ko</language>
     <item>
+      <title>서버리스는 언제 싸고 언제 비싼가 — 택시 요금의 경제학</title>
+      <link>https://sabjil-log.github.io/p/serverless-economics.html</link>
+      <guid>https://sabjil-log.github.io/p/serverless-economics.html</guid>
+      <pubDate>Wed, 12 Aug 2026 00:00:00 -0000</pubDate>
+      <description>실행한 만큼만 내는 건 축복이자 저주입니다. 간헐 트래픽엔 압승, 상시 트래픽엔 역전 — 손익분기의 감각과 비용 밖의 진짜 비용까지.</description>
+    </item>
+    <item>
+      <title>임베딩 모델 고르기 — 리더보드 1등을 덥석 쓰면 안 되는 이유</title>
+      <link>https://sabjil-log.github.io/p/embedding-choice.html</link>
+      <guid>https://sabjil-log.github.io/p/embedding-choice.html</guid>
+      <pubDate>Wed, 12 Aug 2026 00:00:00 -0000</pubDate>
+      <description>RAG 품질의 상한선은 임베딩이 정합니다. 언어·차원·크기·비용의 네 축과, 벤치마크보다 중요한 &#x27;내 데이터 30문항 테스트&#x27;까지.</description>
+    </item>
+    <item>
+      <title>DNS는 맞는데 가끔만 느리다 — 리졸버 캐시 4층과 hosts 우선순위</title>
+      <link>https://sabjil-log.github.io/p/dns-resolver-cache.html</link>
+      <guid>https://sabjil-log.github.io/p/dns-resolver-cache.html</guid>
+      <pubDate>Wed, 12 Aug 2026 00:00:00 -0000</pubDate>
+      <description>&#x27;첫 요청만 느리고 그다음은 빠른&#x27; 패턴은 DNS 캐시 미스의 지문입니다. 조회가 거치는 4층 구조, negative 캐시의 함정, hosts 파일이 이기는 이유까지.</description>
+    </item>
+    <item>
       <title>방화벽이 있는데 왜 WAF가 또 필요하죠 — 겉봉투 검사와 내용물 검사</title>
       <link>https://sabjil-log.github.io/p/what-is-waf.html</link>
       <guid>https://sabjil-log.github.io/p/what-is-waf.html</guid>
@@ -122,26 +143,5 @@
       <guid>https://sabjil-log.github.io/p/fd-limit.html</guid>
       <pubDate>Sun, 02 Aug 2026 00:00:00 -0000</pubDate>
       <description>이 에러의 &#x27;파일&#x27;에는 소켓·파이프도 포함됩니다. 한도의 3단 구조(시스템/프로세스/systemd)와 누수 색출법을 정리했어요.</description>
-    </item>
-    <item>
-      <title>알람이 100개 오면 0개 온 것과 같다 — 알람 피로 없는 모니터링 설계</title>
-      <link>https://sabjil-log.github.io/p/alert-design.html</link>
-      <guid>https://sabjil-log.github.io/p/alert-design.html</guid>
-      <pubDate>Sun, 02 Aug 2026 00:00:00 -0000</pubDate>
-      <description>알람의 목적은 &#x27;알림&#x27;이 아니라 &#x27;행동&#x27;입니다. 증상 기반 알람, 지속시간 조건, 심각도 분리 — 새벽에 울릴 자격이 있는 알람만 남기는 법.</description>
-    </item>
-    <item>
-      <title>같은 프롬프트 앞부분은 왜 싸질까 — 프롬프트 캐싱의 원리와 설계</title>
-      <link>https://sabjil-log.github.io/p/prompt-caching.html</link>
-      <guid>https://sabjil-log.github.io/p/prompt-caching.html</guid>
-      <pubDate>Thu, 30 Jul 2026 00:00:00 -0000</pubDate>
-      <description>LLM은 매 요청마다 프롬프트 전체를 다시 계산합니다. 캐싱은 그 계산의 &#x27;중간 결과&#x27;를 재사용하는 것 — 프롬프트를 어떻게 배치하느냐가 곧 요금입니다.</description>
-    </item>
-    <item>
-      <title>죽였는데 포트가 안 풀린다 — Address already in use 3분 수사</title>
-      <link>https://sabjil-log.github.io/p/port-in-use.html</link>
-      <guid>https://sabjil-log.github.io/p/port-in-use.html</guid>
-      <pubDate>Thu, 30 Jul 2026 00:00:00 -0000</pubDate>
-      <description>분명 프로세스를 죽였는데 재시작하면 Address already in use. 범인은 셋 중 하나입니다 — 살아있는 자식, TIME_WAIT, 또는 엉뚱한 점유자.</description>
     </item>
 </channel></rss>
