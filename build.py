@@ -259,7 +259,23 @@ def main():
     open(os.path.join(DOCS, ".nojekyll"), "w").write("")
 
     posts = [read_post(p) for p in glob.glob(os.path.join(POSTS_DIR, "*.md"))]
+    # ── 예약 발행: 오늘보다 미래 날짜의 글은 아직 공개하지 않는다 ──
+    today = datetime.date.today().isoformat()
+    scheduled = [p for p in posts if p["date"] > today]
+    posts = [p for p in posts if p["date"] <= today]
+    if scheduled:
+        nxt = min(p["date"] for p in scheduled)
+        print(f"예약 대기 {len(scheduled)}편 (가장 이른 공개일 {nxt})")
     posts.sort(key=lambda x: (x["date"], x["slug"]), reverse=True)
+
+    # 예약 대기·삭제된 글의 이전 빌드 잔재 제거
+    live = {p["slug"] for p in posts}
+    for stale in glob.glob(os.path.join(DOCS, "p", "*.html")):
+        if os.path.basename(stale)[:-5] not in live:
+            os.remove(stale); print("  잔재 제거:", os.path.basename(stale))
+    for stale in glob.glob(os.path.join(DOCS, "og", "*.png")):
+        if os.path.basename(stale)[:-4] not in live:
+            os.remove(stale)
 
     # 개별 글
     viz_gallery = []          # (제목, slug, viz HTML) — 갤러리용
@@ -358,10 +374,11 @@ def main():
              '<p class="sum" style="margin:0 0 6px;color:var(--muted)">'
              '움직이는 그림으로 개념을 한 장에 담았습니다. 각 카드의 링크에서 자세한 설명을 읽을 수 있어요.</p>']
     for name, d in DG.DIAGRAMS.items():
-        link = (f'<a href="p/{d["post"]}.html">자세히 읽기 &#10095;</a>'
-                if d.get("post") in slug_set else "")
+        if d.get("post") not in slug_set:
+            continue          # 아직 공개되지 않은 글의 다이어그램은 갤러리에서도 숨김
         cards.append(f'<div class="dg-card">{DG.render(name)}'
-                     f'<div class="dg-more">{link}</div></div>')
+                     f'<div class="dg-more">'
+                     f'<a href="p/{d["post"]}.html">자세히 읽기 &#10095;</a></div></div>')
     for title, slug, viz in viz_gallery:
         cards.append(
             f'<div class="dg-card"><div class="dg-cap-out">{html.escape(title)}</div>'
