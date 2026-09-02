@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>로컬 LLM은 언제 정답인가 — 온디바이스 vs API의 손익분기 · 삽질노트</title>
+<meta name="description" content="GPU 사서 직접 돌리는 게 이득인 조건은 생각보다 좁습니다. 다만 그 좁은 조건(데이터 반출 금지, 상시 고부하)에 걸리면 선택지가 아니라 필수가 되죠.">
+<meta property="og:title" content="로컬 LLM은 언제 정답인가 — 온디바이스 vs API의 손익분기 · 삽질노트">
+<meta property="og:description" content="GPU 사서 직접 돌리는 게 이득인 조건은 생각보다 좁습니다. 다만 그 좁은 조건(데이터 반출 금지, 상시 고부하)에 걸리면 선택지가 아니라 필수가 되죠.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/local-vs-api-llm.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/local-vs-api-llm.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/local-vs-api-llm.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/local-vs-api-llm.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-02</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>로컬 LLM은 언제 정답인가 — 온디바이스 vs API의 손익분기</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 로컬(자체 서빙) LLM의 손익은 <strong>가동률과 규제</strong>가 정합니다. 간헐 사용이면 API가 압도적으로 싸고(서버리스 글의 그 택시 논리), <strong>상시 고부하이거나 데이터 반출이 금지된 환경</strong>이면 로컬이 답이 됩니다. 그리고 품질·운영 부담은 여전히 API 쪽이 유리하다는 걸 전제로 계산해야 해요.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">로컬 LLM vs API — 갈리는 세 축</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><circle cx="48.0" cy="40.0" r="25.4" fill="var(--dg-blue-s)"/><g transform="translate(29.6,21.6) scale(1.150)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="76" y="46" class="dg-tl">로컬(자체 서빙)이 정답</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="76" class="dg-ts">데이터 반출 금지 (CSAP·금융·의료)</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="100" class="dg-ts">상시 고부하 — GPU 유휴가 적음</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="124" class="dg-ts">대량 정형 작업 (분류·추출·요약)</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="148" class="dg-ts">운영이 내 일 — 서빙·VRAM·가용성·교체</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><circle cx="362.0" cy="40.0" r="25.4" fill="var(--dg-blue-s)"/><g transform="translate(343.6,21.6) scale(1.150)">
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g><text x="390" y="46" class="dg-tl">API가 정답</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">간헐 사용 — 부른 만큼만</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">최상위 품질·복잡 추론</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="124" class="dg-ts">프롬프트 캐싱으로 실효 단가 급락</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="148" class="dg-ts">프롬프트가 외부로 나감 (마스킹 필요)</text><text x="12" y="182" class="dg-ts">손익분기 계산 전에 캐싱 적용 단가로 · 동시성 기준 VRAM · API 폴백 설계까지</text></svg><figcaption>반출 금지면 로컬 확정, 그 외엔 가동률이 정합니다. 대부분은 게이트웨이로 섞는 하이브리드에 안착해요.</figcaption></figure>
+<h2 id="_1">세 가지 축으로 갈린다</h2>
+<p><strong>① 데이터 경계 (가장 강한 조건).</strong> 공공·금융·의료처럼 <strong>데이터를 외부로 못 보내는</strong> 환경이면 계산이 끝납니다 — 비용이 비싸도 로컬입니다. CSAP 대상 시스템, 개인정보를 프롬프트에 담아야 하는 워크로드가 여기 해당하죠. 게이트웨이 글의 마스킹·가명화로 완화하는 방법도 있지만, "원문이 필요한 작업"(문서 요약, 상담 이력 분석)은 마스킹으로 품질이 무너지는 경우가 많습니다.</p>
+<p><strong>② 가동률.</strong> GPU는 <strong>켜두면 나가는 비용</strong>(상시 서버)이고, API는 <strong>부른 만큼</strong>(택시)입니다.</p>
+<div class="highlight"><pre><span></span><code>자체 서빙: GPU 시간당 요금 × 24 × 30 (또는 카드 감가 + 전기 + 공간)
+API:       (입력 토큰 + 출력 토큰) × 단가 × 호출 수
+
+→ 하루 몇 백 건: API가 수십 배 저렴 (GPU는 대부분 유휴)
+→ 초당 수십 건 상시: 로컬이 역전하기 시작
+</code></pre></div>
+
+<p>여기서 자주 빠뜨리는 게 <strong>프롬프트 캐싱</strong>입니다 — API는 고정 프리픽스에 큰 할인이 붙으니(그 글의 구조), 시스템 프롬프트가 긴 RAG 서비스라면 API 실효 단가가 계산보다 훨씬 낮아집니다. 손익분기를 재기 전에 캐싱 적용 후의 단가로 계산하세요.</p>
+<p><strong>③ 품질·모델 선택권.</strong> 최상위 모델은 대개 API로만 제공됩니다. 로컬은 오픈 웨이트 모델의 성능 범위 안에서 골라야 하고 — 다만 <strong>작업이 좁으면 그 격차가 무의미</strong>해집니다. 분류·추출·정형 요약 같은 일은 중소형 모델이 충분히 하고(구조화 출력 글의 그 스키마 강제까지 붙이면 더), 그런 작업이 대량이면 로컬의 단가 우위가 그대로 실현되죠.</p>
+<h2 id="_2">로컬을 택했을 때 실제로 하는 일</h2>
+<p>"GPU 사서 돌린다"의 실체는 인프라 운영입니다.</p>
+<ul>
+<li><strong>서빙 엔진 운영</strong> — vLLM 등으로 API 형태 노출, 동시 요청 배칭, 컨텍스트 한도 관리</li>
+<li><strong>VRAM 계산</strong> — 양자화 글의 그 산수(가중치 + KV 캐시 + 동시 요청 수). 동시성이 늘면 KV 캐시가 VRAM을 먹으니, "모델은 들어가는데 동시 3명이면 터진다"가 흔한 실패</li>
+<li><strong>가용성</strong> — 카드 한 장이면 그게 SPOF입니다. 장애 시 API로 폴백하는 구성(게이트웨이 글의 그 폴백)이 현실적인 절충</li>
+<li><strong>업데이트</strong> — 더 좋은 오픈 모델이 나오면 교체·재평가. API는 벤더가 하는 일을 우리가 하는 것</li>
+</ul>
+<p>이 운영 부담을 비용에 넣지 않은 비교는 대개 로컬에 유리하게 왜곡됩니다.</p>
+<h2 id="_3">하이브리드가 대개 정답</h2>
+<p>실무에서 자주 안착하는 형태:</p>
+<div class="highlight"><pre><span></span><code>[민감 데이터 / 대량 정형 작업]  → 로컬 (자체 서빙)
+[복잡한 추론 / 간헐 고난도]     → API
+[둘 사이 라우팅·폴백·계측]      → LLM 게이트웨이
+</code></pre></div>
+
+<p>게이트웨이 글의 그 관문이 여기서 진짜 값을 합니다 — 앱은 어디로 가는지 모른 채 한 곳에 요청하고, 라우팅 규칙(데이터 등급·작업 유형)으로 로컬/API를 나눕니다. 로컬이 죽으면 API로, 규제 대상 데이터는 절대 API로 안 가게 — <strong>정책을 코드 한 곳에서</strong> 집행하는 구조.</p>
+<h2 id="_4">결정 절차</h2>
+<div class="highlight"><pre><span></span><code>1. 데이터 반출이 금지되는가 → 예: 로컬 확정 (아래는 참고만)
+2. 캐싱 적용 후 API 월 예상 비용 계산  vs  GPU 월 비용 + 운영 공수
+3. 작업 난도가 중소형 모델로 충분한가 → 골든셋으로 실측 (벤치마크 글의 3단 절차)
+4. 로컬로 간다면: 동시성 기준 VRAM 계산 + API 폴백 설계
+</code></pre></div>
+
+<h2 id="_5">한 줄 정리</h2>
+<p>로컬 LLM은 <strong>규제(반출 금지)이거나 상시 고부하</strong>일 때 정답입니다. 그 외에는 캐싱 적용된 API가 대개 싸고 편하고 좋고요 — 결정은 골든셋 실측 + 운영 공수를 포함한 계산으로, 그리고 대부분은 <strong>게이트웨이로 둘을 섞는 하이브리드</strong>에 안착합니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/embedding-cache.html"><span class="g">&#10095;</span>같은 문서를 두 번 임베딩하지 않기 — RAG 인덱싱 비용 줄이기</a><a href="../p/benchmark-traps.html"><span class="g">&#10095;</span>리더보드 1등 모델이 우리 서비스에선 3등인 이유 — 벤치마크 읽는 법</a><a href="../p/embedding-choice.html"><span class="g">&#10095;</span>임베딩 모델 고르기 — 리더보드 1등을 덥석 쓰면 안 되는 이유</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/nftables.html"><span class="lbl">newer</span>iptables 대신 nftables — 규칙 읽는 법만이라도</a><a href="../p/embedding-cache.html" style="text-align:right"><span class="lbl">older</span>같은 문서를 두 번 임베딩하지 않기 — RAG 인덱싱 비용 줄이기</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

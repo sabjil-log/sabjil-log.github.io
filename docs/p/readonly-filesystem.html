@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>디스크가 갑자기 읽기전용이 됐다 — 파일시스템의 자기방어 · 삽질노트</title>
+<meta name="description" content="쓰기가 전부 실패하는데 디스크는 멀쩡해 보입니다. 커널이 손상을 감지하고 스스로 잠근 것 — 재부팅 전에 원인을 봐야 하는 이유.">
+<meta property="og:title" content="디스크가 갑자기 읽기전용이 됐다 — 파일시스템의 자기방어 · 삽질노트">
+<meta property="og:description" content="쓰기가 전부 실패하는데 디스크는 멀쩡해 보입니다. 커널이 손상을 감지하고 스스로 잠근 것 — 재부팅 전에 원인을 봐야 하는 이유.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/readonly-filesystem.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/readonly-filesystem.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/readonly-filesystem.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/readonly-filesystem.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html" class="on">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-02</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>디스크가 갑자기 읽기전용이 됐다 — 파일시스템의 자기방어</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 파일시스템이 읽기전용으로 바뀌는 건 고장이 아니라 <strong>커널의 자기방어</strong>입니다. 손상을 감지했을 때 "더 쓰면 더 망가진다"며 스스로 잠그는 것 — 그래서 <strong>재부팅으로 풀기 전에 dmesg에서 왜 잠갔는지</strong>를 읽어야 합니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">읽기전용 전환 = 커널이 켠 지혈대</div><svg viewBox="0 0 640 238" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.rf-0{animation:rf-h 4.0s ease-in-out infinite;animation-delay:0.0s;}
+.rf-1{animation:rf-h 4.0s ease-in-out infinite;animation-delay:1.0s;}
+.rf-2{animation:rf-h 4.0s ease-in-out infinite;animation-delay:2.0s;}
+.rf-3{animation:rf-h 4.0s ease-in-out infinite;animation-delay:3.0s;}
+@keyframes rf-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim rf-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="60" y="36" class="dg-t">① 물리 디스크 오류</text><text x="216" y="36" class="dg-lab2">blk_update_request: I/O error</text><text x="396" y="36" class="dg-ts">볼륨 교체 + 스냅샷 복구</text><rect class="dg-box dg-anim rf-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="60" y="84" class="dg-t">② 메타데이터 손상</text><text x="216" y="84" class="dg-lab2">EXT4-fs error: deleted inode</text><text x="396" y="84" class="dg-ts">언마운트 후 fsck</text><rect class="dg-box dg-anim rf-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<circle cx="16" cy="16" r="13" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<ellipse cx="16" cy="16" rx="5.5" ry="13" fill="none" stroke="var(--dg-blue)" stroke-width="1.4"/>
+<path d="M3 16 h26 M5.2 9.5 h21.6 M5.2 22.5 h21.6" stroke="var(--dg-blue)" stroke-width="1.4"/></g><text x="60" y="132" class="dg-t">③ 네트워크 스토리지</text><text x="216" y="132" class="dg-lab2">NFS/EFS 마운트 끊김</text><text x="396" y="132" class="dg-ts">네트워크·마운트 옵션</text><rect class="dg-box dg-anim rf-3" x="12" y="156" width="616" height="38" rx="9"/><g transform="translate(17.6,156.6) scale(1.150)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="60" y="180" class="dg-t">④ 블록 장치 ro</text><text x="216" y="180" class="dg-lab2">lsblk 의 RO 컬럼 = 1</text><text x="396" y="180" class="dg-ts">클라우드 볼륨 속성 확인</text><text x="12" y="230" class="dg-ts">원인 모르고 remount,rw 하면 손상이 번집니다 — dmesg 먼저, 재부팅은 기록도 지웁니다</text></svg><figcaption>손상을 감지하면 스스로 잠급니다. 재부팅으로 풀기 전에 dmesg에서 왜 잠갔는지를 읽어야 해요.</figcaption></figure>
+<h2 id="_1">증상</h2>
+<div class="highlight"><pre><span></span><code>$ touch /var/log/test
+touch: cannot touch &#39;/var/log/test&#39;: Read-only file system
+$ df -h        # 용량은 멀쩡 (inode 글의 그 함정도 아님)
+</code></pre></div>
+
+<p>앱은 로그를 못 써서 조용히 실패하고, DB는 쓰기 에러를 뿜고, 세션 파일을 못 만들어 로그인이 안 됩니다. 그런데 읽기는 다 되니 "디스크가 죽은 건 아닌데?" 싶죠.</p>
+<h2 id="_2">왜 잠그나 — 출혈을 멈추는 지혈대</h2>
+<p>EXT4 같은 파일시스템에는 <code>errors=remount-ro</code>라는 기본 마운트 옵션이 있습니다. <strong>에러를 만나면 읽기전용으로 재마운트</strong>하라는 뜻이에요. 이유는 명확합니다 — 메타데이터가 이미 깨진 상태에서 계속 쓰면 <strong>손상이 번지고 복구 가능성이 낮아집니다.</strong> 환자가 피를 흘릴 때 달리기를 멈추게 하는 것과 같아요.</p>
+<p>즉 읽기전용 상태는 <strong>결과이고 증상</strong>입니다. 원인은 그전에 일어났고, 그 기록은 커널 로그에 있습니다.</p>
+<h2 id="dmesg">원인 찾기 — dmesg가 사건 기록부</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>sudo<span class="w"> </span>dmesg<span class="w"> </span>-T<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-iE<span class="w"> </span><span class="s2">&quot;error|remount|I/O|ext4|nvme|sd[a-z]&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-30
+</code></pre></div>
+
+<p>패턴별 해석:</p>
+<p><strong>① 물리 디스크 오류</strong></p>
+<div class="highlight"><pre><span></span><code>blk_update_request: I/O error, dev sda, sector 12345678
+</code></pre></div>
+
+<p>디스크나 케이블, 클라우드라면 스토리지 계층의 문제입니다. SMART로 확인하고(<code>smartctl -a /dev/sda</code>), 클라우드면 콘솔의 볼륨 상태·이벤트를 봅니다. 이 경우는 <strong>볼륨 교체 + 스냅샷 복구</strong>(그 글의 시나리오)가 답입니다.</p>
+<p><strong>② 파일시스템 메타데이터 손상</strong></p>
+<div class="highlight"><pre><span></span><code>EXT4-fs error (device sda1): ext4_lookup: deleted inode referenced
+</code></pre></div>
+
+<p>갑작스러운 전원 차단, 이전의 비정상 종료가 남긴 상처. fsck가 처방입니다.</p>
+<p><strong>③ 네트워크 스토리지 단절</strong> — NFS/EFS 마운트가 끊기면 같은 증상이 납니다. strace 글에서 본 그 "read에서 멈춘" 상태와 사촌이죠. 네트워크·마운트 옵션을 봅니다.</p>
+<p><strong>④ 클라우드 특수 케이스</strong> — 볼륨 자체가 읽기전용으로 붙거나, 스냅샷에서 복원한 볼륨이 라벨 충돌을 일으키는 경우. <code>lsblk -o NAME,RO,MOUNTPOINT</code>에서 RO 컬럼이 1이면 블록 장치 레벨입니다.</p>
+<h2 id="_3">복구 순서</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># 0) 현재 마운트 상태 확인 — 정말 ro 인가</span>
+mount<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot; / \| /var &quot;</span><span class="w">        </span><span class="c1"># (ro, ...) 표시 확인</span>
+
+<span class="c1"># 1) 원인이 ②(메타데이터)이고 데이터 디스크라면: 언마운트 후 검사</span>
+sudo<span class="w"> </span>umount<span class="w"> </span>/data
+sudo<span class="w"> </span>fsck<span class="w"> </span>-y<span class="w"> </span>/dev/sdb1<span class="w">            </span><span class="c1"># -y 는 자동 수정 — 로그를 꼭 남기세요</span>
+sudo<span class="w"> </span>mount<span class="w"> </span>/data
+
+<span class="c1"># 2) 루트(/)가 잠긴 경우: 재부팅이 필요 (부팅 중 자동 fsck)</span>
+<span class="c1">#    급하면 임시 rw 재마운트로 응급조치 — 원인 모른 채 쓰면 위험</span>
+sudo<span class="w"> </span>mount<span class="w"> </span>-o<span class="w"> </span>remount,rw<span class="w"> </span>/
+</code></pre></div>
+
+<p><strong>중요한 순서 감각:</strong> <code>remount,rw</code>는 지혈대를 풀어버리는 것입니다. 원인이 ①(물리 오류)인데 이걸 하면 손상을 키웁니다. <strong>dmesg를 먼저 읽고</strong>, 물리 오류가 아닌 게 확인됐을 때만 응급 재마운트를 쓰세요. 그리고 재부팅은 증상을 지우는 대신 <strong>dmesg 기록도 지웁니다</strong> — <code>journalctl -k -b -1</code>로 이전 부팅의 커널 로그를 볼 수 있다는 걸 기억해두면 사후 수사가 가능합니다.</p>
+<h2 id="_4">예방 감각</h2>
+<ul>
+<li><strong>디스크 사용률 알람</strong>(알람 설계 글의 그 시한폭탄 예외 항목) — 꽉 찬 디스크가 손상의 방아쇠가 되는 경우가 있습니다</li>
+<li><strong>정기 재부팅 시 fsck 통과 확인</strong> — 오래 안 껐다 켠 서버는 상처를 안고 달리는 중일 수 있어요</li>
+<li><strong>상태는 디스크 밖으로</strong> — 로그는 중앙화, 데이터는 볼륨 분리. 루트 디스크가 잠겨도 서비스가 죽지 않게 (소모품 서버 철학의 실익)</li>
+</ul>
+<h2 id="_5">한 줄 정리</h2>
+<p>읽기전용 전환은 <strong>커널이 켠 지혈대</strong>입니다. 재부팅으로 풀기 전에 <code>dmesg</code>로 <strong>물리 오류인지 메타데이터 손상인지</strong> 가르고 — 전자면 볼륨 교체+스냅샷 복구, 후자면 fsck. 원인 모르고 <code>remount,rw</code> 하는 게 이 사고를 진짜 재앙으로 만드는 유일한 방법입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --troubleshooting</div><a href="../p/multi-stage-build.html"><span class="g">&#10095;</span>1.2GB 이미지가 80MB가 되기까지 — 멀티스테이지 빌드</a><a href="../p/requests-limits.html"><span class="g">&#10095;</span>쿠버네티스 requests와 limits — 예약석과 천장은 다르다</a><a href="../p/fd-limit.html"><span class="g">&#10095;</span>Too many open files — 파일도 안 여는데 왜 한도 초과일까</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/spot-instances.html"><span class="lbl">newer</span>70% 할인의 조건 — 스팟(선점형) 인스턴스를 쓸 수 있는 일과 없는 일</a><a href="../p/private-endpoint.html" style="text-align:right"><span class="lbl">older</span>NAT 요금을 없애는 전용 통로 — 프라이빗 엔드포인트 실습편</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

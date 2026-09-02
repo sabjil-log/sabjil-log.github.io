@@ -3025,7 +3025,337 @@
 <path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
       fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
 <path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
-      stroke-linecap="round" stroke-linejoin="round"/></g><text x="60" y="180" class="dg-t">④ 내 데이터 심사</text><text x="216" y="180" class="dg-lab2">질문 30개 재현율@k</text><text x="396" y="180" class="dg-ts">리더보드는 후보 추리기용</text><text x="12" y="230" class="dg-ts">모델 교체 = 전체 재인덱싱 — 벡터에 모델 버전 메타데이터를 남겨두세요</text></svg><figcaption>RAG 재현율의 상한을 정하는 선택. 최종 심사는 리더보드가 아니라 내 질문 30개의 재현율@k입니다.</figcaption></figure><div class="dg-more"><a href="p/embedding-choice.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><div class="dg-cap-out">[그림 한 장] 요청 한 번의 VPC 여정 — 클릭에서 응답까지 무슨 일이 벌어지나</div><div class="viz">
+      stroke-linecap="round" stroke-linejoin="round"/></g><text x="60" y="180" class="dg-t">④ 내 데이터 심사</text><text x="216" y="180" class="dg-lab2">질문 30개 재현율@k</text><text x="396" y="180" class="dg-ts">리더보드는 후보 추리기용</text><text x="12" y="230" class="dg-ts">모델 교체 = 전체 재인덱싱 — 벡터에 모델 버전 메타데이터를 남겨두세요</text></svg><figcaption>RAG 재현율의 상한을 정하는 선택. 최종 심사는 리더보드가 아니라 내 질문 30개의 재현율@k입니다.</figcaption></figure><div class="dg-more"><a href="p/embedding-choice.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">읽기전용 전환 = 커널이 켠 지혈대</div><svg viewBox="0 0 640 238" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.rf-0{animation:rf-h 4.0s ease-in-out infinite;animation-delay:0.0s;}
+.rf-1{animation:rf-h 4.0s ease-in-out infinite;animation-delay:1.0s;}
+.rf-2{animation:rf-h 4.0s ease-in-out infinite;animation-delay:2.0s;}
+.rf-3{animation:rf-h 4.0s ease-in-out infinite;animation-delay:3.0s;}
+@keyframes rf-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim rf-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="60" y="36" class="dg-t">① 물리 디스크 오류</text><text x="216" y="36" class="dg-lab2">blk_update_request: I/O error</text><text x="396" y="36" class="dg-ts">볼륨 교체 + 스냅샷 복구</text><rect class="dg-box dg-anim rf-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="60" y="84" class="dg-t">② 메타데이터 손상</text><text x="216" y="84" class="dg-lab2">EXT4-fs error: deleted inode</text><text x="396" y="84" class="dg-ts">언마운트 후 fsck</text><rect class="dg-box dg-anim rf-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<circle cx="16" cy="16" r="13" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<ellipse cx="16" cy="16" rx="5.5" ry="13" fill="none" stroke="var(--dg-blue)" stroke-width="1.4"/>
+<path d="M3 16 h26 M5.2 9.5 h21.6 M5.2 22.5 h21.6" stroke="var(--dg-blue)" stroke-width="1.4"/></g><text x="60" y="132" class="dg-t">③ 네트워크 스토리지</text><text x="216" y="132" class="dg-lab2">NFS/EFS 마운트 끊김</text><text x="396" y="132" class="dg-ts">네트워크·마운트 옵션</text><rect class="dg-box dg-anim rf-3" x="12" y="156" width="616" height="38" rx="9"/><g transform="translate(17.6,156.6) scale(1.150)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="60" y="180" class="dg-t">④ 블록 장치 ro</text><text x="216" y="180" class="dg-lab2">lsblk 의 RO 컬럼 = 1</text><text x="396" y="180" class="dg-ts">클라우드 볼륨 속성 확인</text><text x="12" y="230" class="dg-ts">원인 모르고 remount,rw 하면 손상이 번집니다 — dmesg 먼저, 재부팅은 기록도 지웁니다</text></svg><figcaption>손상을 감지하면 스스로 잠급니다. 재부팅으로 풀기 전에 dmesg에서 왜 잠갔는지를 읽어야 해요.</figcaption></figure><div class="dg-more"><a href="p/readonly-filesystem.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">스팟 — 다시 하면 되는 일에만</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><circle cx="48.0" cy="40.0" r="25.4" fill="var(--dg-green-s)"/><g transform="translate(29.6,21.6) scale(1.150)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="76" y="46" class="dg-tl">스팟이 맞는 일</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="76" class="dg-ts">배치·ETL — 재실행하면 됨</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="100" class="dg-ts">CI 빌드/테스트 러너 (재시도 이미 있음)</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="124" class="dg-ts">인코딩·렌더링 — 큐에서 다시 집기</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="148" class="dg-ts">ML 학습 — 단, 체크포인트가 전제</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><circle cx="362.0" cy="40.0" r="25.4" fill="var(--dg-violet-s)"/><g transform="translate(343.6,21.6) scale(1.150)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="390" y="46" class="dg-tl">스팟이 안 맞는 일</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="76" class="dg-ts">DB·상태 저장소 — 회수 = 데이터 위험</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="100" class="dg-ts">단일 인스턴스 핵심 서비스</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="124" class="dg-ts">긴 단일 작업 (체크포인트 불가)</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="148" class="dg-ts">장기 연결 유지 (웹소켓·세션 로컬)</text><text x="12" y="182" class="dg-ts">타입·AZ 다양화로 확보 확률↑ · 온디맨드 혼합으로 최악 방지 · 회수 신호 핸들러 필수</text></svg><figcaption>남는 좌석을 70% 싸게, 대신 몇 분 예고 후 회수. 기준은 '아무 때나 죽어도 되는가' 하나입니다.</figcaption></figure><div class="dg-more"><a href="p/spot-instances.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">임베딩 캐시 — 해시로 델타 인덱싱</div><svg viewBox="0 0 640 116" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.ecc-0{animation:ecc-h 4.6s ease-in-out infinite;animation-delay:0.0s;}
+.ecc-1{animation:ecc-h 4.6s ease-in-out infinite;animation-delay:1.15s;}
+.ecc-2{animation:ecc-h 4.6s ease-in-out infinite;animation-delay:2.3s;}
+.ecc-3{animation:ecc-h 4.6s ease-in-out infinite;animation-delay:3.45s;}
+@keyframes ecc-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim ecc-0" x="12" y="18" width="145" height="58" rx="10"/><circle cx="44.0" cy="47.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(24.0,27.0) scale(1.250)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="70" y="42" class="dg-key">문서 해시</text><text x="70" y="62" class="dg-lab2">안 바뀌면 스킵</text><line x1="157" y1="47" x2="169" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim ecc-1" x="169" y="18" width="145" height="58" rx="10"/><circle cx="201.0" cy="47.0" r="27.0" fill="var(--dg-green-s)"/><g transform="translate(181.0,27.0) scale(1.250)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="227" y="42" class="dg-key">청크 해시</text><text x="227" y="62" class="dg-lab2">바뀐 것만</text><line x1="314" y1="47" x2="326" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim ecc-2" x="326" y="18" width="145" height="58" rx="10"/><circle cx="358.0" cy="47.0" r="27.0" fill="var(--dg-violet-s)"/><g transform="translate(338.0,27.0) scale(1.250)">
+<path d="M16 5 a6 6 0 0 0 -6 6 a5 5 0 0 0 -2 9 a5.5 5.5 0 0 0 8 6 a5.5 5.5 0 0 0 8 -6 a5 5 0 0 0 -2 -9 a6 6 0 0 0 -6 -6 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.8"/>
+<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.4" stroke-linecap="round"/></g><text x="384" y="42" class="dg-key">임베딩</text><text x="384" y="62" class="dg-lab2">재사용 vs 신규</text><line x1="471" y1="47" x2="483" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim ecc-3" x="483" y="18" width="145" height="58" rx="10"/><circle cx="515.0" cy="47.0" r="27.0" fill="var(--dg-violet-s)"/><g transform="translate(495.0,27.0) scale(1.250)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="541" y="42" class="dg-key">차집합 삭제</text><text x="541" y="62" class="dg-lab2">사라진 청크</text><text x="12" y="102" class="dg-ts">키에 모델·청킹 버전 포함 · 로그에 (신규/재사용/삭제) 카운트 — 캐시가 듣는지 확인</text></svg><figcaption>임베딩은 결정적이라 캐시가 완벽히 통합니다. 문서 게이트 + 청크 게이트로 매일 전체 재계산을 델타로.</figcaption></figure><div class="dg-more"><a href="p/embedding-cache.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">nftables 3층 구조</div><svg viewBox="0 0 640 238" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.nf-0{animation:nf-h 4.0s ease-in-out infinite;animation-delay:0.0s;}
+.nf-1{animation:nf-h 4.0s ease-in-out infinite;animation-delay:1.0s;}
+.nf-2{animation:nf-h 4.0s ease-in-out infinite;animation-delay:2.0s;}
+.nf-3{animation:nf-h 4.0s ease-in-out infinite;animation-delay:3.0s;}
+@keyframes nf-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim nf-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="60" y="36" class="dg-t">table inet filter</text><text x="216" y="36" class="dg-lab2">주소 패밀리 + 이름</text><text x="396" y="36" class="dg-ts">프로그램마다 자기 서랍</text><rect class="dg-box dg-anim nf-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<rect x="3" y="6" width="26" height="20" rx="2" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.7"/>
+<path d="M3 12.6 h26 M3 19.3 h26" stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M11 6 v6.6 M20 6 v6.6 M7 12.6 v6.7 M16 12.6 v6.7 M24.5 12.6 v6.7 M11 19.3 v6.7 M20 19.3 v6.7"
+      stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M16 13 c2.6 2.4 3.4 4.2 3.4 6 a3.4 3.4 0 0 1 -6.8 0 c0 -1.8 0.8 -3.6 3.4 -6 z"
+      fill="var(--dg-amber)" stroke="var(--dg-red)" stroke-width="1.3"/></g><text x="60" y="84" class="dg-t">chain input</text><text x="216" y="84" class="dg-lab2">hook · priority · policy</text><text x="396" y="84" class="dg-ts">policy drop = 누락 포트 차단</text><rect class="dg-box dg-anim nf-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
+      stroke-linecap="round" stroke-linejoin="round"/></g><text x="60" y="132" class="dg-t">ct state established</text><text x="216" y="132" class="dg-lab2">연결 추적 허용</text><text x="396" y="132" class="dg-ts">OS 레벨 스테이트풀</text><rect class="dg-box dg-anim nf-3" x="12" y="156" width="616" height="38" rx="9"/><g transform="translate(17.6,156.6) scale(1.150)">
+<rect x="2" y="11" width="28" height="11" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="5" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="10" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="15" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="20" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<circle cx="26.5" cy="16.5" r="1.2" fill="var(--dg-green)"/></g><text x="60" y="180" class="dg-t">rule</text><text x="216" y="180" class="dg-lab2">tcp dport { 22,80,443 }</text><text x="396" y="180" class="dg-ts">위에서 아래로 첫 매치</text><text x="12" y="230" class="dg-ts">firewalld·도커가 도는 서버에 nft로 직접 쓰면 충돌 — 그 도구의 문법으로 여세요</text></svg><figcaption>table(서랍) → chain(훅·정책) → rule, 평가는 위에서 아래. nft list ruleset 이 진실입니다.</figcaption></figure><div class="dg-more"><a href="p/nftables.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">백업의 독립성 3겹</div><svg viewBox="0 0 640 238" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.cr-0{animation:cr-h 4.0s ease-in-out infinite;animation-delay:0.0s;}
+.cr-1{animation:cr-h 4.0s ease-in-out infinite;animation-delay:1.0s;}
+.cr-2{animation:cr-h 4.0s ease-in-out infinite;animation-delay:2.0s;}
+.cr-3{animation:cr-h 4.0s ease-in-out infinite;animation-delay:3.0s;}
+@keyframes cr-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim cr-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<circle cx="16" cy="16" r="13" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<ellipse cx="16" cy="16" rx="5.5" ry="13" fill="none" stroke="var(--dg-blue)" stroke-width="1.4"/>
+<path d="M3 16 h26 M5.2 9.5 h21.6 M5.2 22.5 h21.6" stroke="var(--dg-blue)" stroke-width="1.4"/></g><text x="60" y="36" class="dg-t">① 지리 분리</text><text x="216" y="36" class="dg-lab2">다른 리전으로 복제</text><text x="396" y="36" class="dg-ts">리전 장애 대비 · 전송 요금</text><rect class="dg-box dg-anim cr-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<path d="M10 14 v-3.5 a6 6 0 0 1 12 0 V14" fill="none" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<rect x="6.5" y="14" width="19" height="14" rx="2.5" fill="var(--dg-amber-s)" stroke="var(--dg-amber)" stroke-width="1.8"/>
+<circle cx="16" cy="20" r="2" fill="var(--dg-amber)"/>
+<path d="M16 21.5 v3" stroke="var(--dg-amber)" stroke-width="2" stroke-linecap="round"/></g><text x="60" y="84" class="dg-t">② 권한 분리</text><text x="216" y="84" class="dg-lab2">다른 계정 (pull 방식)</text><text x="396" y="84" class="dg-ts">계정 탈취에도 백업 생존</text><rect class="dg-box dg-anim cr-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
+      stroke-linecap="round" stroke-linejoin="round"/></g><text x="60" y="132" class="dg-t">③ 시간 분리</text><text x="216" y="132" class="dg-lab2">불변 보존 (오브젝트 락)</text><text x="396" y="132" class="dg-ts">관리자도 못 지움</text><rect class="dg-box dg-anim cr-3" x="12" y="156" width="616" height="38" rx="9"/><g transform="translate(17.6,156.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="60" y="180" class="dg-t">④ 복구 리허설</text><text x="216" y="180" class="dg-lab2">분기 1회 실제 복구</text><text x="396" y="180" class="dg-ts">안 해봤으면 백업이 아님</text><text x="12" y="230" class="dg-ts">주기는 RPO(얼마 잃어도 되나), 방식은 RTO(얼마 안에 복구) — 비즈니스와 합의할 숫자</text></svg><figcaption>같은 리전이면 리전 장애에, 같은 계정이면 권한 사고에 함께 죽습니다. 지리·권한·시간으로 분리하세요.</figcaption></figure><div class="dg-more"><a href="p/cross-region-replication.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">리더보드를 읽는 네 가지 의심</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><circle cx="48.0" cy="40.0" r="25.4" fill="var(--dg-blue-s)"/><g transform="translate(29.6,21.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="76" y="46" class="dg-tl">점수를 의심할 이유</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="76" class="dg-ts">오염 — 시험 문제가 학습 데이터에</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="100" class="dg-ts">평균의 마법 — 종합 1등이 우리 과제 5등</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="124" class="dg-ts">조건 차이 — few-shot·온도·채점 방식</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="148" class="dg-ts">불일치 — 시험 풀이 ≠ 우리 작업</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><circle cx="362.0" cy="40.0" r="25.4" fill="var(--dg-green-s)"/><g transform="translate(343.6,21.6) scale(1.150)">
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
+      stroke-linecap="round" stroke-linejoin="round"/></g><text x="390" y="46" class="dg-tl">그래서 이렇게 쓴다</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">최근·비공개 셋 결과에 무게</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">종합 접고 하위 과제만 (한국어·롱컨텍스트)</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="124" class="dg-ts">골든셋 30~50문항 실측이 최종 심사</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="148" class="dg-ts">지연·비용·한도·컴플라이언스로 결정</text><text x="12" y="182" class="dg-ts">벤더 비교표는 '우리에게 유리한 조건'이 섞였다고 가정하고 보세요</text></svg><figcaption>점수는 사실이지만 결론은 아닙니다. 후보는 리더보드로 추리고, 결정은 내 골든셋으로.</figcaption></figure><div class="dg-more"><a href="p/benchmark-traps.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">tmux — 서버 안의 작업실</div><svg viewBox="0 0 640 250" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.tx-cut{opacity:0;animation:tx-c 4s ease-in-out infinite;}
+@keyframes tx-c{0%,34%{opacity:0}42%,72%{opacity:1}82%,100%{opacity:0}}
+</style>
+<circle cx="62.0" cy="74.0" r="32.6" fill="var(--dg-blue-s)"/><g transform="translate(36.4,48.4) scale(1.600)">
+<rect x="4" y="4" width="24" height="16" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="6.5" y="6.5" width="19" height="11" rx="1" fill="var(--dg-screen)"/>
+<path d="M1.5 22 h29 l-2.5 3.5 H4 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/></g>
+<text x="26" y="126" class="dg-t">내 노트북</text>
+<line x1="104" y1="74" x2="250" y2="74" class="dg-arrow"/>
+<text x="132" y="60" class="dg-lab2">ssh</text>
+<g class="dg-anim tx-cut"><text x="164" y="92" font-size="20" fill="var(--dg-red)" font-weight="700">✂</text>
+<text x="126" y="112" class="dg-ts" fill="var(--dg-red)">연결 끊김</text></g>
+<rect x="250" y="24" width="376" height="130" rx="14" fill="none" stroke="var(--dg-blue)"
+      stroke-dasharray="6 4" stroke-width="1.4"/>
+<text x="262" y="44" class="dg-lab2">서버</text>
+<rect x="272" y="56" width="336" height="82" rx="12" fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8"/>
+<circle cx="308.0" cy="96.0" r="27.8" fill="var(--dg-green-s)"/><g transform="translate(287.2,75.2) scale(1.300)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g>
+<text x="340" y="88" class="dg-tl" font-size="13">tmux 세션 "deploy"</text>
+<text x="340" y="108" class="dg-ts">창0: 배포 스크립트 (계속 실행 중)</text>
+<text x="340" y="126" class="dg-ts">창1: journalctl -f</text>
+<text x="14" y="184" class="dg-key" font-size="12.5">tmux new -s 이름 → Ctrl+b d (나오기) → tmux attach -t 이름</text>
+<text x="14" y="208" class="dg-ts">서버에 붙으면 tmux 먼저 — 장시간 작업(rsync·배포·이관)은 무조건 안에서</text>
+<text x="14" y="230" class="dg-ts">단, 재부팅은 못 넘깁니다 — 그건 systemd 서비스의 일</text>
+</svg><figcaption>SSH가 끊기면 그 위의 프로세스도 죽습니다. 작업실을 만들어두면 화면째로 살아남아요.</figcaption></figure><div class="dg-more"><a href="p/tmux.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">엔드포인트 — NAT을 우회하는 전용 통로</div><svg viewBox="0 0 640 270" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.ep-old{animation:ep-o 4.2s ease-in-out infinite;}
+.ep-new{animation:ep-n 4.2s ease-in-out infinite;}
+@keyframes ep-o{0%,52%{opacity:.9}60%,100%{opacity:.16}}
+@keyframes ep-n{0%,52%{opacity:.16}60%,100%{opacity:1}}
+</style>
+<circle cx="62.0" cy="78.0" r="32.6" fill="var(--dg-blue-s)"/><g transform="translate(36.4,52.4) scale(1.600)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g>
+<text x="20" y="128" class="dg-t">private 서버</text>
+<g class="dg-anim ep-old">
+<path d="M104 68 H 250 V 44 H 400" class="dg-arrow"/>
+<circle cx="288.0" cy="68.0" r="26.2" fill="var(--dg-blue-s)"/><g transform="translate(268.8,48.8) scale(1.200)">
+<path d="M5 29 V13 a11 11 0 0 1 22 0 v16 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.8"/>
+<path d="M11 29 V15 a5 5 0 0 1 10 0 v14 z" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.7"/>
+<circle cx="19" cy="22" r="1.2" fill="var(--dg-blue)"/></g>
+<text x="256" y="106" class="dg-ts">NAT GW</text>
+<circle cx="452.0" cy="44.0" r="26.2" fill="var(--dg-blue-s)"/><g transform="translate(432.8,24.8) scale(1.200)">
+<circle cx="16" cy="16" r="13" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<ellipse cx="16" cy="16" rx="5.5" ry="13" fill="none" stroke="var(--dg-blue)" stroke-width="1.4"/>
+<path d="M3 16 h26 M5.2 9.5 h21.6 M5.2 22.5 h21.6" stroke="var(--dg-blue)" stroke-width="1.4"/></g>
+<text x="484" y="48" class="dg-key" font-size="12">인터넷 경유 — GB당 과금</text>
+</g>
+<g class="dg-anim ep-new">
+<path d="M104 92 H 300 V 160 H 420" stroke="var(--dg-green)" stroke-width="2.4" fill="none"/>
+<circle cx="360.0" cy="160.0" r="27.8" fill="var(--dg-green-s)"/><g transform="translate(339.2,139.2) scale(1.300)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g>
+<text x="298" y="196" class="dg-ts" fill="var(--dg-green)">엔드포인트 (VPC 내부)</text>
+<circle cx="480.0" cy="160.0" r="29.4" fill="var(--dg-violet-s)"/><g transform="translate(457.6,137.6) scale(1.400)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g>
+<text x="514" y="164" class="dg-t">Object Storage</text>
+</g>
+<text x="14" y="228" class="dg-lab2">라우팅: pl-storage → vpce-xxxx 추가 (0.0.0.0/0 → nat 은 그대로)</text>
+<text x="14" y="250" class="dg-ts">검증은 "접근되네"가 아니라 NAT 처리량 하락으로 · 인터넷 노출 구간도 소멸</text>
+</svg><figcaption>더 구체적인 경로가 이깁니다. 스토리지행만 내부 통로로 돌리고 나머지 인터넷은 그대로.</figcaption></figure><div class="dg-more"><a href="p/private-endpoint.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">로컬 LLM vs API — 갈리는 세 축</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><circle cx="48.0" cy="40.0" r="25.4" fill="var(--dg-blue-s)"/><g transform="translate(29.6,21.6) scale(1.150)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="76" y="46" class="dg-tl">로컬(자체 서빙)이 정답</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="76" class="dg-ts">데이터 반출 금지 (CSAP·금융·의료)</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="100" class="dg-ts">상시 고부하 — GPU 유휴가 적음</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="124" class="dg-ts">대량 정형 작업 (분류·추출·요약)</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="148" class="dg-ts">운영이 내 일 — 서빙·VRAM·가용성·교체</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><circle cx="362.0" cy="40.0" r="25.4" fill="var(--dg-blue-s)"/><g transform="translate(343.6,21.6) scale(1.150)">
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g><text x="390" y="46" class="dg-tl">API가 정답</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">간헐 사용 — 부른 만큼만</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">최상위 품질·복잡 추론</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="124" class="dg-ts">프롬프트 캐싱으로 실효 단가 급락</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="148" class="dg-ts">프롬프트가 외부로 나감 (마스킹 필요)</text><text x="12" y="182" class="dg-ts">손익분기 계산 전에 캐싱 적용 단가로 · 동시성 기준 VRAM · API 폴백 설계까지</text></svg><figcaption>반출 금지면 로컬 확정, 그 외엔 가동률이 정합니다. 대부분은 게이트웨이로 섞는 하이브리드에 안착해요.</figcaption></figure><div class="dg-more"><a href="p/local-vs-api-llm.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><div class="dg-cap-out">[그림 한 장] 요청 한 번의 VPC 여정 — 클릭에서 응답까지 무슨 일이 벌어지나</div><div class="viz">
 <svg viewBox="0 0 660 300" xmlns="http://www.w3.org/2000/svg">
   <text x="10" y="16" class="vz-cap">초록 점: 사용자 요청→응답 왕복 · 주황 점: 서버가 외부 API로 나가는 길(NAT)</text>
 

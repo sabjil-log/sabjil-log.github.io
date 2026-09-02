@@ -5,6 +5,69 @@
   <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
   <language>ko</language>
     <item>
+      <title>SSH가 끊겨도 작업은 살아있게 — tmux 최소 사용법</title>
+      <link>https://sabjil-log.github.io/p/tmux.html</link>
+      <guid>https://sabjil-log.github.io/p/tmux.html</guid>
+      <pubDate>Wed, 02 Sep 2026 00:00:00 -0000</pubDate>
+      <description>장시간 작업 중 SSH가 끊기면 작업도 죽습니다. tmux는 서버 안에 작업실을 만들어두는 것 — 명령 다섯 개면 충분해요.</description>
+    </item>
+    <item>
+      <title>70% 할인의 조건 — 스팟(선점형) 인스턴스를 쓸 수 있는 일과 없는 일</title>
+      <link>https://sabjil-log.github.io/p/spot-instances.html</link>
+      <guid>https://sabjil-log.github.io/p/spot-instances.html</guid>
+      <pubDate>Wed, 02 Sep 2026 00:00:00 -0000</pubDate>
+      <description>남는 좌석을 헐값에 파는 대신 자리를 비켜달라 할 수 있는 티켓입니다. 중단을 견디는 일과 못 견디는 일을 가르는 기준.</description>
+    </item>
+    <item>
+      <title>디스크가 갑자기 읽기전용이 됐다 — 파일시스템의 자기방어</title>
+      <link>https://sabjil-log.github.io/p/readonly-filesystem.html</link>
+      <guid>https://sabjil-log.github.io/p/readonly-filesystem.html</guid>
+      <pubDate>Wed, 02 Sep 2026 00:00:00 -0000</pubDate>
+      <description>쓰기가 전부 실패하는데 디스크는 멀쩡해 보입니다. 커널이 손상을 감지하고 스스로 잠근 것 — 재부팅 전에 원인을 봐야 하는 이유.</description>
+    </item>
+    <item>
+      <title>NAT 요금을 없애는 전용 통로 — 프라이빗 엔드포인트 실습편</title>
+      <link>https://sabjil-log.github.io/p/private-endpoint.html</link>
+      <guid>https://sabjil-log.github.io/p/private-endpoint.html</guid>
+      <pubDate>Wed, 02 Sep 2026 00:00:00 -0000</pubDate>
+      <description>private 서버가 오브젝트 스토리지를 부를 때 NAT를 지나면 GB당 돈을 냅니다. 라우팅 두 줄로 그 트래픽을 내부 통로로 돌리는 방법과 검증법.</description>
+    </item>
+    <item>
+      <title>iptables 대신 nftables — 규칙 읽는 법만이라도</title>
+      <link>https://sabjil-log.github.io/p/nftables.html</link>
+      <guid>https://sabjil-log.github.io/p/nftables.html</guid>
+      <pubDate>Wed, 02 Sep 2026 00:00:00 -0000</pubDate>
+      <description>요즘 배포판의 기본은 nftables입니다. 옛 명령이 먹히는 것처럼 보여도 실제로는 번역된 것 — 최소한 남의 규칙을 읽고 원인을 짚을 정도는 알아둬야 합니다.</description>
+    </item>
+    <item>
+      <title>로컬 LLM은 언제 정답인가 — 온디바이스 vs API의 손익분기</title>
+      <link>https://sabjil-log.github.io/p/local-vs-api-llm.html</link>
+      <guid>https://sabjil-log.github.io/p/local-vs-api-llm.html</guid>
+      <pubDate>Wed, 02 Sep 2026 00:00:00 -0000</pubDate>
+      <description>GPU 사서 직접 돌리는 게 이득인 조건은 생각보다 좁습니다. 다만 그 좁은 조건(데이터 반출 금지, 상시 고부하)에 걸리면 선택지가 아니라 필수가 되죠.</description>
+    </item>
+    <item>
+      <title>같은 문서를 두 번 임베딩하지 않기 — RAG 인덱싱 비용 줄이기</title>
+      <link>https://sabjil-log.github.io/p/embedding-cache.html</link>
+      <guid>https://sabjil-log.github.io/p/embedding-cache.html</guid>
+      <pubDate>Wed, 02 Sep 2026 00:00:00 -0000</pubDate>
+      <description>문서 하나 고쳤다고 전체를 다시 임베딩하는 파이프라인은 흔합니다. 청크 해시 하나로 재인덱싱 비용이 수십 분의 일이 돼요.</description>
+    </item>
+    <item>
+      <title>백업을 같은 도시에 두면 백업이 아니다 — 크로스 리전 복제</title>
+      <link>https://sabjil-log.github.io/p/cross-region-replication.html</link>
+      <guid>https://sabjil-log.github.io/p/cross-region-replication.html</guid>
+      <pubDate>Wed, 02 Sep 2026 00:00:00 -0000</pubDate>
+      <description>원본과 백업이 같은 리전·같은 계정에 있으면 하나의 사고가 둘을 함께 지웁니다. 지리적 분리와 권한 분리, 그리고 복구 목표(RPO/RTO)로 정하는 설계.</description>
+    </item>
+    <item>
+      <title>리더보드 1등 모델이 우리 서비스에선 3등인 이유 — 벤치마크 읽는 법</title>
+      <link>https://sabjil-log.github.io/p/benchmark-traps.html</link>
+      <guid>https://sabjil-log.github.io/p/benchmark-traps.html</guid>
+      <pubDate>Wed, 02 Sep 2026 00:00:00 -0000</pubDate>
+      <description>점수는 사실이지만 결론은 아닙니다. 오염·평균의 마법·조건 차이 — 리더보드가 우리 현실과 어긋나는 네 가지 이유와 읽는 요령.</description>
+    </item>
+    <item>
       <title>서버리스는 언제 싸고 언제 비싼가 — 택시 요금의 경제학</title>
       <link>https://sabjil-log.github.io/p/serverless-economics.html</link>
       <guid>https://sabjil-log.github.io/p/serverless-economics.html</guid>
@@ -80,68 +143,5 @@
       <guid>https://sabjil-log.github.io/p/requests-limits.html</guid>
       <pubDate>Fri, 07 Aug 2026 00:00:00 -0000</pubDate>
       <description>왜 둘 다 있고, 왜 다르게 잡으라는 걸까요. requests는 스케줄러의 예약, limits는 런타임의 천장 — 이 구분에서 OOMKilled와 스로틀링의 정체까지 풀립니다.</description>
-    </item>
-    <item>
-      <title>VPC가 늘어나면 연결이 지옥이 된다 — 피어링 vs Transit Gateway</title>
-      <link>https://sabjil-log.github.io/p/peering-vs-tgw.html</link>
-      <guid>https://sabjil-log.github.io/p/peering-vs-tgw.html</guid>
-      <pubDate>Fri, 07 Aug 2026 00:00:00 -0000</pubDate>
-      <description>VPC 두세 개까진 피어링이 답인데, 열 개가 되면 연결이 45개가 됩니다. 직통 전화선과 중앙 교환기 — 갈아탈 시점과 각각의 함정을 정리했어요.</description>
-    </item>
-    <item>
-      <title>프로세스가 뭘 하다 멈췄는지 훔쳐보기 — strace 입문</title>
-      <link>https://sabjil-log.github.io/p/strace.html</link>
-      <guid>https://sabjil-log.github.io/p/strace.html</guid>
-      <pubDate>Wed, 05 Aug 2026 00:00:00 -0000</pubDate>
-      <description>로그도 없이 멈춘 프로세스, 소스도 없는 바이너리 — strace는 프로세스와 커널 사이의 대화를 도청해 &#x27;지금 뭘 기다리는지&#x27;를 보여줍니다.</description>
-    </item>
-    <item>
-      <title>서버가 사라져도 로그는 남아야 한다 — 로그 중앙화 설계</title>
-      <link>https://sabjil-log.github.io/p/log-centralization.html</link>
-      <guid>https://sabjil-log.github.io/p/log-centralization.html</guid>
-      <pubDate>Wed, 05 Aug 2026 00:00:00 -0000</pubDate>
-      <description>오토스케일링과 소모품 서버의 시대엔 &#x27;서버에 들어가서 로그 보기&#x27;가 성립하지 않습니다. 수집→중앙 저장→보존 정책의 기본 구조와 실무 함정.</description>
-    </item>
-    <item>
-      <title>LLM 호출을 한 문으로 모아라 — 게이트웨이(릴레이) 패턴</title>
-      <link>https://sabjil-log.github.io/p/llm-gateway.html</link>
-      <guid>https://sabjil-log.github.io/p/llm-gateway.html</guid>
-      <pubDate>Wed, 05 Aug 2026 00:00:00 -0000</pubDate>
-      <description>앱마다 벤더 API를 직접 부르면 키·비용·로깅·정책이 사방에 흩어집니다. 중간에 문 하나를 세우는 게이트웨이 패턴의 역할과 설계 포인트.</description>
-    </item>
-    <item>
-      <title>좀비 프로세스는 kill -9로도 안 죽는다 — Z 상태의 정체</title>
-      <link>https://sabjil-log.github.io/p/zombie-process.html</link>
-      <guid>https://sabjil-log.github.io/p/zombie-process.html</guid>
-      <pubDate>Mon, 03 Aug 2026 00:00:00 -0000</pubDate>
-      <description>좀비는 이미 죽은 프로세스입니다. 죽은 걸 또 죽일 수는 없죠. 남은 건 부모가 회수하지 않은 &#x27;사망 신고서&#x27; — 문제의 주어는 항상 부모입니다.</description>
-    </item>
-    <item>
-      <title>스냅샷과 서버 이미지, 뭘 찍는 게 다른가 — 복구 시나리오로 가르기</title>
-      <link>https://sabjil-log.github.io/p/snapshot-vs-image.html</link>
-      <guid>https://sabjil-log.github.io/p/snapshot-vs-image.html</guid>
-      <pubDate>Mon, 03 Aug 2026 00:00:00 -0000</pubDate>
-      <description>디스크를 찍는 스냅샷과 서버를 통째로 찍는 이미지. &#x27;무엇으로부터 복구하고 싶은가&#x27;를 정하면 뭘 찍어야 할지가 자동으로 나옵니다.</description>
-    </item>
-    <item>
-      <title>LoRA — 파인튜닝을 가난하게 하는 법</title>
-      <link>https://sabjil-log.github.io/p/lora.html</link>
-      <guid>https://sabjil-log.github.io/p/lora.html</guid>
-      <pubDate>Mon, 03 Aug 2026 00:00:00 -0000</pubDate>
-      <description>70억 파라미터를 전부 고치는 대신, 원본은 얼려두고 작은 &#x27;수정 스티커&#x27;만 학습합니다. 소비자용 GPU에서 파인튜닝이 가능해진 이유예요.</description>
-    </item>
-    <item>
-      <title>LLM 응답 파싱 지옥에서 탈출하기 — 구조화 출력 제대로 쓰는 법</title>
-      <link>https://sabjil-log.github.io/p/structured-output.html</link>
-      <guid>https://sabjil-log.github.io/p/structured-output.html</guid>
-      <pubDate>Sun, 02 Aug 2026 00:00:00 -0000</pubDate>
-      <description>&#x27;JSON으로만 답해&#x27;는 언젠가 배신당합니다. 프롬프트 구걸부터 스키마 강제까지 4단계 사다리와, 구조화가 놓치기 쉬운 함정들.</description>
-    </item>
-    <item>
-      <title>Too many open files — 파일도 안 여는데 왜 한도 초과일까</title>
-      <link>https://sabjil-log.github.io/p/fd-limit.html</link>
-      <guid>https://sabjil-log.github.io/p/fd-limit.html</guid>
-      <pubDate>Sun, 02 Aug 2026 00:00:00 -0000</pubDate>
-      <description>이 에러의 &#x27;파일&#x27;에는 소켓·파이프도 포함됩니다. 한도의 3단 구조(시스템/프로세스/systemd)와 누수 색출법을 정리했어요.</description>
     </item>
 </channel></rss>

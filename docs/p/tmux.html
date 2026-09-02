@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SSH가 끊겨도 작업은 살아있게 — tmux 최소 사용법 · 삽질노트</title>
+<meta name="description" content="장시간 작업 중 SSH가 끊기면 작업도 죽습니다. tmux는 서버 안에 작업실을 만들어두는 것 — 명령 다섯 개면 충분해요.">
+<meta property="og:title" content="SSH가 끊겨도 작업은 살아있게 — tmux 최소 사용법 · 삽질노트">
+<meta property="og:description" content="장시간 작업 중 SSH가 끊기면 작업도 죽습니다. tmux는 서버 안에 작업실을 만들어두는 것 — 명령 다섯 개면 충분해요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/tmux.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/tmux.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/tmux.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/tmux.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html" class="on">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-02</span><a class="chip" href="../c/linux.html">--linux</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>SSH가 끊겨도 작업은 살아있게 — tmux 최소 사용법</h1><blockquote>
+<p><strong>한 줄 요약:</strong> SSH 세션이 끊기면 그 위에서 돌던 프로세스도 함께 죽습니다(HUP 신호). tmux는 <strong>서버 안에 독립된 작업실을 만들고 거기 들어가서 일하는 것</strong> — 연결이 끊겨도 작업실은 남아 있고, 다시 붙으면 화면까지 그대로입니다. 명령 다섯 개면 실무가 됩니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">tmux — 서버 안의 작업실</div><svg viewBox="0 0 640 250" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.tx-cut{opacity:0;animation:tx-c 4s ease-in-out infinite;}
+@keyframes tx-c{0%,34%{opacity:0}42%,72%{opacity:1}82%,100%{opacity:0}}
+</style>
+<circle cx="62.0" cy="74.0" r="32.6" fill="var(--dg-blue-s)"/><g transform="translate(36.4,48.4) scale(1.600)">
+<rect x="4" y="4" width="24" height="16" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="6.5" y="6.5" width="19" height="11" rx="1" fill="var(--dg-screen)"/>
+<path d="M1.5 22 h29 l-2.5 3.5 H4 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/></g>
+<text x="26" y="126" class="dg-t">내 노트북</text>
+<line x1="104" y1="74" x2="250" y2="74" class="dg-arrow"/>
+<text x="132" y="60" class="dg-lab2">ssh</text>
+<g class="dg-anim tx-cut"><text x="164" y="92" font-size="20" fill="var(--dg-red)" font-weight="700">✂</text>
+<text x="126" y="112" class="dg-ts" fill="var(--dg-red)">연결 끊김</text></g>
+<rect x="250" y="24" width="376" height="130" rx="14" fill="none" stroke="var(--dg-blue)"
+      stroke-dasharray="6 4" stroke-width="1.4"/>
+<text x="262" y="44" class="dg-lab2">서버</text>
+<rect x="272" y="56" width="336" height="82" rx="12" fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8"/>
+<circle cx="308.0" cy="96.0" r="27.8" fill="var(--dg-green-s)"/><g transform="translate(287.2,75.2) scale(1.300)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g>
+<text x="340" y="88" class="dg-tl" font-size="13">tmux 세션 "deploy"</text>
+<text x="340" y="108" class="dg-ts">창0: 배포 스크립트 (계속 실행 중)</text>
+<text x="340" y="126" class="dg-ts">창1: journalctl -f</text>
+<text x="14" y="184" class="dg-key" font-size="12.5">tmux new -s 이름 → Ctrl+b d (나오기) → tmux attach -t 이름</text>
+<text x="14" y="208" class="dg-ts">서버에 붙으면 tmux 먼저 — 장시간 작업(rsync·배포·이관)은 무조건 안에서</text>
+<text x="14" y="230" class="dg-ts">단, 재부팅은 못 넘깁니다 — 그건 systemd 서비스의 일</text>
+</svg><figcaption>SSH가 끊기면 그 위의 프로세스도 죽습니다. 작업실을 만들어두면 화면째로 살아남아요.</figcaption></figure>
+<h2 id="_1">왜 필요한가</h2>
+<ul>
+<li>rsync로 500GB 이관 중 노트북이 절전에 들어감 → 처음부터(그 글의 재개가 있어 다행이지만 시간은 날아감)</li>
+<li>배포 스크립트 실행 중 사무실 와이파이가 끊김 → 절반만 배포된 상태</li>
+<li>장애 대응 중 터미널을 닫아야 하는데 tail -f 로그를 놓치고 싶지 않음</li>
+</ul>
+<p><code>nohup</code>이나 <code>&amp;</code>로도 프로세스는 살릴 수 있지만, <strong>화면(출력·진행률·대화형 입력)은 잃습니다.</strong> tmux는 화면째로 보존합니다.</p>
+<h2 id="_2">개념: 서버 안의 작업실</h2>
+<div class="highlight"><pre><span></span><code>[내 노트북] --ssh--&gt; [서버]
+                      └─ tmux 세션 &quot;deploy&quot;  ← 작업실 (SSH와 독립)
+                            ├─ 창(window) 0: 배포 스크립트
+                            └─ 창 1: 로그 tail
+</code></pre></div>
+
+<p>내가 접속을 끊어도(detach) 작업실은 그대로 돌아갑니다. 다시 접속해 attach하면 <strong>떠날 때 화면 그대로</strong> 이어집니다. 배스천을 거쳐 들어가는 환경이라면 특히 체감이 큽니다 — 중간 어느 홉이 끊겨도 작업은 무사하니까요.</p>
+<h2 id="_3">명령 다섯 개</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>tmux<span class="w"> </span>new<span class="w"> </span>-s<span class="w"> </span>deploy<span class="w">        </span><span class="c1"># ① &#39;deploy&#39;라는 작업실 만들고 들어가기</span>
+<span class="c1"># (작업 실행...)</span>
+<span class="c1"># ② 나오기: Ctrl+b 누르고 손 뗀 뒤 d   (detach)</span>
+tmux<span class="w"> </span>ls<span class="w">                   </span><span class="c1"># ③ 작업실 목록 — 뭐가 살아있나</span>
+tmux<span class="w"> </span>attach<span class="w"> </span>-t<span class="w"> </span>deploy<span class="w">     </span><span class="c1"># ④ 다시 들어가기</span>
+<span class="nb">exit</span><span class="w">                      </span><span class="c1"># ⑤ 작업 끝났으면 작업실 정리</span>
+</code></pre></div>
+
+<p>핵심은 <strong>Ctrl+b</strong>가 "지금부터 tmux에게 말한다"는 신호라는 것. 그다음 한 글자가 명령입니다.</p>
+<div class="highlight"><pre><span></span><code>Ctrl+b d      나오기 (detach)
+Ctrl+b c      새 창 만들기
+Ctrl+b 0/1/2  창 번호로 이동
+Ctrl+b &quot;      화면을 위아래로 쪼개기 (pane)
+Ctrl+b %      좌우로 쪼개기
+Ctrl+b 방향키  쪼갠 화면 간 이동
+Ctrl+b [      스크롤 모드 (q로 나옴) ← 위쪽 출력 보기
+</code></pre></div>
+
+<p>처음엔 <code>d / c / 숫자 / "</code> 네 개만 써도 충분합니다. 나머지는 필요할 때 찾으면 되고요.</p>
+<h2 id="_4">실무 패턴 셋</h2>
+<p><strong>① 장시간 작업은 무조건 tmux 안에서.</strong></p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>tmux<span class="w"> </span>new<span class="w"> </span>-s<span class="w"> </span>migrate
+rsync<span class="w"> </span>-avP<span class="w"> </span>--delete<span class="w"> </span>/data/<span class="w"> </span>new-server:/data/
+<span class="c1"># Ctrl+b d 로 나오고, 퇴근. 다음날 tmux attach -t migrate 로 확인</span>
+</code></pre></div>
+
+<p><strong>② 장애 대응용 다창 배치.</strong> 창 0에 명령, 창 1에 <code>journalctl -f</code>, 창 2에 <code>watch -n2 'ss -s'</code>. Ctrl+b 숫자로 오가며 보는 게 터미널 여러 개 띄우는 것보다 안정적입니다 — 연결이 끊겨도 배치가 유지되니까요.</p>
+<p><strong>③ 이미 시작한 작업이 tmux 밖이라면.</strong> 늦었습니다 — 그래서 습관이 중요해요. 서버에 붙으면 <strong>무조건 tmux 먼저</strong>. 그리고 <code>.bashrc</code>에 붙이는 자동 attach는 편하지만 스크립트·자동화 세션까지 잡아채 사고를 만드니, 수동으로 치는 걸 권합니다.</p>
+<h2 id="_5">알아두면 좋은 것</h2>
+<ul>
+<li><strong>세션 이름은 목적으로.</strong> <code>tmux new -s migrate-goil</code> 처럼. 나중에 <code>tmux ls</code>에서 "이게 뭐였지"가 없어야 합니다.</li>
+<li><strong>서버 재부팅에는 안 살아남습니다.</strong> tmux는 그 서버의 프로세스니까요. 재부팅을 넘겨야 하는 작업은 systemd 서비스로(fd 글의 그 세계) 만드는 게 맞습니다.</li>
+<li><strong>screen과의 관계.</strong> 오래된 서버엔 <code>screen</code>만 있을 수 있습니다. 개념은 같고 키만 다릅니다(Ctrl+a). 둘 중 있는 걸 쓰면 되고, 새로 배운다면 tmux.</li>
+<li><strong>긴 출력은 파일로도.</strong> tmux 스크롤 버퍼는 유한합니다. 중요한 작업은 <code>| tee /tmp/작업.log</code>로 남기세요 — 나중에 grep할 수 있는 형태로.</li>
+</ul>
+<h2 id="_6">한 줄 정리</h2>
+<p><strong>서버에 붙으면 tmux 먼저.</strong> <code>new -s 이름</code> → 작업 → <code>Ctrl+b d</code> → <code>attach -t 이름</code>, 이 넷이 8할입니다. 연결이 끊겨도 화면째로 살아남고, 장애 대응 때는 창을 나눠 쓰세요 — 다만 재부팅을 넘길 작업은 tmux가 아니라 systemd의 일입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --linux</div><a href="../p/rsync.html"><span class="g">&#10095;</span>scp 쓰다가 rsync로 못 돌아오는 이유 — 델타 전송과 재개</a><a href="../p/strace.html"><span class="g">&#10095;</span>프로세스가 뭘 하다 멈췄는지 훔쳐보기 — strace 입문</a><a href="../p/zombie-process.html"><span class="g">&#10095;</span>좀비 프로세스는 kill -9로도 안 죽는다 — Z 상태의 정체</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><span></span><a href="../p/spot-instances.html" style="text-align:right"><span class="lbl">older</span>70% 할인의 조건 — 스팟(선점형) 인스턴스를 쓸 수 있는 일과 없는 일</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

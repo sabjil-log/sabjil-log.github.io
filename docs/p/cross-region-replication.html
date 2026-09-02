@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>백업을 같은 도시에 두면 백업이 아니다 — 크로스 리전 복제 · 삽질노트</title>
+<meta name="description" content="원본과 백업이 같은 리전·같은 계정에 있으면 하나의 사고가 둘을 함께 지웁니다. 지리적 분리와 권한 분리, 그리고 복구 목표(RPO/RTO)로 정하는 설계.">
+<meta property="og:title" content="백업을 같은 도시에 두면 백업이 아니다 — 크로스 리전 복제 · 삽질노트">
+<meta property="og:description" content="원본과 백업이 같은 리전·같은 계정에 있으면 하나의 사고가 둘을 함께 지웁니다. 지리적 분리와 권한 분리, 그리고 복구 목표(RPO/RTO)로 정하는 설계.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/cross-region-replication.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/cross-region-replication.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/cross-region-replication.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/cross-region-replication.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-02</span><a class="chip" href="../c/cloud.html">--cloud</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>백업을 같은 도시에 두면 백업이 아니다 — 크로스 리전 복제</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 백업의 가치는 <strong>원본과 얼마나 독립적인가</strong>로 정해집니다. 같은 리전이면 리전 장애에 함께 죽고, 같은 계정이면 계정 탈취·실수 삭제에 함께 지워집니다. 그래서 진짜 백업은 <strong>다른 리전 + 다른 권한 경계 + 되돌릴 수 없는 보존</strong>이에요.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">백업의 독립성 3겹</div><svg viewBox="0 0 640 238" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.cr-0{animation:cr-h 4.0s ease-in-out infinite;animation-delay:0.0s;}
+.cr-1{animation:cr-h 4.0s ease-in-out infinite;animation-delay:1.0s;}
+.cr-2{animation:cr-h 4.0s ease-in-out infinite;animation-delay:2.0s;}
+.cr-3{animation:cr-h 4.0s ease-in-out infinite;animation-delay:3.0s;}
+@keyframes cr-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim cr-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<circle cx="16" cy="16" r="13" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<ellipse cx="16" cy="16" rx="5.5" ry="13" fill="none" stroke="var(--dg-blue)" stroke-width="1.4"/>
+<path d="M3 16 h26 M5.2 9.5 h21.6 M5.2 22.5 h21.6" stroke="var(--dg-blue)" stroke-width="1.4"/></g><text x="60" y="36" class="dg-t">① 지리 분리</text><text x="216" y="36" class="dg-lab2">다른 리전으로 복제</text><text x="396" y="36" class="dg-ts">리전 장애 대비 · 전송 요금</text><rect class="dg-box dg-anim cr-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<path d="M10 14 v-3.5 a6 6 0 0 1 12 0 V14" fill="none" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<rect x="6.5" y="14" width="19" height="14" rx="2.5" fill="var(--dg-amber-s)" stroke="var(--dg-amber)" stroke-width="1.8"/>
+<circle cx="16" cy="20" r="2" fill="var(--dg-amber)"/>
+<path d="M16 21.5 v3" stroke="var(--dg-amber)" stroke-width="2" stroke-linecap="round"/></g><text x="60" y="84" class="dg-t">② 권한 분리</text><text x="216" y="84" class="dg-lab2">다른 계정 (pull 방식)</text><text x="396" y="84" class="dg-ts">계정 탈취에도 백업 생존</text><rect class="dg-box dg-anim cr-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
+      stroke-linecap="round" stroke-linejoin="round"/></g><text x="60" y="132" class="dg-t">③ 시간 분리</text><text x="216" y="132" class="dg-lab2">불변 보존 (오브젝트 락)</text><text x="396" y="132" class="dg-ts">관리자도 못 지움</text><rect class="dg-box dg-anim cr-3" x="12" y="156" width="616" height="38" rx="9"/><g transform="translate(17.6,156.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="60" y="180" class="dg-t">④ 복구 리허설</text><text x="216" y="180" class="dg-lab2">분기 1회 실제 복구</text><text x="396" y="180" class="dg-ts">안 해봤으면 백업이 아님</text><text x="12" y="230" class="dg-ts">주기는 RPO(얼마 잃어도 되나), 방식은 RTO(얼마 안에 복구) — 비즈니스와 합의할 숫자</text></svg><figcaption>같은 리전이면 리전 장애에, 같은 계정이면 권한 사고에 함께 죽습니다. 지리·권한·시간으로 분리하세요.</figcaption></figure>
+<h2 id="_1">사고 시나리오로 보는 독립성</h2>
+<p>리전·AZ 글에서 장애 반경을 3단계로 봤습니다. 백업을 그 반경 위에 놓아보면 —</p>
+<table>
+<thead>
+<tr>
+<th>사고</th>
+<th>같은 AZ 백업</th>
+<th>같은 리전 다른 AZ</th>
+<th>다른 리전</th>
+<th>다른 계정</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>볼륨 손상·실수 삭제</td>
+<td>✓ 살아남음</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>AZ 장애</td>
+<td>✕ 함께 죽음</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>리전 장애</td>
+<td>✕</td>
+<td>✕</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>계정 탈취·권한 오용</td>
+<td>✕</td>
+<td>✕</td>
+<td>✕(같은 계정)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>랜섬웨어(원본 암호화)</td>
+<td>스냅샷이 남아 있으면 ✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓(가장 안전)</td>
+</tr>
+</tbody>
+</table>
+<p>표의 마지막 두 줄이 최근 설계가 바뀐 이유입니다. 리전 장애는 드물지만, <strong>권한 사고와 랜섬웨어는 드물지 않습니다.</strong> 그래서 "다른 리전"에서 멈추지 않고 "다른 계정 + 삭제 불가 보존"까지 가는 게 요즘 기준이에요.</p>
+<h2 id="_2">세 가지 분리</h2>
+<p><strong>① 지리적 분리 (다른 리전).</strong> Object Storage의 리전 간 복제 기능, 스냅샷·이미지의 타 리전 복사(스냅샷 글의 그 함정 ④), DB의 크로스 리전 백업. 대개 <strong>복제 트래픽에 전송 요금</strong>이 붙으니(비용 누수 글의 그 화살표) 대상을 골라야 합니다 — 전부가 아니라 <strong>없으면 사업이 멈추는 것</strong>만.</p>
+<p><strong>② 권한 분리 (다른 계정/프로젝트).</strong> 운영 계정의 자격증명이 유출되거나 오용돼도 백업 계정은 못 건드리게. 구현은 "백업 계정이 운영 계정에서 <strong>끌어오기(pull)</strong>"가 정석입니다 — 운영 쪽에 백업 계정 쓰기 권한을 주는 push 방식은 유출 시 백업까지 뚫리니까요.</p>
+<p><strong>③ 시간적 분리 (되돌릴 수 없는 보존).</strong> 오브젝트 락·불변 보존 기능으로 <strong>보존 기간 내 삭제·변경 자체를 금지</strong>. 관리자 권한으로도 못 지우는 상태를 만드는 것 — 랜섬웨어와 내부자 실수 양쪽에 대한 마지막 방어선입니다.</p>
+<h2 id="rporto">얼마나 자주, 얼마나 오래 — RPO/RTO로 정하기</h2>
+<p>용어 두 개면 대화가 정확해집니다.</p>
+<ul>
+<li><strong>RPO(복구 시점 목표):</strong> "데이터를 얼마까지 잃어도 되나?" → <strong>백업 주기</strong>를 정합니다. RPO 1시간이면 시간당 복제.</li>
+<li><strong>RTO(복구 시간 목표):</strong> "얼마 안에 서비스가 돌아와야 하나?" → <strong>복구 방식</strong>을 정합니다. RTO 1시간이면 타 리전에 미리 이미지·설정이 준비돼 있어야 하고, RTO 하루면 백업에서 조립할 시간이 있죠.</li>
+</ul>
+<p>이 둘을 <strong>비즈니스 쪽과 합의</strong>하지 않으면 인프라가 혼자 과잉 설계하거나(비용 폭발) 과소 설계합니다(장애 때 발각). 관리형 DB 이관 글에서 말한 "롤백 조건을 사전 합의"와 같은 성격의 일이에요.</p>
+<h2 id="_3">복구 리허설이 없으면 백업이 아니다</h2>
+<p>이 글에서 하나만 가져간다면 이겁니다 — <strong>복제해둔 것으로 실제로 복구해본 적이 없으면, 그건 백업이 아니라 백업처럼 보이는 비용입니다.</strong></p>
+<p>리허설 체크리스트:</p>
+<div class="highlight"><pre><span></span><code>□ 타 리전에서 스냅샷/이미지로 인스턴스를 실제로 부팅해봤나
+□ DB를 복구하고 앱을 붙여 쿼리가 나가는 것까지 확인했나 (엔드포인트 변경 절차 포함)
+□ 소요 시간을 측정했나 → 그게 실제 RTO (희망 RTO와 비교)
+□ 절차가 문서로 있나 — 새벽 3시의 다른 사람이 따라할 수 있게
+□ 분기 1회 일정이 캘린더에 있나
+</code></pre></div>
+
+<h2 id="_4">한 줄 정리</h2>
+<p>백업의 품질 = <strong>원본과의 독립성</strong>입니다. 다른 리전(지리)·다른 계정(권한)·불변 보존(시간) 세 겹으로 분리하고, 주기와 방식은 <strong>RPO/RTO 합의</strong>로 정하고 — 그리고 <strong>분기마다 실제로 복구해보세요.</strong> 복구해본 적 없는 백업은 슈뢰딩거의 백업입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --cloud</div><a href="../p/spot-instances.html"><span class="g">&#10095;</span>70% 할인의 조건 — 스팟(선점형) 인스턴스를 쓸 수 있는 일과 없는 일</a><a href="../p/private-endpoint.html"><span class="g">&#10095;</span>NAT 요금을 없애는 전용 통로 — 프라이빗 엔드포인트 실습편</a><a href="../p/serverless-economics.html"><span class="g">&#10095;</span>서버리스는 언제 싸고 언제 비싼가 — 택시 요금의 경제학</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/embedding-cache.html"><span class="lbl">newer</span>같은 문서를 두 번 임베딩하지 않기 — RAG 인덱싱 비용 줄이기</a><a href="../p/benchmark-traps.html" style="text-align:right"><span class="lbl">older</span>리더보드 1등 모델이 우리 서비스에선 3등인 이유 — 벤치마크 읽는 법</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

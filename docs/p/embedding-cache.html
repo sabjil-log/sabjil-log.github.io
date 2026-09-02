@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>같은 문서를 두 번 임베딩하지 않기 — RAG 인덱싱 비용 줄이기 · 삽질노트</title>
+<meta name="description" content="문서 하나 고쳤다고 전체를 다시 임베딩하는 파이프라인은 흔합니다. 청크 해시 하나로 재인덱싱 비용이 수십 분의 일이 돼요.">
+<meta property="og:title" content="같은 문서를 두 번 임베딩하지 않기 — RAG 인덱싱 비용 줄이기 · 삽질노트">
+<meta property="og:description" content="문서 하나 고쳤다고 전체를 다시 임베딩하는 파이프라인은 흔합니다. 청크 해시 하나로 재인덱싱 비용이 수십 분의 일이 돼요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/embedding-cache.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/embedding-cache.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/embedding-cache.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/embedding-cache.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-02</span><a class="chip" href="../c/ai.html">--ai</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>같은 문서를 두 번 임베딩하지 않기 — RAG 인덱싱 비용 줄이기</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 임베딩은 <strong>같은 입력에 항상 같은 출력</strong>입니다 — 즉 캐시가 완벽하게 통하는 연산이죠. <strong>청크 내용의 해시를 키로 저장</strong>해두면, 문서를 다시 인덱싱할 때 바뀐 청크만 계산합니다. rsync가 파일에 한 일을 임베딩에 하는 것.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">임베딩 캐시 — 해시로 델타 인덱싱</div><svg viewBox="0 0 640 116" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.ecc-0{animation:ecc-h 4.6s ease-in-out infinite;animation-delay:0.0s;}
+.ecc-1{animation:ecc-h 4.6s ease-in-out infinite;animation-delay:1.15s;}
+.ecc-2{animation:ecc-h 4.6s ease-in-out infinite;animation-delay:2.3s;}
+.ecc-3{animation:ecc-h 4.6s ease-in-out infinite;animation-delay:3.45s;}
+@keyframes ecc-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim ecc-0" x="12" y="18" width="145" height="58" rx="10"/><circle cx="44.0" cy="47.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(24.0,27.0) scale(1.250)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="70" y="42" class="dg-key">문서 해시</text><text x="70" y="62" class="dg-lab2">안 바뀌면 스킵</text><line x1="157" y1="47" x2="169" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim ecc-1" x="169" y="18" width="145" height="58" rx="10"/><circle cx="201.0" cy="47.0" r="27.0" fill="var(--dg-green-s)"/><g transform="translate(181.0,27.0) scale(1.250)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="227" y="42" class="dg-key">청크 해시</text><text x="227" y="62" class="dg-lab2">바뀐 것만</text><line x1="314" y1="47" x2="326" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim ecc-2" x="326" y="18" width="145" height="58" rx="10"/><circle cx="358.0" cy="47.0" r="27.0" fill="var(--dg-violet-s)"/><g transform="translate(338.0,27.0) scale(1.250)">
+<path d="M16 5 a6 6 0 0 0 -6 6 a5 5 0 0 0 -2 9 a5.5 5.5 0 0 0 8 6 a5.5 5.5 0 0 0 8 -6 a5 5 0 0 0 -2 -9 a6 6 0 0 0 -6 -6 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.8"/>
+<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.4" stroke-linecap="round"/></g><text x="384" y="42" class="dg-key">임베딩</text><text x="384" y="62" class="dg-lab2">재사용 vs 신규</text><line x1="471" y1="47" x2="483" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim ecc-3" x="483" y="18" width="145" height="58" rx="10"/><circle cx="515.0" cy="47.0" r="27.0" fill="var(--dg-violet-s)"/><g transform="translate(495.0,27.0) scale(1.250)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="541" y="42" class="dg-key">차집합 삭제</text><text x="541" y="62" class="dg-lab2">사라진 청크</text><text x="12" y="102" class="dg-ts">키에 모델·청킹 버전 포함 · 로그에 (신규/재사용/삭제) 카운트 — 캐시가 듣는지 확인</text></svg><figcaption>임베딩은 결정적이라 캐시가 완벽히 통합니다. 문서 게이트 + 청크 게이트로 매일 전체 재계산을 델타로.</figcaption></figure>
+<h2 id="_1">흔한 낭비의 구조</h2>
+<p>사내 문서 5,000개로 RAG를 만들었습니다. 매일 밤 인덱싱 배치가 돕니다.</p>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">all_docs</span><span class="p">():</span>             <span class="c1"># 5,000개</span>
+    <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">split</span><span class="p">(</span><span class="n">doc</span><span class="p">):</span>       <span class="c1"># 평균 20청크 = 10만 청크</span>
+        <span class="n">vec</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>         <span class="c1"># 매일 10만 번 임베딩</span>
+        <span class="n">upsert</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="n">vec</span><span class="p">)</span>
+</code></pre></div>
+
+<p>그런데 하루에 실제로 바뀌는 문서는 <strong>5~10개</strong>입니다. 10만 번 중 99.9%가 <strong>어제와 완전히 같은 텍스트를 또 계산</strong>하는 거죠. API형이면 그대로 요금이고, 자체 서빙이면 GPU 시간입니다.</p>
+<h2 id="_2">처방: 내용 해시를 키로</h2>
+<p>임베딩은 결정적(deterministic) 함수라, <strong>입력이 같으면 결과를 재사용해도 100% 동일</strong>합니다. 그래서 캐시 키는 내용 그 자체 —</p>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">chunk_key</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">model_id</span><span class="p">):</span>
+    <span class="c1"># 모델을 바꾸면 벡터가 호환되지 않으므로 키에 모델을 포함</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="mi">32</span><span class="p">]</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">h</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">embed_cached</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">model_id</span><span class="p">,</span> <span class="n">cache</span><span class="p">):</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">chunk_key</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">model_id</span><span class="p">)</span>
+    <span class="n">hit</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">hit</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">hit</span>                      <span class="c1"># 계산 생략</span>
+    <span class="n">vec</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">model_id</span><span class="p">)</span>
+    <span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">vec</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">vec</span>
+</code></pre></div>
+
+<p><code>model_id</code>를 키에 넣는 게 중요합니다 — 임베딩 글에서 말한 그 제약(모델 교체 = 재인덱싱)이 캐시 오염으로 나타나지 않게 하는 안전장치예요.</p>
+<h2 id="_3">문서 단위 스킵까지 — 두 단계 게이트</h2>
+<p>청크 해시만으로도 계산은 아끼지만, <strong>문서를 쪼개고 해시를 뜨는 일 자체</strong>도 비용입니다. 앞에 게이트를 하나 더 둡니다.</p>
+<div class="highlight"><pre><span></span><code>① 문서 게이트: 원본 파일의 해시(또는 수정시각+크기)가 지난번과 같으면 → 그 문서 통째로 스킵
+② 청크 게이트: 바뀐 문서만 쪼개고, 청크 해시로 개별 판정 → 바뀐 청크만 임베딩
+</code></pre></div>
+
+<p>①이 rsync의 파일 목록 비교, ②가 델타 전송에 해당합니다. 실무 효과는 극적이에요 — 매일 10만 청크가 <strong>수십~수백 청크</strong>로.</p>
+<h2 id="_4">놓치기 쉬운 것들</h2>
+<p><strong>① 삭제 처리.</strong> 캐시는 "새로 계산할 것"만 줄입니다. 문서에서 사라진 청크를 벡터DB에서 <strong>지우지 않으면</strong> 유령 문서가 검색됩니다 — 없어진 규정이 답변 근거로 인용되는 사고. 문서별로 현재 청크 키 집합을 기록해두고, 인덱싱 후 <strong>차집합을 삭제</strong>하세요. (rsync의 <code>--delete</code>와 같은 역할이고, 같은 이유로 조심스럽게.)</p>
+<p><strong>② 청킹 규칙을 바꾸면 전부 무효.</strong> 청크 경계가 달라지면 텍스트가 달라지니 해시도 전부 새것 — 청킹 파라미터 변경은 사실상 전체 재인덱싱입니다. 그래서 청킹 규칙도 키에 포함시키는 구현이 안전해요(<code>model:chunkver:hash</code>).</p>
+<p><strong>③ 중복 문서의 자동 이득.</strong> 사내 문서는 같은 문단이 여러 파일에 복붙돼 있는 경우가 흔합니다. 내용 해시 캐시는 이걸 <strong>자동으로 중복 제거</strong>해줍니다 — 계산도 아끼고, 검색 결과에 같은 내용이 여러 번 뜨는 문제도 줄어요(리랭커 앞단의 후보 다양성 확보).</p>
+<p><strong>④ 저장은 가볍게.</strong> 캐시 값은 벡터(수 KB)입니다. 10만 청크 × 1024차원이면 수백 MB — 로컬 SQLite나 Redis, 또는 벡터DB 자체를 캐시로 겸용(이미 있는 벡터를 읽어 재사용)해도 됩니다. 별도 저장소를 만들기 전에 <strong>벡터DB에 해시를 메타데이터로 넣고 조회하는 방식</strong>이 가장 단순한 구현입니다.</p>
+<h2 id="_5">인덱싱 파이프라인 체크리스트</h2>
+<div class="highlight"><pre><span></span><code>□ 문서 해시로 무변경 문서 스킵
+□ 청크 해시(+모델·청킹 버전)로 개별 스킵
+□ 사라진 청크는 차집합 삭제
+□ 인덱싱 로그에 (신규/재사용/삭제) 카운트 출력 ← 캐시가 실제로 듣는지 확인
+□ 실패 시 재개 가능 (중단된 배치가 처음부터 돌지 않게)
+</code></pre></div>
+
+<p>마지막 두 개가 운영의 눈입니다. "재사용 99,900 / 신규 120"이 매일 로그에 찍히면 파이프라인이 건강한 것이고, 그 비율이 어느 날 깨지면 무언가(모델·청킹 버전) 바뀐 겁니다.</p>
+<h2 id="_6">한 줄 정리</h2>
+<p>임베딩은 결정적이니 <strong>내용 해시로 캐시하면 공짜 절감</strong>입니다. 문서 게이트 + 청크 게이트로 매일 전체 재계산을 델타로 바꾸고, <strong>모델·청킹 버전을 키에 포함</strong>하고, <strong>사라진 청크 삭제</strong>를 잊지 마세요 — 인덱싱 비용은 대개 여기서 90% 이상 빠집니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/local-vs-api-llm.html"><span class="g">&#10095;</span>로컬 LLM은 언제 정답인가 — 온디바이스 vs API의 손익분기</a><a href="../p/benchmark-traps.html"><span class="g">&#10095;</span>리더보드 1등 모델이 우리 서비스에선 3등인 이유 — 벤치마크 읽는 법</a><a href="../p/embedding-choice.html"><span class="g">&#10095;</span>임베딩 모델 고르기 — 리더보드 1등을 덥석 쓰면 안 되는 이유</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/local-vs-api-llm.html"><span class="lbl">newer</span>로컬 LLM은 언제 정답인가 — 온디바이스 vs API의 손익분기</a><a href="../p/cross-region-replication.html" style="text-align:right"><span class="lbl">older</span>백업을 같은 도시에 두면 백업이 아니다 — 크로스 리전 복제</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

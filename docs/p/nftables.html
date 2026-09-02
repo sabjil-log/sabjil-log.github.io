@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iptables 대신 nftables — 규칙 읽는 법만이라도 · 삽질노트</title>
+<meta name="description" content="요즘 배포판의 기본은 nftables입니다. 옛 명령이 먹히는 것처럼 보여도 실제로는 번역된 것 — 최소한 남의 규칙을 읽고 원인을 짚을 정도는 알아둬야 합니다.">
+<meta property="og:title" content="iptables 대신 nftables — 규칙 읽는 법만이라도 · 삽질노트">
+<meta property="og:description" content="요즘 배포판의 기본은 nftables입니다. 옛 명령이 먹히는 것처럼 보여도 실제로는 번역된 것 — 최소한 남의 규칙을 읽고 원인을 짚을 정도는 알아둬야 합니다.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/nftables.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/nftables.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/nftables.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/nftables.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html" class="on">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-02</span><a class="chip" href="../c/network.html">--network</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>iptables 대신 nftables — 규칙 읽는 법만이라도</h1><blockquote>
+<p><strong>한 줄 요약:</strong> nftables는 iptables의 후계입니다. 지금 배포판에서 <code>iptables</code> 명령이 먹혀도 대개 <strong>뒤에서 nftables로 번역</strong>되고 있어요. 구조는 단순합니다 — <strong>table(주소패밀리별 서랍) → chain(훅에 걸린 규칙 묶음) → rule</strong> 3층이고, <code>nft list ruleset</code> 한 줄이면 전체가 보입니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">nftables 3층 구조</div><svg viewBox="0 0 640 238" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.nf-0{animation:nf-h 4.0s ease-in-out infinite;animation-delay:0.0s;}
+.nf-1{animation:nf-h 4.0s ease-in-out infinite;animation-delay:1.0s;}
+.nf-2{animation:nf-h 4.0s ease-in-out infinite;animation-delay:2.0s;}
+.nf-3{animation:nf-h 4.0s ease-in-out infinite;animation-delay:3.0s;}
+@keyframes nf-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim nf-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="60" y="36" class="dg-t">table inet filter</text><text x="216" y="36" class="dg-lab2">주소 패밀리 + 이름</text><text x="396" y="36" class="dg-ts">프로그램마다 자기 서랍</text><rect class="dg-box dg-anim nf-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<rect x="3" y="6" width="26" height="20" rx="2" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.7"/>
+<path d="M3 12.6 h26 M3 19.3 h26" stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M11 6 v6.6 M20 6 v6.6 M7 12.6 v6.7 M16 12.6 v6.7 M24.5 12.6 v6.7 M11 19.3 v6.7 M20 19.3 v6.7"
+      stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M16 13 c2.6 2.4 3.4 4.2 3.4 6 a3.4 3.4 0 0 1 -6.8 0 c0 -1.8 0.8 -3.6 3.4 -6 z"
+      fill="var(--dg-amber)" stroke="var(--dg-red)" stroke-width="1.3"/></g><text x="60" y="84" class="dg-t">chain input</text><text x="216" y="84" class="dg-lab2">hook · priority · policy</text><text x="396" y="84" class="dg-ts">policy drop = 누락 포트 차단</text><rect class="dg-box dg-anim nf-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
+      stroke-linecap="round" stroke-linejoin="round"/></g><text x="60" y="132" class="dg-t">ct state established</text><text x="216" y="132" class="dg-lab2">연결 추적 허용</text><text x="396" y="132" class="dg-ts">OS 레벨 스테이트풀</text><rect class="dg-box dg-anim nf-3" x="12" y="156" width="616" height="38" rx="9"/><g transform="translate(17.6,156.6) scale(1.150)">
+<rect x="2" y="11" width="28" height="11" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="5" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="10" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="15" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="20" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<circle cx="26.5" cy="16.5" r="1.2" fill="var(--dg-green)"/></g><text x="60" y="180" class="dg-t">rule</text><text x="216" y="180" class="dg-lab2">tcp dport { 22,80,443 }</text><text x="396" y="180" class="dg-ts">위에서 아래로 첫 매치</text><text x="12" y="230" class="dg-ts">firewalld·도커가 도는 서버에 nft로 직접 쓰면 충돌 — 그 도구의 문법으로 여세요</text></svg><figcaption>table(서랍) → chain(훅·정책) → rule, 평가는 위에서 아래. nft list ruleset 이 진실입니다.</figcaption></figure>
+<h2 id="_1">왜 알아야 하나</h2>
+<p>서버에서 통신이 안 될 때, 계층 진단의 5번 칸(방화벽)에는 세 겹이 있습니다 — 클라우드 ACG/NACL, 그리고 <strong>OS 내부 방화벽</strong>. ACG를 아무리 열어도 OS 안에서 DROP하고 있으면 tcpdump 패턴 ③(SYN만 반복)이 나오죠. 그 OS 내부 방화벽의 현재 표준이 nftables입니다.</p>
+<p>혼란의 원인 하나 짚고 가면 — <code>iptables -L</code>이 아무것도 안 보여주는데 통신이 막히는 경우가 있습니다. 규칙이 nftables 쪽에 직접 작성돼 있고(firewalld나 도커, 또는 관리자가), 호환 계층이 그걸 못 보여주는 상황이에요. <strong><code>nft list ruleset</code>이 진실</strong>입니다.</p>
+<h2 id="3">구조: 3층</h2>
+<div class="highlight"><pre><span></span><code>table inet filter {            ← 서랍: 주소 패밀리(inet=IPv4+6) + 이름
+  chain input {                ← 묶음: 어느 훅에, 우선순위, 기본 정책
+    type filter hook input priority 0; policy drop;
+    ct state established,related accept       ← 규칙들
+    iifname &quot;lo&quot; accept
+    tcp dport { 22, 80, 443 } accept
+  }
+  chain forward { ... }
+  chain output  { ... }
+}
+</code></pre></div>
+
+<p>iptables와 결정적으로 다른 점 둘:</p>
+<ul>
+<li><strong>테이블·체인을 내가 만듭니다.</strong> iptables는 filter/nat 등 고정 테이블에 규칙을 얹었지만, nftables는 서랍부터 정의해요. 그래서 여러 프로그램(firewalld, docker, k8s)이 <strong>각자의 테이블</strong>을 갖고 공존합니다 — 규칙이 안 보이던 이유가 대개 이것.</li>
+<li><strong>집합(set) 문법.</strong> <code>{ 22, 80, 443 }</code> 처럼 한 줄로 묶고, 이름 붙인 집합·맵도 만듭니다. iptables에서 포트마다 규칙을 늘어놓던 것이 한 줄로 줄어요.</li>
+</ul>
+<p><code>ct state established,related accept</code> 한 줄도 짚어둘 만합니다 — 연결 추적으로 <strong>응답 트래픽을 자동 허용</strong>하는 규칙, 즉 ACG 글의 그 "스테이트풀"을 OS에서 구현하는 문장입니다. 이 줄이 없으면 NACL 글의 임시 포트 함정이 서버 안에서 재현됩니다.</p>
+<h2 id="_2">읽기 위한 명령 넷</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>sudo<span class="w"> </span>nft<span class="w"> </span>list<span class="w"> </span>ruleset<span class="w">                 </span><span class="c1"># 전체 — 진실은 여기</span>
+sudo<span class="w"> </span>nft<span class="w"> </span>list<span class="w"> </span>table<span class="w"> </span>inet<span class="w"> </span>filter<span class="w">       </span><span class="c1"># 특정 서랍만</span>
+sudo<span class="w"> </span>nft<span class="w"> </span>-a<span class="w"> </span>list<span class="w"> </span>ruleset<span class="w">              </span><span class="c1"># handle 번호 표시 (삭제할 때 필요)</span>
+sudo<span class="w"> </span>nft<span class="w"> </span>monitor<span class="w"> </span>trace<span class="w">                </span><span class="c1"># (트레이스 켠 뒤) 패킷이 어느 규칙에 걸리나 실시간</span>
+</code></pre></div>
+
+<p>디버깅의 핵심은 <strong>순서</strong>입니다 — 체인 안에서 위에서 아래로 평가되고, <code>accept</code>/<code>drop</code>을 만나면 종료. NACL 글에서 본 "번호 순서" 함정이 여기서도 같아요: 위쪽의 넓은 규칙이 아래쪽 의도를 무력화합니다. 그리고 <code>policy drop</code>인 체인은 <strong>아무 규칙에도 안 걸리면 버림</strong>이니, 새 서비스 포트를 여는 걸 잊으면 조용히 막힙니다.</p>
+<p>카운터를 붙이면 "이 규칙이 실제로 걸리고 있나"를 숫자로 볼 수 있습니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>sudo<span class="w"> </span>nft<span class="w"> </span>add<span class="w"> </span>rule<span class="w"> </span>inet<span class="w"> </span>filter<span class="w"> </span>input<span class="w"> </span>tcp<span class="w"> </span>dport<span class="w"> </span><span class="m">8080</span><span class="w"> </span>counter<span class="w"> </span>accept
+sudo<span class="w"> </span>nft<span class="w"> </span>list<span class="w"> </span>ruleset<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A1<span class="w"> </span><span class="m">8080</span><span class="w">      </span><span class="c1"># packets/bytes 증가 확인</span>
+</code></pre></div>
+
+<h2 id="_3">최소한의 쓰기</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># 임시로 포트 열기 (재부팅하면 사라짐 — 그게 안전판)</span>
+sudo<span class="w"> </span>nft<span class="w"> </span>add<span class="w"> </span>rule<span class="w"> </span>inet<span class="w"> </span>filter<span class="w"> </span>input<span class="w"> </span>tcp<span class="w"> </span>dport<span class="w"> </span><span class="m">8080</span><span class="w"> </span>accept
+
+<span class="c1"># 방금 규칙 지우기: handle 확인 후</span>
+sudo<span class="w"> </span>nft<span class="w"> </span>-a<span class="w"> </span>list<span class="w"> </span>chain<span class="w"> </span>inet<span class="w"> </span>filter<span class="w"> </span>input<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="m">8080</span><span class="w">     </span><span class="c1"># handle 42</span>
+sudo<span class="w"> </span>nft<span class="w"> </span>delete<span class="w"> </span>rule<span class="w"> </span>inet<span class="w"> </span>filter<span class="w"> </span>input<span class="w"> </span>handle<span class="w"> </span><span class="m">42</span>
+
+<span class="c1"># 영구 반영은 배포판 방식대로 (/etc/nftables.conf + systemctl enable nftables,</span>
+<span class="c1"># 또는 firewalld/ufw를 쓰는 서버라면 그 도구로 — 직접 nft로 쓰면 덮어써집니다)</span>
+</code></pre></div>
+
+<p>마지막 괄호가 실무에서 제일 중요합니다. <strong>관리 도구가 있는 서버에 nft로 직접 쓰면 충돌</strong>합니다 — firewalld가 리로드할 때 내 규칙이 사라지고, 왜 사라졌는지 몰라 한참 헤매게 되죠. 서버에 firewalld/ufw가 도는지 먼저 확인하고, 있으면 그 도구의 문법으로 여세요.</p>
+<h2 id="_4">도커와의 관계</h2>
+<p>도커는 자기 테이블/체인을 만들어 포트 공개(<code>-p</code>)와 NAT을 처리합니다. 그래서 — <strong>도커로 공개한 포트는 내 input 체인 규칙을 우회하는 것처럼 보입니다</strong>(실제로는 다른 훅·체인에서 처리). "방화벽에서 막았는데 컨테이너 포트가 열려 있다"는 유명한 함정이고, 해결은 도커 쪽 설정(포트를 127.0.0.1에만 바인딩하거나, 도커의 iptables 통합 옵션 조정)입니다. docker-localhost 글의 그 "주소 체계가 다르다"는 감각이 방화벽에도 적용되는 셈이에요.</p>
+<h2 id="_5">한 줄 정리</h2>
+<p><strong><code>nft list ruleset</code>이 진실</strong>이고, 구조는 table → chain(훅·policy) → rule, 평가는 위에서 아래. <code>ct state established</code> 한 줄이 스테이트풀을 만들고, <code>policy drop</code> 체인은 누락된 포트를 조용히 막습니다. 그리고 firewalld·도커가 도는 서버에서는 <strong>직접 쓰지 말고 그 도구로</strong> — 충돌이 미스터리의 원천입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --network</div><a href="../p/dns-resolver-cache.html"><span class="g">&#10095;</span>DNS는 맞는데 가끔만 느리다 — 리졸버 캐시 4층과 hosts 우선순위</a><a href="../p/peering-vs-tgw.html"><span class="g">&#10095;</span>VPC가 늘어나면 연결이 지옥이 된다 — 피어링 vs Transit Gateway</a><a href="../p/dns-records.html"><span class="g">&#10095;</span>A, CNAME, MX, TXT — 도메인 연결이 안 될 때 봐야 할 레코드들</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/private-endpoint.html"><span class="lbl">newer</span>NAT 요금을 없애는 전용 통로 — 프라이빗 엔드포인트 실습편</a><a href="../p/local-vs-api-llm.html" style="text-align:right"><span class="lbl">older</span>로컬 LLM은 언제 정답인가 — 온디바이스 vs API의 손익분기</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

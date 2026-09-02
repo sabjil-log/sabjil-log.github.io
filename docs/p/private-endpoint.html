@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NAT 요금을 없애는 전용 통로 — 프라이빗 엔드포인트 실습편 · 삽질노트</title>
+<meta name="description" content="private 서버가 오브젝트 스토리지를 부를 때 NAT를 지나면 GB당 돈을 냅니다. 라우팅 두 줄로 그 트래픽을 내부 통로로 돌리는 방법과 검증법.">
+<meta property="og:title" content="NAT 요금을 없애는 전용 통로 — 프라이빗 엔드포인트 실습편 · 삽질노트">
+<meta property="og:description" content="private 서버가 오브젝트 스토리지를 부를 때 NAT를 지나면 GB당 돈을 냅니다. 라우팅 두 줄로 그 트래픽을 내부 통로로 돌리는 방법과 검증법.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/private-endpoint.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/private-endpoint.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/private-endpoint.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/private-endpoint.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-02</span><a class="chip" href="../c/cloud.html">--cloud</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>NAT 요금을 없애는 전용 통로 — 프라이빗 엔드포인트 실습편</h1><blockquote>
+<p><strong>한 줄 요약:</strong> private 서브넷의 서버가 같은 클라우드의 스토리지를 부를 때, 기본 경로는 <strong>NAT을 거쳐 인터넷으로 나갔다 오는 것</strong>입니다 — 처리 요금이 GB당 붙죠. 엔드포인트는 <strong>VPC 안에서 그 서비스로 직행하는 통로</strong>를 만들어 요금과 노출을 함께 없앱니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">엔드포인트 — NAT을 우회하는 전용 통로</div><svg viewBox="0 0 640 270" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.ep-old{animation:ep-o 4.2s ease-in-out infinite;}
+.ep-new{animation:ep-n 4.2s ease-in-out infinite;}
+@keyframes ep-o{0%,52%{opacity:.9}60%,100%{opacity:.16}}
+@keyframes ep-n{0%,52%{opacity:.16}60%,100%{opacity:1}}
+</style>
+<circle cx="62.0" cy="78.0" r="32.6" fill="var(--dg-blue-s)"/><g transform="translate(36.4,52.4) scale(1.600)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g>
+<text x="20" y="128" class="dg-t">private 서버</text>
+<g class="dg-anim ep-old">
+<path d="M104 68 H 250 V 44 H 400" class="dg-arrow"/>
+<circle cx="288.0" cy="68.0" r="26.2" fill="var(--dg-blue-s)"/><g transform="translate(268.8,48.8) scale(1.200)">
+<path d="M5 29 V13 a11 11 0 0 1 22 0 v16 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.8"/>
+<path d="M11 29 V15 a5 5 0 0 1 10 0 v14 z" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.7"/>
+<circle cx="19" cy="22" r="1.2" fill="var(--dg-blue)"/></g>
+<text x="256" y="106" class="dg-ts">NAT GW</text>
+<circle cx="452.0" cy="44.0" r="26.2" fill="var(--dg-blue-s)"/><g transform="translate(432.8,24.8) scale(1.200)">
+<circle cx="16" cy="16" r="13" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<ellipse cx="16" cy="16" rx="5.5" ry="13" fill="none" stroke="var(--dg-blue)" stroke-width="1.4"/>
+<path d="M3 16 h26 M5.2 9.5 h21.6 M5.2 22.5 h21.6" stroke="var(--dg-blue)" stroke-width="1.4"/></g>
+<text x="484" y="48" class="dg-key" font-size="12">인터넷 경유 — GB당 과금</text>
+</g>
+<g class="dg-anim ep-new">
+<path d="M104 92 H 300 V 160 H 420" stroke="var(--dg-green)" stroke-width="2.4" fill="none"/>
+<circle cx="360.0" cy="160.0" r="27.8" fill="var(--dg-green-s)"/><g transform="translate(339.2,139.2) scale(1.300)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g>
+<text x="298" y="196" class="dg-ts" fill="var(--dg-green)">엔드포인트 (VPC 내부)</text>
+<circle cx="480.0" cy="160.0" r="29.4" fill="var(--dg-violet-s)"/><g transform="translate(457.6,137.6) scale(1.400)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g>
+<text x="514" y="164" class="dg-t">Object Storage</text>
+</g>
+<text x="14" y="228" class="dg-lab2">라우팅: pl-storage → vpce-xxxx 추가 (0.0.0.0/0 → nat 은 그대로)</text>
+<text x="14" y="250" class="dg-ts">검증은 "접근되네"가 아니라 NAT 처리량 하락으로 · 인터넷 노출 구간도 소멸</text>
+</svg><figcaption>더 구체적인 경로가 이깁니다. 스토리지행만 내부 통로로 돌리고 나머지 인터넷은 그대로.</figcaption></figure>
+<h2 id="nat">문제 확인부터 — 정말 NAT을 지나고 있나</h2>
+<p>NAT 글에서 예고한 그 점검입니다. 먼저 우리 NAT 트래픽의 정체를 봅니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># NAT 지표에서 처리량이 큰 시간대를 찾고, 그 시각 서버 쪽에서:</span>
+sudo<span class="w"> </span>tcpdump<span class="w"> </span>-ni<span class="w"> </span>any<span class="w"> </span><span class="s1">&#39;dst port 443&#39;</span><span class="w"> </span>-c<span class="w"> </span><span class="m">200</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $5}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-d.<span class="w"> </span>-f1-4<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn<span class="w"> </span><span class="p">|</span><span class="w"> </span>head
+<span class="c1"># 상위 목적지가 스토리지 서비스 대역이면 → 엔드포인트 전환 후보 확정</span>
+</code></pre></div>
+
+<p>전형적 범인은 셋입니다 — <strong>① 백업 스크립트가 매일 수십~수백 GB를 버킷으로 업로드, ② 컨테이너 노드가 이미지를 pull(멀티스테이지 다이어트가 여기서도 돈을 아낍니다), ③ 로그 수집기가 중앙 저장소로 전송</strong>(그 글의 파이프라인).</p>
+<h2 id="_1">두 종류의 통로</h2>
+<p><strong>게이트웨이형 (스토리지용, 대개 추가 요금 없음)</strong>
+라우팅 테이블에 "이 서비스로 가는 건 이 통로로"를 추가하는 방식. 요금이 안 붙는 경우가 많아 <strong>트래픽이 크면 무조건 1순위</strong>입니다.</p>
+<div class="highlight"><pre><span></span><code># private 서브넷의 라우팅 테이블 (before)
+10.0.0.0/16      → local
+0.0.0.0/0        → nat-gateway        ← 스토리지행도 여기로 나감
+
+# (after) 엔드포인트 경로 추가
+10.0.0.0/16      → local
+pl-storage(prefix) → vpce-xxxx        ← 스토리지행만 전용 통로로
+0.0.0.0/0        → nat-gateway        ← 나머지 인터넷은 그대로
+</code></pre></div>
+
+<p>핵심은 <strong>더 구체적인 경로가 이깁니다</strong>(longest prefix match) — 0.0.0.0/0보다 특정 서비스 대역이 우선하니, 기존 경로를 지우지 않고 추가만 하면 됩니다. 서브넷 글의 "경로가 정체를 정한다"가 여기서 비용으로 나타나는 셈이죠.</p>
+<p><strong>인터페이스형 (그 외 API 서비스, 시간당 요금)</strong>
+VPC 안에 그 서비스의 사설 IP 창구(ENI)를 만들고, DNS가 그 IP로 해석되게 하는 방식. 시간당 요금이 있으니 <strong>NAT 처리 요금과 견줘</strong> 판단합니다 — 트래픽이 작으면 NAT이 더 싸요.</p>
+<p>NCP도 같은 그림입니다. Object Storage 등으로 향하는 내부 경로/프라이빗 엔드포인트 제공 여부를 확인하고 라우팅을 분리하는 접근은 동일합니다(이름 지도 글의 원칙대로 세부 스펙만 문서 재확인).</p>
+<h2 id="_2">전환 절차와 검증</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># 1) 전환 전 기준선 기록</span>
+<span class="c1">#    NAT 처리량(GB/일), 백업 작업 소요 시간</span>
+
+<span class="c1"># 2) 엔드포인트 생성 후, 라우팅이 실제로 바뀌었나 — 경로부터</span>
+ip<span class="w"> </span>route<span class="w"> </span>get<span class="w"> </span>스토리지IP<span class="w">        </span><span class="c1"># 나가는 인터페이스 확인 (변화 없으면 라우팅 반영 안 됨)</span>
+
+<span class="c1"># 3) 진짜 검증: NAT을 안 지나는지</span>
+<span class="c1">#    NAT 지표에서 해당 시간대 처리량이 떨어졌는지 확인 (이게 결정적 증거)</span>
+<span class="c1">#    + 서버에서 접근이 여전히 되는지</span>
+aws<span class="w"> </span>s3<span class="w"> </span>ls<span class="w"> </span>s3://my-bucket<span class="w"> </span>--region<span class="w"> </span>ap-northeast-2<span class="w">      </span><span class="c1"># 또는 해당 SDK 호출</span>
+
+<span class="c1"># 4) 며칠 뒤 청구서에서 NAT 처리 요금 감소 확인</span>
+</code></pre></div>
+
+<p>2번과 3번을 나눈 이유가 있습니다 — <strong>"접근이 되네"는 검증이 아닙니다.</strong> 엔드포인트가 잘못 설정돼도 NAT 경로가 살아 있으면 접근은 계속 되니까요(그리고 요금도 계속 나갑니다). <strong>NAT 처리량 하락</strong>만이 진짜 증거예요.</p>
+<h2 id="_3">부수 효과: 보안이 같이 좋아진다</h2>
+<p>비용 얘기로 시작했지만, 실은 보안 개선이 더 큰 소득일 수 있습니다.</p>
+<ul>
+<li>스토리지 접근이 <strong>인터넷을 아예 안 지납니다</strong> — 트래픽 노출 구간이 사라짐</li>
+<li>엔드포인트 정책으로 "이 VPC에서만 이 버킷 접근 허용" 같은 제약을 걸 수 있어, <strong>키가 유출돼도 외부에서는 못 쓰는</strong> 구조가 됩니다(최소권한 글의 그 폭발 반경 축소를 네트워크로 구현)</li>
+<li>나아가 "우리 버킷은 VPC 엔드포인트 경유만 허용"으로 잠그면, 공개 버킷 실수 사고의 표면이 줄어듭니다</li>
+</ul>
+<p>CSAP/ISMS-P 같은 심사에서 "내부 통신 구간 분리"를 설명해야 할 때도 이 구성이 근거가 되죠.</p>
+<h2 id="_4">한 줄 정리</h2>
+<p>private 서브넷의 스토리지 트래픽은 <strong>기본이 NAT 경유(GB당 과금)</strong>입니다. tcpdump로 목적지를 집계해 후보를 확인하고, <strong>게이트웨이형 엔드포인트 + 라우팅 한 줄</strong>로 우회하고, 검증은 "접근되네"가 아니라 <strong>NAT 처리량 하락</strong>으로 — 비용과 노출이 함께 줄어듭니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --cloud</div><a href="../p/spot-instances.html"><span class="g">&#10095;</span>70% 할인의 조건 — 스팟(선점형) 인스턴스를 쓸 수 있는 일과 없는 일</a><a href="../p/cross-region-replication.html"><span class="g">&#10095;</span>백업을 같은 도시에 두면 백업이 아니다 — 크로스 리전 복제</a><a href="../p/serverless-economics.html"><span class="g">&#10095;</span>서버리스는 언제 싸고 언제 비싼가 — 택시 요금의 경제학</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/readonly-filesystem.html"><span class="lbl">newer</span>디스크가 갑자기 읽기전용이 됐다 — 파일시스템의 자기방어</a><a href="../p/nftables.html" style="text-align:right"><span class="lbl">older</span>iptables 대신 nftables — 규칙 읽는 법만이라도</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
