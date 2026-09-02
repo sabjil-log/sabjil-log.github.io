@@ -1809,3 +1809,147 @@ _add("embedding-choice", "임베딩 모델 선택의 4축",
          ("③ 크기·형태", "인덱싱은 배치, 질의는 매번", "질의 지연 = TTFT · API vs 자체서빙", "brain"),
          ("④ 내 데이터 심사", "질문 30개 재현율@k", "리더보드는 후보 추리기용", "shield"),
      ], "모델 교체 = 전체 재인덱싱 — 벡터에 모델 버전 메타데이터를 남겨두세요"))
+
+
+# ── 13차 배치 (예약 발행분) ───────────────────────────────────
+_add("readonly-fs", "읽기전용 전환 = 커널이 켠 지혈대",
+     "손상을 감지하면 스스로 잠급니다. 재부팅으로 풀기 전에 dmesg에서 왜 잠갔는지를 읽어야 해요.",
+     "readonly-filesystem",
+     _ladder("rf", [
+         ("① 물리 디스크 오류", "blk_update_request: I/O error", "볼륨 교체 + 스냅샷 복구", "database"),
+         ("② 메타데이터 손상", "EXT4-fs error: deleted inode", "언마운트 후 fsck", "doc"),
+         ("③ 네트워크 스토리지", "NFS/EFS 마운트 끊김", "네트워크·마운트 옵션", "globe"),
+         ("④ 블록 장치 ro", "lsblk 의 RO 컬럼 = 1", "클라우드 볼륨 속성 확인", "server"),
+     ], "원인 모르고 remount,rw 하면 손상이 번집니다 — dmesg 먼저, 재부팅은 기록도 지웁니다"))
+
+_add("spot-fit", "스팟 — 다시 하면 되는 일에만",
+     "남는 좌석을 70% 싸게, 대신 몇 분 예고 후 회수. 기준은 '아무 때나 죽어도 되는가' 하나입니다.",
+     "spot-instances",
+     _two("sp", "스팟이 맞는 일", [
+         ("ok", "배치·ETL — 재실행하면 됨"),
+         ("ok", "CI 빌드/테스트 러너 (재시도 이미 있음)"),
+         ("ok", "인코딩·렌더링 — 큐에서 다시 집기"),
+         ("ok", "ML 학습 — 단, 체크포인트가 전제"),
+     ], "스팟이 안 맞는 일", [
+         ("no", "DB·상태 저장소 — 회수 = 데이터 위험"),
+         ("no", "단일 인스턴스 핵심 서비스"),
+         ("no", "긴 단일 작업 (체크포인트 불가)"),
+         ("no", "장기 연결 유지 (웹소켓·세션 로컬)"),
+     ], "타입·AZ 다양화로 확보 확률↑ · 온디맨드 혼합으로 최악 방지 · 회수 신호 핸들러 필수",
+        licon="box", ricon="database"))
+
+_add("embedding-cache", "임베딩 캐시 — 해시로 델타 인덱싱",
+     "임베딩은 결정적이라 캐시가 완벽히 통합니다. 문서 게이트 + 청크 게이트로 매일 전체 재계산을 델타로.",
+     "embedding-cache",
+     _flow("ecc", [("문서 해시", "안 바뀌면 스킵", "doc"),
+                   ("청크 해시", "바뀐 것만", "box"),
+                   ("임베딩", "재사용 vs 신규", "brain"),
+                   ("차집합 삭제", "사라진 청크", "database")],
+           "키에 모델·청킹 버전 포함 · 로그에 (신규/재사용/삭제) 카운트 — 캐시가 듣는지 확인"))
+
+_add("nftables-tree", "nftables 3층 구조",
+     "table(서랍) → chain(훅·정책) → rule, 평가는 위에서 아래. nft list ruleset 이 진실입니다.",
+     "nftables",
+     _ladder("nf", [
+         ("table inet filter", "주소 패밀리 + 이름", "프로그램마다 자기 서랍", "box"),
+         ("chain input", "hook · priority · policy", "policy drop = 누락 포트 차단", "firewall"),
+         ("ct state established", "연결 추적 허용", "OS 레벨 스테이트풀", "shield"),
+         ("rule", "tcp dport { 22,80,443 }", "위에서 아래로 첫 매치", "switch"),
+     ], "firewalld·도커가 도는 서버에 nft로 직접 쓰면 충돌 — 그 도구의 문법으로 여세요"))
+
+_add("cross-region", "백업의 독립성 3겹",
+     "같은 리전이면 리전 장애에, 같은 계정이면 권한 사고에 함께 죽습니다. 지리·권한·시간으로 분리하세요.",
+     "cross-region-replication",
+     _ladder("cr", [
+         ("① 지리 분리", "다른 리전으로 복제", "리전 장애 대비 · 전송 요금", "globe"),
+         ("② 권한 분리", "다른 계정 (pull 방식)", "계정 탈취에도 백업 생존", "lock"),
+         ("③ 시간 분리", "불변 보존 (오브젝트 락)", "관리자도 못 지움", "shield"),
+         ("④ 복구 리허설", "분기 1회 실제 복구", "안 해봤으면 백업이 아님", "doc"),
+     ], "주기는 RPO(얼마 잃어도 되나), 방식은 RTO(얼마 안에 복구) — 비즈니스와 합의할 숫자"))
+
+_add("benchmark-traps", "리더보드를 읽는 네 가지 의심",
+     "점수는 사실이지만 결론은 아닙니다. 후보는 리더보드로 추리고, 결정은 내 골든셋으로.",
+     "benchmark-traps",
+     _two("bt", "점수를 의심할 이유", [
+         ("no", "오염 — 시험 문제가 학습 데이터에"),
+         ("no", "평균의 마법 — 종합 1등이 우리 과제 5등"),
+         ("no", "조건 차이 — few-shot·온도·채점 방식"),
+         ("no", "불일치 — 시험 풀이 ≠ 우리 작업"),
+     ], "그래서 이렇게 쓴다", [
+         ("ok", "최근·비공개 셋 결과에 무게"),
+         ("ok", "종합 접고 하위 과제만 (한국어·롱컨텍스트)"),
+         ("ok", "골든셋 30~50문항 실측이 최종 심사"),
+         ("ok", "지연·비용·한도·컴플라이언스로 결정"),
+     ], "벤더 비교표는 '우리에게 유리한 조건'이 섞였다고 가정하고 보세요",
+        licon="doc", ricon="shield"))
+
+_add("tmux-session", "tmux — 서버 안의 작업실",
+     "SSH가 끊기면 그 위의 프로세스도 죽습니다. 작업실을 만들어두면 화면째로 살아남아요.",
+     "tmux",
+     '<svg viewBox="0 0 640 250" role="img"><style>' + _COMMON + """
+.tx-cut{opacity:0;animation:tx-c 4s ease-in-out infinite;}
+@keyframes tx-c{0%,34%{opacity:0}42%,72%{opacity:1}82%,100%{opacity:0}}
+</style>
+""" + _icon("laptop", 62, 74, 1.6, halo=True) + """
+<text x="26" y="126" class="dg-t">내 노트북</text>
+<line x1="104" y1="74" x2="250" y2="74" class="dg-arrow"/>
+<text x="132" y="60" class="dg-lab2">ssh</text>
+<g class="dg-anim tx-cut"><text x="164" y="92" font-size="20" fill="var(--dg-red)" font-weight="700">✂</text>
+<text x="126" y="112" class="dg-ts" fill="var(--dg-red)">연결 끊김</text></g>
+<rect x="250" y="24" width="376" height="130" rx="14" fill="none" stroke="var(--dg-blue)"
+      stroke-dasharray="6 4" stroke-width="1.4"/>
+<text x="262" y="44" class="dg-lab2">서버</text>
+<rect x="272" y="56" width="336" height="82" rx="12" fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8"/>
+""" + _icon("box", 308, 96, 1.3, halo=True) + """
+<text x="340" y="88" class="dg-tl" font-size="13">tmux 세션 "deploy"</text>
+<text x="340" y="108" class="dg-ts">창0: 배포 스크립트 (계속 실행 중)</text>
+<text x="340" y="126" class="dg-ts">창1: journalctl -f</text>
+<text x="14" y="184" class="dg-key" font-size="12.5">tmux new -s 이름 → Ctrl+b d (나오기) → tmux attach -t 이름</text>
+<text x="14" y="208" class="dg-ts">서버에 붙으면 tmux 먼저 — 장시간 작업(rsync·배포·이관)은 무조건 안에서</text>
+<text x="14" y="230" class="dg-ts">단, 재부팅은 못 넘깁니다 — 그건 systemd 서비스의 일</text>
+</svg>""")
+
+_add("endpoint-bypass", "엔드포인트 — NAT을 우회하는 전용 통로",
+     "더 구체적인 경로가 이깁니다. 스토리지행만 내부 통로로 돌리고 나머지 인터넷은 그대로.",
+     "private-endpoint",
+     '<svg viewBox="0 0 640 270" role="img"><style>' + _COMMON + """
+.ep-old{animation:ep-o 4.2s ease-in-out infinite;}
+.ep-new{animation:ep-n 4.2s ease-in-out infinite;}
+@keyframes ep-o{0%,52%{opacity:.9}60%,100%{opacity:.16}}
+@keyframes ep-n{0%,52%{opacity:.16}60%,100%{opacity:1}}
+</style>
+""" + _icon("server", 62, 78, 1.6, halo=True) + """
+<text x="20" y="128" class="dg-t">private 서버</text>
+<g class="dg-anim ep-old">
+<path d="M104 68 H 250 V 44 H 400" class="dg-arrow"/>
+""" + _icon("gateway", 288, 68, 1.2, halo=True) + """
+<text x="256" y="106" class="dg-ts">NAT GW</text>
+""" + _icon("globe", 452, 44, 1.2, halo=True) + """
+<text x="484" y="48" class="dg-key" font-size="12">인터넷 경유 — GB당 과금</text>
+</g>
+<g class="dg-anim ep-new">
+<path d="M104 92 H 300 V 160 H 420" stroke="var(--dg-green)" stroke-width="2.4" fill="none"/>
+""" + _icon("box", 360, 160, 1.3, halo=True) + """
+<text x="298" y="196" class="dg-ts" fill="var(--dg-green)">엔드포인트 (VPC 내부)</text>
+""" + _icon("database", 480, 160, 1.4, halo=True) + """
+<text x="514" y="164" class="dg-t">Object Storage</text>
+</g>
+<text x="14" y="228" class="dg-lab2">라우팅: pl-storage → vpce-xxxx 추가 (0.0.0.0/0 → nat 은 그대로)</text>
+<text x="14" y="250" class="dg-ts">검증은 "접근되네"가 아니라 NAT 처리량 하락으로 · 인터넷 노출 구간도 소멸</text>
+</svg>""")
+
+_add("local-vs-api", "로컬 LLM vs API — 갈리는 세 축",
+     "반출 금지면 로컬 확정, 그 외엔 가동률이 정합니다. 대부분은 게이트웨이로 섞는 하이브리드에 안착해요.",
+     "local-vs-api-llm",
+     _two("lv", "로컬(자체 서빙)이 정답", [
+         ("ok", "데이터 반출 금지 (CSAP·금융·의료)"),
+         ("ok", "상시 고부하 — GPU 유휴가 적음"),
+         ("ok", "대량 정형 작업 (분류·추출·요약)"),
+         ("no", "운영이 내 일 — 서빙·VRAM·가용성·교체"),
+     ], "API가 정답", [
+         ("ok", "간헐 사용 — 부른 만큼만"),
+         ("ok", "최상위 품질·복잡 추론"),
+         ("ok", "프롬프트 캐싱으로 실효 단가 급락"),
+         ("no", "프롬프트가 외부로 나감 (마스킹 필요)"),
+     ], "손익분기 계산 전에 캐싱 적용 단가로 · 동시성 기준 VRAM · API 폴백 설계까지",
+        licon="server", ricon="cloud"))
