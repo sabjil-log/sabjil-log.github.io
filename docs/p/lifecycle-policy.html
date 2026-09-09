@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>저장은 쉽고 정리는 안 한다 — 수명주기 정책으로 자동으로 싸게 늙히기 · 삽질노트</title>
+<meta name="description" content="오브젝트 스토리지는 싸서 다 넣지만, 3년치가 쌓이면 안 쌉니다. 규칙 몇 줄로 오래된 데이터를 저렴한 등급으로 옮기고 지우는 법.">
+<meta property="og:title" content="저장은 쉽고 정리는 안 한다 — 수명주기 정책으로 자동으로 싸게 늙히기 · 삽질노트">
+<meta property="og:description" content="오브젝트 스토리지는 싸서 다 넣지만, 3년치가 쌓이면 안 쌉니다. 규칙 몇 줄로 오래된 데이터를 저렴한 등급으로 옮기고 지우는 법.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/lifecycle-policy.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/lifecycle-policy.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/lifecycle-policy.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/lifecycle-policy.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-09</span><a class="chip" href="../c/cloud.html">--cloud</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>저장은 쉽고 정리는 안 한다 — 수명주기 정책으로 자동으로 싸게 늙히기</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 오브젝트 스토리지의 데이터는 <strong>시간이 지나면 접근 빈도가 급감</strong>하는데 요금은 그대로 나갑니다. 수명주기 정책은 "30일 지나면 저렴한 등급으로, 1년 지나면 아카이브로, 3년 지나면 삭제"를 <strong>자동 집행</strong>하는 규칙이에요 — 사람이 기억할 필요가 없다는 게 핵심입니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">수명주기 — 알아서 싸지고 사라지게</div><svg viewBox="0 0 640 116" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.lc2-0{animation:lc2-h 4.6s ease-in-out infinite;animation-delay:0.0s;}
+.lc2-1{animation:lc2-h 4.6s ease-in-out infinite;animation-delay:1.15s;}
+.lc2-2{animation:lc2-h 4.6s ease-in-out infinite;animation-delay:2.3s;}
+.lc2-3{animation:lc2-h 4.6s ease-in-out infinite;animation-delay:3.45s;}
+@keyframes lc2-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim lc2-0" x="12" y="18" width="145" height="58" rx="10"/><circle cx="44.0" cy="47.0" r="27.0" fill="var(--dg-violet-s)"/><g transform="translate(24.0,27.0) scale(1.250)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="70" y="42" class="dg-key">표준</text><text x="70" y="62" class="dg-lab2">현역 — 즉시 조회</text><line x1="157" y1="47" x2="169" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim lc2-1" x="169" y="18" width="145" height="58" rx="10"/><circle cx="201.0" cy="47.0" r="27.0" fill="var(--dg-green-s)"/><g transform="translate(181.0,27.0) scale(1.250)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="227" y="42" class="dg-key">저빈도</text><text x="227" y="62" class="dg-lab2">30일 후 — 가끔</text><line x1="314" y1="47" x2="326" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim lc2-2" x="326" y="18" width="145" height="58" rx="10"/><circle cx="358.0" cy="47.0" r="27.0" fill="var(--dg-amber-s)"/><g transform="translate(338.0,27.0) scale(1.250)">
+<path d="M10 14 v-3.5 a6 6 0 0 1 12 0 V14" fill="none" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<rect x="6.5" y="14" width="19" height="14" rx="2.5" fill="var(--dg-amber-s)" stroke="var(--dg-amber)" stroke-width="1.8"/>
+<circle cx="16" cy="20" r="2" fill="var(--dg-amber)"/>
+<path d="M16 21.5 v3" stroke="var(--dg-amber)" stroke-width="2" stroke-linecap="round"/></g><text x="384" y="42" class="dg-key">아카이브</text><text x="384" y="62" class="dg-lab2">90일 후 — 규정 보관</text><line x1="471" y1="47" x2="483" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim lc2-3" x="483" y="18" width="145" height="58" rx="10"/><circle cx="515.0" cy="47.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(495.0,27.0) scale(1.250)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="541" y="42" class="dg-key">삭제</text><text x="541" y="62" class="dg-lab2">400일 후</text><text x="12" y="102" class="dg-ts">함정: 아카이브는 싸게 저장이지 싸게 사용이 아님 (최소 보관기간·조회 요금)</text></svg><figcaption>시간이 지나면 접근 빈도는 급감하는데 요금은 그대로입니다. 등급 전환과 삭제를 규칙으로 미리 정해두세요.</figcaption></figure>
+<h2 id="_1">문제: 저장은 습관, 정리는 프로젝트</h2>
+<p>로그·백업·업로드 파일을 버킷에 넣기 시작하면 멈출 이유가 없습니다. GB당 요금이 싸니까요. 그런데 —</p>
+<ul>
+<li>3년 전 애플리케이션 로그를 마지막으로 조회한 게 언제였나요?</li>
+<li>매일 만드는 DB 덤프의 500일 전 파일이 필요할 일이 있나요?</li>
+<li>그런데 그 파일들은 <strong>오늘 만든 파일과 똑같은 단가</strong>로 계속 청구되고 있습니다.</li>
+</ul>
+<p>비용 누수 글의 그 "잊혀진 것들"이 스토리지에서 나타나는 형태입니다. 다만 서버와 달리 <strong>삭제 판단이 어렵다</strong>는 게 특징이죠 — "혹시 필요할까 봐"가 3년을 만듭니다. 그래서 사람의 판단을 빼고 <strong>규칙으로 미리 정해두는</strong> 접근이 답입니다.</p>
+<h2 id="_2">등급(스토리지 클래스)의 구조</h2>
+<p>벤더마다 이름은 다르지만 구조는 같습니다 — <strong>저장 단가가 낮아지는 대신 꺼낼 때의 대가가 커집니다.</strong></p>
+<div class="highlight"><pre><span></span><code>표준(Standard)     저장 비쌈 / 즉시 조회, 조회 요금 낮음     ← 현역 데이터
+저빈도(IA류)       저장 중간 / 즉시 조회, 조회 요금 있음     ← 가끔 보는 데이터
+아카이브           저장 매우 저렴 / 꺼내는 데 시간·요금      ← 규정상 보관
+</code></pre></div>
+
+<p>핵심 함정: <strong>아카이브는 "싸게 저장"이지 "싸게 사용"이 아닙니다.</strong> 자주 꺼내면 조회 요금이 저장 절감액을 넘습니다. 그리고 최소 보관 기간(예: 30일·90일)이 있어서, 그 전에 지우면 <strong>남은 기간만큼 요금이 청구</strong>되기도 합니다 — 짧게 쓰고 버릴 데이터를 아카이브에 넣으면 오히려 손해예요.</p>
+<h2 id="_3">규칙 설계 — 데이터 유형별로</h2>
+<p>정책은 접두사(폴더)나 태그 기준으로 걸 수 있으니, <strong>유형별로 다르게</strong> 잡는 게 요령입니다.</p>
+<div class="highlight"><pre><span></span><code>logs/          → 30일 후 저빈도, 90일 후 아카이브, 400일 후 삭제
+backups/db/    → 7일 후 저빈도, 35일 후 삭제 (일7+주4+월3 정책과 짝)
+uploads/       → 삭제 없음, 90일 후 저빈도 (사용자 자산은 함부로 못 지움)
+tmp/           → 7일 후 삭제 (중간 산출물)
+</code></pre></div>
+
+<p>설계 질문 셋:
+1. <strong>이 데이터를 30일 뒤에도 즉시 조회할 일이 있나?</strong> → 아니면 저빈도 후보
+2. <strong>법적·계약상 보존 기간이 있나?</strong> → 그 기간은 아카이브로 지키고, 그 후 삭제
+3. <strong>지워도 되는 게 확실한가?</strong> → 애매하면 삭제 대신 아카이브 (되돌릴 수 없는 건 삭제뿐)</p>
+<h2 id="_4">잊기 쉬운 항목 셋</h2>
+<p><strong>① 버전 관리가 켜져 있으면 옛 버전도 청구됩니다.</strong> 버킷 버저닝을 켠 상태에서 파일을 덮어쓰면 이전 버전이 조용히 쌓입니다 — "지웠는데 용량이 안 줄어요"의 스토리지 버전. 수명주기 정책에 <strong>"이전 버전은 N일 후 삭제"</strong> 규칙을 따로 넣어야 합니다.</p>
+<p><strong>② 미완료 멀티파트 업로드.</strong> 대용량 업로드가 중간에 실패하면 조각이 남아 계속 과금됩니다. 눈에도 안 보여서 몇 년째 쌓인 경우가 흔해요. <strong>"미완료 업로드 7일 후 정리"</strong> 규칙은 사실상 모든 버킷에 넣어야 하는 기본값입니다.</p>
+<p><strong>③ 삭제 마커·복제 대상.</strong> 크로스 리전 복제를 걸어둔 버킷이라면, 수명주기로 원본을 지울 때 복제본 정책도 함께 봐야 합니다 — 백업 목적으로 복제한 것을 원본 규칙이 따라가 지우면 백업의 의미가 사라지니까요(그 글의 "독립성"이 정책 수준에서 깨지는 케이스).</p>
+<h2 id="_5">도입 절차</h2>
+<div class="highlight"><pre><span></span><code>1. 현황 파악 — 접두사별 용량·객체 수, 그리고 등급 분포
+2. 시뮬레이션 — 규칙 적용 시 절감액 추정 (벤더 콘솔에 미리보기 제공하는 경우가 많음)
+3. 삭제 없는 규칙부터 (등급 전환만) 적용 → 며칠 관찰
+4. 삭제 규칙은 마지막에, 보존 기간 합의 후
+5. 월간 점검에 한 줄 추가 — 등급별 용량 추이
+</code></pre></div>
+
+<p>3번과 4번을 나누는 이유는 WAF 글의 감지 모드와 같습니다 — <strong>되돌릴 수 없는 조치는 단계적으로.</strong> 등급 전환은 되돌릴 수 있지만(요금은 들지만), 삭제는 되돌릴 수 없습니다.</p>
+<h2 id="_6">한 줄 정리</h2>
+<p>수명주기 정책은 <strong>"오래된 데이터는 알아서 싸지고 사라지게"</strong> 만드는 규칙입니다. 유형별 접두사로 나눠 걸고, <strong>이전 버전 삭제·미완료 멀티파트 정리</strong>를 빼먹지 말고, 등급 전환 먼저 → 삭제는 합의 후 — 사람이 기억하지 않아도 되는 구조가 진짜 절감입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --cloud</div><a href="../p/spot-instances.html"><span class="g">&#10095;</span>70% 할인의 조건 — 스팟(선점형) 인스턴스를 쓸 수 있는 일과 없는 일</a><a href="../p/private-endpoint.html"><span class="g">&#10095;</span>NAT 요금을 없애는 전용 통로 — 프라이빗 엔드포인트 실습편</a><a href="../p/cross-region-replication.html"><span class="g">&#10095;</span>백업을 같은 도시에 두면 백업이 아니다 — 크로스 리전 복제</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/systemd-unit.html"><span class="lbl">newer</span>systemd 유닛 파일 읽는 법 — Type, After, Restart가 하는 일</a><a href="../p/hybrid-search.html" style="text-align:right"><span class="lbl">older</span>벡터 검색만으로는 &#x27;그 단어&#x27;를 못 찾는다 — 하이브리드 검색(BM25+벡터)</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

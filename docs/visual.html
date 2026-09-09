@@ -3355,7 +3355,108 @@
 <circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
 <circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="76" y="46" class="dg-tl">로컬(자체 서빙)이 정답</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="76" class="dg-ts">데이터 반출 금지 (CSAP·금융·의료)</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="100" class="dg-ts">상시 고부하 — GPU 유휴가 적음</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="124" class="dg-ts">대량 정형 작업 (분류·추출·요약)</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="148" class="dg-ts">운영이 내 일 — 서빙·VRAM·가용성·교체</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><circle cx="362.0" cy="40.0" r="25.4" fill="var(--dg-blue-s)"/><g transform="translate(343.6,21.6) scale(1.150)">
 <path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
-      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g><text x="390" y="46" class="dg-tl">API가 정답</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">간헐 사용 — 부른 만큼만</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">최상위 품질·복잡 추론</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="124" class="dg-ts">프롬프트 캐싱으로 실효 단가 급락</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="148" class="dg-ts">프롬프트가 외부로 나감 (마스킹 필요)</text><text x="12" y="182" class="dg-ts">손익분기 계산 전에 캐싱 적용 단가로 · 동시성 기준 VRAM · API 폴백 설계까지</text></svg><figcaption>반출 금지면 로컬 확정, 그 외엔 가동률이 정합니다. 대부분은 게이트웨이로 섞는 하이브리드에 안착해요.</figcaption></figure><div class="dg-more"><a href="p/local-vs-api-llm.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><div class="dg-cap-out">[그림 한 장] 요청 한 번의 VPC 여정 — 클릭에서 응답까지 무슨 일이 벌어지나</div><div class="viz">
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g><text x="390" y="46" class="dg-tl">API가 정답</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">간헐 사용 — 부른 만큼만</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">최상위 품질·복잡 추론</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="124" class="dg-ts">프롬프트 캐싱으로 실효 단가 급락</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="148" class="dg-ts">프롬프트가 외부로 나감 (마스킹 필요)</text><text x="12" y="182" class="dg-ts">손익분기 계산 전에 캐싱 적용 단가로 · 동시성 기준 VRAM · API 폴백 설계까지</text></svg><figcaption>반출 금지면 로컬 확정, 그 외엔 가동률이 정합니다. 대부분은 게이트웨이로 섞는 하이브리드에 안착해요.</figcaption></figure><div class="dg-more"><a href="p/local-vs-api-llm.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">유닛 파일에서 사고 나는 세 줄</div><svg viewBox="0 0 640 238" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.su2-0{animation:su2-h 4.0s ease-in-out infinite;animation-delay:0.0s;}
+.su2-1{animation:su2-h 4.0s ease-in-out infinite;animation-delay:1.0s;}
+.su2-2{animation:su2-h 4.0s ease-in-out infinite;animation-delay:2.0s;}
+.su2-3{animation:su2-h 4.0s ease-in-out infinite;animation-delay:3.0s;}
+@keyframes su2-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim su2-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="60" y="36" class="dg-t">Type=</text><text x="216" y="36" class="dg-lab2">simple / forking / notify / oneshot</text><text x="396" y="36" class="dg-ts">start가 멈추면 여기 불일치</text><rect class="dg-box dg-anim su2-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<rect x="3" y="17" width="26" height="10" rx="3" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M10 17 L 7 6" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<path d="M22 17 L 25 6" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<circle cx="9" cy="22" r="1.2" fill="var(--dg-green)"/>
+<circle cx="13.5" cy="22" r="1.2" fill="var(--dg-green)"/>
+<circle cx="18" cy="22" r="1.2" fill="var(--dg-amber)"/></g><text x="60" y="84" class="dg-t">After= / Wants=</text><text x="216" y="84" class="dg-lab2">순서와 필수는 별개 — 짝으로</text><text x="396" y="84" class="dg-ts">network.target ≠ IP 붙음</text><rect class="dg-box dg-anim su2-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="60" y="132" class="dg-t">Restart=</text><text x="216" y="132" class="dg-lab2">on-failure 가 정석</text><text x="396" y="132" class="dg-ts">always는 무한 루프 위험</text><rect class="dg-box dg-anim su2-3" x="12" y="156" width="616" height="38" rx="9"/><g transform="translate(17.6,156.6) scale(1.150)">
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
+      stroke-linecap="round" stroke-linejoin="round"/></g><text x="60" y="180" class="dg-t">StartLimitBurst=</text><text x="216" y="180" class="dg-lab2">60초에 3번 넘으면 포기</text><text x="396" y="180" class="dg-ts">고친 뒤 reset-failed 필요</text><text x="12" y="230" class="dg-ts">종료코드 힌트: 203/EXEC 경로·권한 · 217/USER 계정 없음 · signal=KILL 이면 dmesg로 OOM</text></svg><figcaption>Type(떴다의 정의) · After+Wants(순서와 필수) · Restart+StartLimit(죽었을 때). 진실은 systemctl cat.</figcaption></figure><div class="dg-more"><a href="p/systemd-unit.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">수명주기 — 알아서 싸지고 사라지게</div><svg viewBox="0 0 640 116" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.lc2-0{animation:lc2-h 4.6s ease-in-out infinite;animation-delay:0.0s;}
+.lc2-1{animation:lc2-h 4.6s ease-in-out infinite;animation-delay:1.15s;}
+.lc2-2{animation:lc2-h 4.6s ease-in-out infinite;animation-delay:2.3s;}
+.lc2-3{animation:lc2-h 4.6s ease-in-out infinite;animation-delay:3.45s;}
+@keyframes lc2-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim lc2-0" x="12" y="18" width="145" height="58" rx="10"/><circle cx="44.0" cy="47.0" r="27.0" fill="var(--dg-violet-s)"/><g transform="translate(24.0,27.0) scale(1.250)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="70" y="42" class="dg-key">표준</text><text x="70" y="62" class="dg-lab2">현역 — 즉시 조회</text><line x1="157" y1="47" x2="169" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim lc2-1" x="169" y="18" width="145" height="58" rx="10"/><circle cx="201.0" cy="47.0" r="27.0" fill="var(--dg-green-s)"/><g transform="translate(181.0,27.0) scale(1.250)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="227" y="42" class="dg-key">저빈도</text><text x="227" y="62" class="dg-lab2">30일 후 — 가끔</text><line x1="314" y1="47" x2="326" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim lc2-2" x="326" y="18" width="145" height="58" rx="10"/><circle cx="358.0" cy="47.0" r="27.0" fill="var(--dg-amber-s)"/><g transform="translate(338.0,27.0) scale(1.250)">
+<path d="M10 14 v-3.5 a6 6 0 0 1 12 0 V14" fill="none" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<rect x="6.5" y="14" width="19" height="14" rx="2.5" fill="var(--dg-amber-s)" stroke="var(--dg-amber)" stroke-width="1.8"/>
+<circle cx="16" cy="20" r="2" fill="var(--dg-amber)"/>
+<path d="M16 21.5 v3" stroke="var(--dg-amber)" stroke-width="2" stroke-linecap="round"/></g><text x="384" y="42" class="dg-key">아카이브</text><text x="384" y="62" class="dg-lab2">90일 후 — 규정 보관</text><line x1="471" y1="47" x2="483" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim lc2-3" x="483" y="18" width="145" height="58" rx="10"/><circle cx="515.0" cy="47.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(495.0,27.0) scale(1.250)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="541" y="42" class="dg-key">삭제</text><text x="541" y="62" class="dg-lab2">400일 후</text><text x="12" y="102" class="dg-ts">함정: 아카이브는 싸게 저장이지 싸게 사용이 아님 (최소 보관기간·조회 요금)</text></svg><figcaption>시간이 지나면 접근 빈도는 급감하는데 요금은 그대로입니다. 등급 전환과 삭제를 규칙으로 미리 정해두세요.</figcaption></figure><div class="dg-more"><a href="p/lifecycle-policy.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><figure class="diagram"><div class="dg-cap">벡터는 뜻, BM25는 글자</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><circle cx="48.0" cy="40.0" r="25.4" fill="var(--dg-violet-s)"/><g transform="translate(29.6,21.6) scale(1.150)">
+<path d="M16 5 a6 6 0 0 0 -6 6 a5 5 0 0 0 -2 9 a5.5 5.5 0 0 0 8 6 a5.5 5.5 0 0 0 8 -6 a5 5 0 0 0 -2 -9 a6 6 0 0 0 -6 -6 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.8"/>
+<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.4" stroke-linecap="round"/></g><text x="76" y="46" class="dg-tl">벡터 검색이 강한 것</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="76" class="dg-ts">동의어·표현 차이 (환불 ↔ 반품)</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="100" class="dg-ts">긴 자연어 질의의 의미 파악</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="124" class="dg-ts">ERR-4711 vs ERR-4712 — 거의 같은 벡터</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="148" class="dg-ts">드문 고유명사·버전 번호·짧은 질의</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><circle cx="362.0" cy="40.0" r="25.4" fill="var(--dg-blue-s)"/><g transform="translate(343.6,21.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="390" y="46" class="dg-tl">BM25가 강한 것</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">정확한 식별자·에러 코드·제품명</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">드문 단어에 높은 가중치</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="124" class="dg-ts">동의어를 못 넘음 (글자가 달라서)</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="148" class="dg-ts">한국어는 형태소 분석기가 전제</text><text x="12" y="182" class="dg-ts">각 top-50 → RRF로 순위 융합 → top-20 → 리랭커 → top-5 · 점수 직접 합산은 스케일 때문에 위험</text></svg><figcaption>코드·번호·고유명사는 의미 검색이 오히려 약합니다. 둘을 각각 돌려 순위를 융합(RRF)하세요.</figcaption></figure><div class="dg-more"><a href="p/hybrid-search.html">자세히 읽기 &#10095;</a></div></div><div class="dg-card"><div class="dg-cap-out">[그림 한 장] 요청 한 번의 VPC 여정 — 클릭에서 응답까지 무슨 일이 벌어지나</div><div class="viz">
 <svg viewBox="0 0 660 300" xmlns="http://www.w3.org/2000/svg">
   <text x="10" y="16" class="vz-cap">초록 점: 사용자 요청→응답 왕복 · 주황 점: 서버가 외부 API로 나가는 길(NAT)</text>
 

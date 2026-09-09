@@ -1953,3 +1953,40 @@ _add("local-vs-api", "로컬 LLM vs API — 갈리는 세 축",
          ("no", "프롬프트가 외부로 나감 (마스킹 필요)"),
      ], "손익분기 계산 전에 캐싱 적용 단가로 · 동시성 기준 VRAM · API 폴백 설계까지",
         licon="server", ricon="cloud"))
+
+
+# ── 14차 배치 ─────────────────────────────────────────────────
+_add("systemd-unit", "유닛 파일에서 사고 나는 세 줄",
+     "Type(떴다의 정의) · After+Wants(순서와 필수) · Restart+StartLimit(죽었을 때). 진실은 systemctl cat.",
+     "systemd-unit",
+     _ladder("su2", [
+         ("Type=", "simple / forking / notify / oneshot", "start가 멈추면 여기 불일치", "box"),
+         ("After= / Wants=", "순서와 필수는 별개 — 짝으로", "network.target ≠ IP 붙음", "router"),
+         ("Restart=", "on-failure 가 정석", "always는 무한 루프 위험", "server"),
+         ("StartLimitBurst=", "60초에 3번 넘으면 포기", "고친 뒤 reset-failed 필요", "shield"),
+     ], "종료코드 힌트: 203/EXEC 경로·권한 · 217/USER 계정 없음 · signal=KILL 이면 dmesg로 OOM"))
+
+_add("lifecycle-tiers", "수명주기 — 알아서 싸지고 사라지게",
+     "시간이 지나면 접근 빈도는 급감하는데 요금은 그대로입니다. 등급 전환과 삭제를 규칙으로 미리 정해두세요.",
+     "lifecycle-policy",
+     _flow("lc2", [("표준", "현역 — 즉시 조회", "database"),
+                   ("저빈도", "30일 후 — 가끔", "box"),
+                   ("아카이브", "90일 후 — 규정 보관", "lock"),
+                   ("삭제", "400일 후", "doc")],
+           "함정: 아카이브는 싸게 저장이지 싸게 사용이 아님 (최소 보관기간·조회 요금)"))
+
+_add("hybrid-search", "벡터는 뜻, BM25는 글자",
+     "코드·번호·고유명사는 의미 검색이 오히려 약합니다. 둘을 각각 돌려 순위를 융합(RRF)하세요.",
+     "hybrid-search",
+     _two("hs", "벡터 검색이 강한 것", [
+         ("ok", "동의어·표현 차이 (환불 ↔ 반품)"),
+         ("ok", "긴 자연어 질의의 의미 파악"),
+         ("no", "ERR-4711 vs ERR-4712 — 거의 같은 벡터"),
+         ("no", "드문 고유명사·버전 번호·짧은 질의"),
+     ], "BM25가 강한 것", [
+         ("ok", "정확한 식별자·에러 코드·제품명"),
+         ("ok", "드문 단어에 높은 가중치"),
+         ("no", "동의어를 못 넘음 (글자가 달라서)"),
+         ("no", "한국어는 형태소 분석기가 전제"),
+     ], "각 top-50 → RRF로 순위 융합 → top-20 → 리랭커 → top-5 · 점수 직접 합산은 스케일 때문에 위험",
+        licon="brain", ricon="doc"))

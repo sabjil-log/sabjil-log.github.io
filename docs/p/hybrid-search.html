@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>벡터 검색만으로는 '그 단어'를 못 찾는다 — 하이브리드 검색(BM25+벡터) · 삽질노트</title>
+<meta name="description" content="제품 코드, 에러 번호, 사람 이름 같은 정확한 토큰은 의미 검색이 오히려 약합니다. 키워드 검색과 벡터 검색을 합치면 서로의 구멍을 메워요.">
+<meta property="og:title" content="벡터 검색만으로는 '그 단어'를 못 찾는다 — 하이브리드 검색(BM25+벡터) · 삽질노트">
+<meta property="og:description" content="제품 코드, 에러 번호, 사람 이름 같은 정확한 토큰은 의미 검색이 오히려 약합니다. 키워드 검색과 벡터 검색을 합치면 서로의 구멍을 메워요.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/hybrid-search.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/hybrid-search.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/hybrid-search.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/hybrid-search.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-09</span><a class="chip" href="../c/ai.html">--ai</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>벡터 검색만으로는 &#x27;그 단어&#x27;를 못 찾는다 — 하이브리드 검색(BM25+벡터)</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 벡터 검색은 <strong>뜻이 비슷한 것</strong>을 찾고, 키워드 검색(BM25)은 <strong>글자가 정확히 일치하는 것</strong>을 찾습니다. RAG에서 못 찾는 사례의 상당수가 후자 유형(제품 코드, 에러 번호, 고유명사)이라 — <strong>둘을 함께 돌려 결과를 합치는 하이브리드</strong>가 리랭커보다 먼저 손볼 카드일 수 있습니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">벡터는 뜻, BM25는 글자</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><circle cx="48.0" cy="40.0" r="25.4" fill="var(--dg-violet-s)"/><g transform="translate(29.6,21.6) scale(1.150)">
+<path d="M16 5 a6 6 0 0 0 -6 6 a5 5 0 0 0 -2 9 a5.5 5.5 0 0 0 8 6 a5.5 5.5 0 0 0 8 -6 a5 5 0 0 0 -2 -9 a6 6 0 0 0 -6 -6 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.8"/>
+<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.4" stroke-linecap="round"/></g><text x="76" y="46" class="dg-tl">벡터 검색이 강한 것</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="76" class="dg-ts">동의어·표현 차이 (환불 ↔ 반품)</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="100" class="dg-ts">긴 자연어 질의의 의미 파악</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="124" class="dg-ts">ERR-4711 vs ERR-4712 — 거의 같은 벡터</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="148" class="dg-ts">드문 고유명사·버전 번호·짧은 질의</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><circle cx="362.0" cy="40.0" r="25.4" fill="var(--dg-blue-s)"/><g transform="translate(343.6,21.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="390" y="46" class="dg-tl">BM25가 강한 것</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">정확한 식별자·에러 코드·제품명</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">드문 단어에 높은 가중치</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="124" class="dg-ts">동의어를 못 넘음 (글자가 달라서)</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="148" class="dg-ts">한국어는 형태소 분석기가 전제</text><text x="12" y="182" class="dg-ts">각 top-50 → RRF로 순위 융합 → top-20 → 리랭커 → top-5 · 점수 직접 합산은 스케일 때문에 위험</text></svg><figcaption>코드·번호·고유명사는 의미 검색이 오히려 약합니다. 둘을 각각 돌려 순위를 융합(RRF)하세요.</figcaption></figure>
+<h2 id="_1">벡터 검색이 약한 지점</h2>
+<p>코사인 유사도 글에서 봤듯 임베딩은 <strong>의미의 방향</strong>을 봅니다. 그래서 "환불 규정"과 "반품 절차"를 잘 연결하죠. 그런데 바로 그 성질 때문에 약한 유형이 있습니다.</p>
+<ul>
+<li><strong>정확한 식별자</strong> — "ERR-4711 에러 원인?" → 임베딩에서 ERR-4711과 ERR-4712는 거의 같은 벡터입니다. 엉뚱한 에러 문서가 올라옵니다.</li>
+<li><strong>드문 고유명사</strong> — 사내 시스템명, 고객사명, 제품 코드. 학습에 거의 없던 토큰이라(토큰 글의 그 쪼개짐) 벡터가 흐릿합니다.</li>
+<li><strong>숫자·버전</strong> — "v2.3.1에서 바뀐 것" → 2.3.1과 2.4.0의 구분이 약합니다.</li>
+<li><strong>짧은 질의</strong> — 단어 한두 개는 문맥이 없어 벡터가 방향을 못 잡습니다.</li>
+</ul>
+<p>반대로 BM25(키워드 통계 기반 검색)는 이 유형에 강합니다 — <strong>드문 단어에 높은 가중치</strong>를 주는 게 원리라, ERR-4711이 들어간 문서를 정확히 집어내죠. 대신 "환불"로 검색하면 "반품"만 적힌 문서를 못 찾습니다.</p>
+<p><strong>즉 둘의 약점이 정확히 상보적</strong>입니다. 그래서 합치는 게 자연스러운 결론이에요.</p>
+<h2 id="rrf">합치는 방법 — RRF가 무난한 기본값</h2>
+<p>두 검색 결과를 어떻게 하나로 만드느냐가 문제입니다. 점수를 직접 더하는 건 위험합니다 — BM25 점수(0~수십)와 코사인 유사도(0~1)는 <strong>스케일이 다르고</strong> 질의마다 분포도 달라서요.</p>
+<p>실무 기본값은 <strong>RRF(Reciprocal Rank Fusion)</strong> — 점수 대신 <strong>순위</strong>만 씁니다.</p>
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rrf</span><span class="p">(</span><span class="n">rank_lists</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">60</span><span class="p">):</span>
+    <span class="n">scores</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">ranked</span> <span class="ow">in</span> <span class="n">rank_lists</span><span class="p">:</span>                 <span class="c1"># [벡터 결과, BM25 결과]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">doc_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ranked</span><span class="p">):</span>   <span class="c1"># i = 0-based 순위</span>
+            <span class="n">scores</span><span class="p">[</span><span class="n">doc_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">scores</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">doc_id</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">k</span> <span class="o">+</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">scores</span><span class="o">.</span><span class="n">get</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">final</span> <span class="o">=</span> <span class="n">rrf</span><span class="p">([</span><span class="n">vector_top50</span><span class="p">,</span> <span class="n">bm25_top50</span><span class="p">])[:</span><span class="mi">20</span><span class="p">]</span>   <span class="c1"># 합친 상위 20개를 리랭커로</span>
+</code></pre></div>
+
+<p>점수 스케일 문제를 순위로 우회하는 게 요점이고, <strong>양쪽에서 모두 상위인 문서가 자연스럽게 올라옵니다.</strong> k는 완만함 조절 다이얼(60이 관례적 기본값)이고, 한쪽을 더 신뢰하고 싶으면 리스트별 가중치를 주는 변형도 씁니다.</p>
+<h2 id="_2">파이프라인에서의 위치</h2>
+<p>RAG 2단 검색(리랭커 글)이 3단이 됩니다.</p>
+<div class="highlight"><pre><span></span><code>질의 ─┬─ 벡터 검색  top-50 ─┐
+      └─ BM25 검색  top-50 ─┴─ RRF 융합 → top-20 → 리랭커 → top-5 → LLM
+</code></pre></div>
+
+<p>주의: 1차 후보를 합치는 것이니 <strong>각 검색의 k는 넉넉히</strong>(각 50 정도) 가져와야 융합의 이득이 납니다. 그리고 리랭커가 뒤에 있으면 융합 결과의 순서가 다소 거칠어도 무해합니다 — 리랭커가 정예를 다시 줄 세우니까요.</p>
+<h2 id="_3">한국어에서 신경 쓸 것</h2>
+<p>BM25는 <strong>토크나이저에 크게 의존</strong>합니다. 한국어는 조사·어미가 붙어 "환불을"과 "환불이"가 다른 토큰이 되니, 형태소 분석기(nori, mecab류)를 붙이지 않으면 키워드 검색 품질이 급락합니다. Elasticsearch/OpenSearch를 쓰면 nori 플러그인이 표준 선택이고, 경량 구현이면 형태소 분석 + 불용어 처리 정도는 넣어야 합니다.</p>
+<p>반대로 <strong>식별자·코드는 형태소 분석을 타면 안 됩니다</strong> — ERR-4711이 쪼개지면 의미가 없어지니, 그런 필드는 별도로(정확 일치용 필드로) 인덱싱하는 구성이 실전에서 잘 먹힙니다.</p>
+<h2 id="_4">도입 판단 — 언제 이걸 먼저 하나</h2>
+<p>평가 글의 검색 재현율이 낮을 때, 손볼 순서는 상황에 따라 다릅니다.</p>
+<div class="highlight"><pre><span></span><code>실패 사례를 열어보고 —
+· 동의어·표현 차이로 못 찾음      → 임베딩 모델 교체 / 청킹 조정
+· 코드·번호·고유명사로 못 찾음    → 하이브리드 (BM25 추가) ★
+· 후보엔 있는데 순위가 밀림        → 리랭커
+· 정답 문서 자체가 인덱스에 없음   → 인덱싱 파이프라인 (캐시 글의 삭제 처리 등)
+</code></pre></div>
+
+<p><strong>실패 사례를 유형별로 세어보는 것</strong>이 결정을 만듭니다. 감으로 리랭커부터 붙이면, 식별자 검색 실패는 그대로 남습니다.</p>
+<h2 id="_5">한 줄 정리</h2>
+<p>벡터는 <strong>뜻</strong>, BM25는 <strong>글자</strong> — RAG의 못 찾는 사례를 열어보면 후자 유형이 꽤 많습니다. 두 검색을 각각 넉넉히 돌려 <strong>RRF로 순위 융합</strong>하고 리랭커로 넘기세요. 한국어는 형태소 분석기가 전제이고, 식별자 필드는 쪼개지 않는 것 — 이 두 가지만 챙기면 하이브리드는 가성비 좋은 개선입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/local-vs-api-llm.html"><span class="g">&#10095;</span>로컬 LLM은 언제 정답인가 — 온디바이스 vs API의 손익분기</a><a href="../p/embedding-cache.html"><span class="g">&#10095;</span>같은 문서를 두 번 임베딩하지 않기 — RAG 인덱싱 비용 줄이기</a><a href="../p/benchmark-traps.html"><span class="g">&#10095;</span>리더보드 1등 모델이 우리 서비스에선 3등인 이유 — 벤치마크 읽는 법</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/lifecycle-policy.html"><span class="lbl">newer</span>저장은 쉽고 정리는 안 한다 — 수명주기 정책으로 자동으로 싸게 늙히기</a><a href="../p/tmux.html" style="text-align:right"><span class="lbl">older</span>SSH가 끊겨도 작업은 살아있게 — tmux 최소 사용법</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
