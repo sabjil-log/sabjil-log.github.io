@@ -1990,3 +1990,109 @@ _add("hybrid-search", "벡터는 뜻, BM25는 글자",
          ("no", "한국어는 형태소 분석기가 전제"),
      ], "각 top-50 → RRF로 순위 융합 → top-20 → 리랭커 → top-5 · 점수 직접 합산은 스케일 때문에 위험",
         licon="brain", ricon="doc"))
+
+
+# ── 15차 배치 (밀린 3일치) ────────────────────────────────────
+_add("deleted-open-file", "rm은 이름표만 뗀다",
+     "열어둔 프로세스가 있으면 데이터는 살아 있습니다. lsof +L1 로 찾고, 로그면 /proc/PID/fd/N 을 truncate.",
+     "deleted-but-full",
+     '<svg viewBox="0 0 640 230" role="img"><style>' + _COMMON + """
+.dl-tag{animation:dl-t 3.6s ease-in-out infinite;}
+@keyframes dl-t{0%,30%{opacity:1;transform:translate(0,0)}55%,100%{opacity:0;transform:translate(0,-30px)}}
+</style>
+<rect x="60" y="60" width="200" height="90" rx="12" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<text x="84" y="98" class="dg-t">데이터 20GB (inode)</text>
+<text x="84" y="122" class="dg-ts">디스크를 계속 점유</text>
+<g class="dg-anim dl-tag"><rect x="84" y="24" width="150" height="26" rx="6" fill="var(--raise)" stroke="var(--dg-red)" stroke-width="1.5"/>
+<text x="96" y="42" class="dg-lab2" fill="var(--dg-red)">app.log ← rm 으로 뗌</text></g>
+""" + _icon("box", 420, 105, 1.6, halo=True) + """
+<text x="386" y="156" class="dg-t">java (pid 23841)</text>
+<text x="386" y="172" class="dg-ts">fd 7 로 계속 쓰는 중</text>
+<line x1="260" y1="105" x2="380" y2="105" stroke="var(--dg-green)" stroke-width="2.4"/>
+<text x="272" y="96" class="dg-lab2" fill="var(--dg-green)">열린 fd = 참조 1</text>
+<text x="14" y="208" class="dg-ts">df ≫ du 어긋남 → sudo lsof +L1 → truncate -s 0 /proc/PID/fd/7 (로그만!) → 앞으로는 logrotate</text>
+</svg>""")
+
+_add("iac-loop", "IaC — plan/apply 루프",
+     "선언(코드) → plan(차이 미리보기) → apply(차이만 적용) → 상태 파일. 진실의 원장은 원격에.",
+     "iac-intro",
+     _flow("ia", [("선언", "main.tf 에 원하는 상태", "doc"),
+                  ("plan", "현재와의 diff 미리보기", "brain"),
+                  ("apply", "차이만 적용", "gateway"),
+                  ("state", "원격 + 잠금", "lock")],
+           "-/+ (destroy and create) 가 보이면 멈추기 · 데이터 계층은 prevent_destroy · 환경×계층으로 상태 분리"))
+
+_add("metadata-filter", "조건은 필터, 의미는 벡터",
+     "연도·고객사·권한은 벡터 유사도에 맡기지 말고 메타데이터로 먼저 자릅니다. 권한은 코드가 세션에서.",
+     "metadata-filtering",
+     _flow("mf2", [("메타 필터", "client·year·acl", "firewall"),
+                   ("범위 확정", "후보 수천 → 수백", "box"),
+                   ("벡터 top-k", "의미 검색", "brain"),
+                   ("리랭커→LLM", "정예만", "doc")],
+           "필터 후 검색(pre-filter) — 검색 후 걸러내면 결과가 비거나 k 부족 · 권한 필터는 모델이 아닌 코드가"))
+
+_add("container-disk", "노드 디스크를 먹는 네 층",
+     "docker system df 로 재고, 안전한 것부터 지웁니다. 볼륨은 데이터 — prune 말고 개별 확인.",
+     "container-disk-cleanup",
+     _ladder("cd2", [
+         ("① 컨테이너 로그", "json-file 무제한", "daemon.json max-size 상한", "doc"),
+         ("② 옛 이미지·죽은 컨테이너", "배포마다 태그 누적", "system prune / image prune -a", "box"),
+         ("③ 빌드 캐시", "CI 노드에서 비대", "builder prune --filter until", "server"),
+         ("④ 볼륨 — 멈춤", "dangling 이라도 데이터", "목록 확인 후 개별 삭제만", "database"),
+     ], "쿠버 노드는 kubelet GC(85%)와 싸우지 말고 임계·로그 상한 조정 — DiskPressure = 이 문제"))
+
+_add("audit-trail", "감사 로그 — 사고 전에 켜서 밖에",
+     "누가·언제·어디서·무엇을. 리소스→누가, 자격증명→무엇, 거부 이벤트 세 축으로 뒤집니다.",
+     "audit-log",
+     _ladder("at", [
+         ("① 켜기 + 내보내기", "별도 계정 버킷 (pull)", "불변 보존 — 침입자 1순위가 로그 삭제", "lock"),
+         ("② 리소스 → 누가", "이 ACG 바꾼 사람", "장애 추적의 기본", "server"),
+         ("③ 자격증명 → 무엇", "이 키가 24h 한 일", "유출 의심 시 첫 질문", "user"),
+         ("④ 실시간 알람", "루트 사용·로그 중지·0.0.0.0/0", "P1 — 받으면 즉시 행동", "shield"),
+     ], "CSAP·ISMS-P 증적 = 이 로그 · 보존 1년+ 정책 · 월간 '관리자 권한 변경 검토'를 루틴으로"))
+
+_add("batch-api", "실시간 vs 배치 — 즉시성을 안 사면 싸진다",
+     "결과를 기다리지 않는 작업(인덱싱·분류·평가)은 배치로. JSONL + custom_id + 실패분 재제출 + 멱등 반영.",
+     "batch-api",
+     _two("ba", "실시간 API — 지금 답", [
+         ("ok", "사용자 대면 응답"),
+         ("ok", "에이전트 루프 (결과 보고 다음 결정)"),
+         ("no", "배치성 작업을 여기로 부르면 낭비"),
+         ("dot", "즉시 응답용 용량 값이 단가에 포함"),
+     ], "배치 API — 몇 시간 뒤 답, 반값", [
+         ("ok", "RAG 인덱싱 · 요약 · 메타데이터 추출"),
+         ("ok", "대량 분류·태깅 · 골든셋 평가"),
+         ("ok", "합성 데이터 · 정기 리포트"),
+         ("no", "SLA 계약 작업 — 24h 창은 보장 아님"),
+     ], "게이트웨이에서 '지연 허용' 플래그로 경로 분기 · 자체 서빙이면 야간 오프라인 배치가 같은 역할",
+        licon="laptop", ricon="database"))
+
+_add("http-headers", "프록시를 지나며 헤더가 붙고 사라진다",
+     "Host는 어느 사이트, XFF는 진짜 누구(신뢰 홉 계산), Cache-Control은 누가 기억해도 되나.",
+     "http-headers",
+     _flow("hh", [("클라이언트", "Host: api.example.com", "user"),
+                  ("CDN", "+XFF · Cache 판단", "cloud"),
+                  ("LB", "+XFF · TLS 종료", "switch"),
+                  ("앱", "XFF 신뢰 계산", "server")],
+           "사고 8할: 사라진 Host(리다이렉트 깨짐) · 위조 가능한 XFF 맨 왼쪽 · 개인 응답에 public 캐시"))
+
+_add("warmup-grace", "새 서버의 준비 시간표",
+     "헬스체크가 준비 시간을 안 기다리면 교체 루프가 돕니다. 그레이스는 실측×1.5, 스케일링 계산엔 워밍업 제외.",
+     "warmup-grace",
+     _bars("wg", [("OS 부팅", 40, "~40s", "server"),
+                  ("초기화·앱 기동", 90, "~90s → 헬스 200", "box"),
+                  ("캐시 예열 (정상 성능)", 150, "~150s", "brain")],
+           160, "그레이스가 90s 미만이면 앱 뜨기 전에 죽임 · 90~150s 트래픽은 느린 서버로 → slow start",
+           thr=90, thr_label="헬스체크 판정 90s"))
+
+_add("agent-failures", "에이전트 실패 모드 여섯 종",
+     "챗봇은 틀린 답, 에이전트는 틀린 행동. 종마다 감지 지표와 차단 장치가 다릅니다.",
+     "agent-failure-modes",
+     _ladder("af", [
+         ("① 무한 루프", "같은 도구 반복", "호출 상한 · 반복 감지", "box"),
+         ("② 환각 실행", "없는 도구·지어낸 ID", "인자 검증 · ID 출처 추적", "brain"),
+         ("③ 권한 초과", "조회 시켰는데 삭제", "도구 최소화 · 승인 게이트", "firewall"),
+         ("④ 조용한 포기", "못 했는데 '완료'", "결과 필드 명시 · 기록 대조 ★", "shield"),
+         ("⑤ 컨텍스트 붕괴", "긴 작업 후반 제약 망각", "작업 노트 · 도구 레벨 강제", "doc"),
+         ("⑥ 부분 완료", "상한에 걸려 중간 정지", "멱등 설계 · 재개 체크포인트", "database"),
+     ], "공통 기반: 구조화된 도구 결과 + 실행 기록 로그 + 골든셋의 '실패해야 정상' 과제"))

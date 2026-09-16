@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>급하지 않은 LLM 작업은 반값에 — 배치 API 활용법 · 삽질노트</title>
+<meta name="description" content="야간에 도는 문서 분류 1만 건을 실시간 API로 부르는 건 택시로 이삿짐을 옮기는 격입니다. 결과를 나중에 받아도 되는 일의 비용 구조와 설계.">
+<meta property="og:title" content="급하지 않은 LLM 작업은 반값에 — 배치 API 활용법 · 삽질노트">
+<meta property="og:description" content="야간에 도는 문서 분류 1만 건을 실시간 API로 부르는 건 택시로 이삿짐을 옮기는 격입니다. 결과를 나중에 받아도 되는 일의 비용 구조와 설계.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/batch-api.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/batch-api.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/batch-api.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/batch-api.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-15</span><a class="chip" href="../c/ai.html">--ai</a><span>2 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>급하지 않은 LLM 작업은 반값에 — 배치 API 활용법</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 벤더들의 배치 API는 <strong>"지금 당장 답이 필요 없는 요청"</strong>을 모아 보내면 <strong>대폭 할인(대개 50%)</strong>해주는 창구입니다. 문서 분류·요약·태깅·평가처럼 결과를 몇 시간 뒤 받아도 되는 작업이 대상 — 스팟 인스턴스가 컴퓨팅에 한 일을 LLM 호출에 하는 셈이에요.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">실시간 vs 배치 — 즉시성을 안 사면 싸진다</div><svg viewBox="0 0 640 190" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+</style><rect class="dg-box" x="12" y="10" width="302" height="156" rx="12"/><circle cx="48.0" cy="40.0" r="25.4" fill="var(--dg-blue-s)"/><g transform="translate(29.6,21.6) scale(1.150)">
+<rect x="4" y="4" width="24" height="16" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="6.5" y="6.5" width="19" height="11" rx="1" fill="var(--dg-screen)"/>
+<path d="M1.5 22 h29 l-2.5 3.5 H4 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/></g><text x="76" y="46" class="dg-tl">실시간 API — 지금 답</text><text x="28" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="76" class="dg-ts">사용자 대면 응답</text><text x="28" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="44" y="100" class="dg-ts">에이전트 루프 (결과 보고 다음 결정)</text><text x="28" y="124" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="44" y="124" class="dg-ts">배치성 작업을 여기로 부르면 낭비</text><text x="28" y="148" font-size="13" font-weight="700" fill="var(--muted)">·</text><text x="44" y="148" class="dg-ts">즉시 응답용 용량 값이 단가에 포함</text><rect class="dg-box" x="326" y="10" width="302" height="156" rx="12"/><circle cx="362.0" cy="40.0" r="25.4" fill="var(--dg-violet-s)"/><g transform="translate(343.6,21.6) scale(1.150)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="390" y="46" class="dg-tl">배치 API — 몇 시간 뒤 답, 반값</text><text x="342" y="76" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="76" class="dg-ts">RAG 인덱싱 · 요약 · 메타데이터 추출</text><text x="342" y="100" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="100" class="dg-ts">대량 분류·태깅 · 골든셋 평가</text><text x="342" y="124" font-size="13" font-weight="700" fill="var(--dg-green)">✓</text><text x="358" y="124" class="dg-ts">합성 데이터 · 정기 리포트</text><text x="342" y="148" font-size="13" font-weight="700" fill="var(--dg-red)">✕</text><text x="358" y="148" class="dg-ts">SLA 계약 작업 — 24h 창은 보장 아님</text><text x="12" y="182" class="dg-ts">게이트웨이에서 '지연 허용' 플래그로 경로 분기 · 자체 서빙이면 야간 오프라인 배치가 같은 역할</text></svg><figcaption>결과를 기다리지 않는 작업(인덱싱·분류·평가)은 배치로. JSONL + custom_id + 실패분 재제출 + 멱등 반영.</figcaption></figure>
+<h2 id="api">실시간 API의 숨은 낭비</h2>
+<p>RAG 인덱싱용 문서 요약 1만 건, 고객 문의 월간 분류, 골든셋 평가 500문항 — 전부 <strong>결과를 사람이 앉아서 기다리지 않는 작업</strong>입니다. 그런데 실시간 API(요청 즉시 응답)로 부르면 벤더는 "즉시 응답"을 위한 용량을 예약해두고 그 값을 받습니다. 스팟 글의 논리 그대로 — <strong>즉시성을 안 사면 싸집니다.</strong></p>
+<h2 id="api_1">배치 API의 모양</h2>
+<div class="highlight"><pre><span></span><code>1. 요청 파일 만들기 — 한 줄에 요청 하나 (JSONL)
+2. 업로드 → 배치 작업 생성
+3. 기다림 (수십 분 ~ 최대 24시간, 벤더별 상이)
+4. 결과 파일 다운로드 → 요청 ID로 짝 맞추기
+</code></pre></div>
+
+<div class="highlight"><pre data-lang="jsonl"><span></span><code>{&quot;custom_id&quot;:&quot;doc-0001&quot;,&quot;params&quot;:{&quot;model&quot;:&quot;...&quot;,&quot;max_tokens&quot;:300,&quot;messages&quot;:[{&quot;role&quot;:&quot;user&quot;,&quot;content&quot;:&quot;다음 문서를 3줄로 요약: ...&quot;}]}}
+{&quot;custom_id&quot;:&quot;doc-0002&quot;,&quot;params&quot;:{...}}
+</code></pre></div>
+
+<p><code>custom_id</code>가 핵심입니다 — 결과는 <strong>순서 보장이 없으니</strong> 이걸로 원본과 매칭합니다. 그리고 결과 파일엔 성공한 것과 실패한 것(형식 오류, 콘텐츠 정책, 일시 오류)이 섞여 오니, 실패분만 골라 재제출하는 로직이 필요해요.</p>
+<h2 id="_1">어울리는 일 / 안 어울리는 일</h2>
+<p><strong>어울림 (지연 허용):</strong>
+- RAG 인덱싱 — 청크 요약·키워드·메타데이터 추출(메타데이터 필터링 글의 그 LLM 추출)
+- 대량 분류·태깅 — 문의 유형, 감성, 라우팅 라벨
+- 골든셋 평가 실행 — 평가 글의 그 루프를 야간에 반값으로
+- 합성 데이터·LoRA 학습용 예시 생성
+- 주간 리포트류 정기 요약</p>
+<p><strong>안 어울림:</strong>
+- 사용자 대면 응답 (당연히)
+- 에이전트 루프 — 도구 호출 결과를 보고 다음 요청을 정하는 구조는 배치로 못 쪼갭니다
+- 완료 시각이 계약된 SLA 작업 — 24시간 창은 "최대"이고 보장이 아니니</p>
+<h2 id="_2">설계 요령</h2>
+<p><strong>① 실시간 경로와 배치 경로를 처음부터 나누기.</strong> LLM 게이트웨이 글의 그 관문에서 요청 유형별로 라우팅 — "지연 허용" 플래그가 붙은 요청은 배치 큐로. 한 서비스 안에 두 경로가 공존하는 게 정상입니다.</p>
+<p><strong>② 프롬프트 캐싱과의 관계.</strong> 배치는 이미 할인이지만, 요청들이 <strong>같은 시스템 프롬프트를 공유</strong>하면 캐싱 할인도 중첩되는 경우가 있습니다(벤더별 정책 확인). 어느 쪽이든 프롬프트 캐싱 글의 규칙(고정부 앞으로)은 배치 파일에서도 그대로 지키세요.</p>
+<p><strong>③ 멱등성.</strong> 배치가 중간에 실패하거나 결과를 두 번 처리하면 같은 문서가 두 번 인덱싱됩니다. <code>custom_id</code>를 처리 완료 표로 관리하고, 결과 반영은 upsert로 — 임베딩 캐시 글의 해시 키 방식이 여기서도 중복을 막아줍니다.</p>
+<p><strong>④ 크기 조절.</strong> 배치 하나에 너무 많이 넣으면 실패 시 재제출 단위가 커집니다. 수천 건 단위로 쪼개고, 배치별 상태(제출/완료/실패 건수)를 기록하는 표가 운영의 눈이에요.</p>
+<p><strong>⑤ 비용 대시보드에 별도 항목으로.</strong> 배치 지출과 실시간 지출을 나눠 보면 "실시간으로 부르고 있던 배치성 작업"이 드러납니다 — 그게 다음 절감 후보.</p>
+<h2 id="_3">자체 서빙이라면</h2>
+<p>로컬 LLM 글의 그 GPU 서버라면 배치 API 대신 <strong>오프피크 스케줄링</strong>이 같은 역할입니다 — 낮에는 실시간 서빙, 야간에는 vLLM의 오프라인 배치 모드로 대량 처리. GPU 가동률을 채우는 것이 로컬의 손익을 결정한다고 했으니, 배치성 작업을 야간에 몰아넣는 게 그 가동률을 만드는 가장 쉬운 방법이기도 하죠.</p>
+<h2 id="_4">한 줄 정리</h2>
+<p><strong>결과를 기다리지 않는 작업은 배치로.</strong> JSONL + custom_id + 실패분 재제출 + 멱등 반영이 뼈대고, 게이트웨이에서 실시간/배치 경로를 나누세요. 인덱싱·분류·평가·합성이 단골이고 — 같은 일을 반값에 하는 가장 단순한 방법입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/agent-failure-modes.html"><span class="g">&#10095;</span>에이전트 실패 모드 도감 — 루프·환각 실행·권한 초과·조용한 포기</a><a href="../p/metadata-filtering.html"><span class="g">&#10095;</span>검색 범위를 먼저 좁혀라 — 메타데이터 필터링으로 RAG 정확도 올리기</a><a href="../p/hybrid-search.html"><span class="g">&#10095;</span>벡터 검색만으로는 &#x27;그 단어&#x27;를 못 찾는다 — 하이브리드 검색(BM25+벡터)</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/container-disk-cleanup.html"><span class="lbl">newer</span>컨테이너가 노드 디스크를 다 먹었다 — 이미지·로그·오버레이 청소법</a><a href="../p/audit-log.html" style="text-align:right"><span class="lbl">older</span>누가 새벽 3시에 보안그룹을 열었나 — 감사 로그 되짚기</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

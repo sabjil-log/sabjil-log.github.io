@@ -32,7 +32,43 @@
   <nav class="nav"><a href="index.html" class="on">home</a><a href="c/troubleshooting.html">--troubleshooting</a><a href="c/linux.html">--linux</a><a href="c/cloud.html">--cloud</a><a href="c/network.html">--network</a><a href="c/security.html">--security</a><a href="c/ai.html">--ai</a><a href="visual.html">--visual</a><a href="archive.html">--all</a></nav>
 </div></header>
 <div class="wrap"><section class="facade" aria-label="삽질노트"><div class="fac-bar"><span class="fac-dots"></span><span class="fac-title">sabjil-log — bash</span></div><div class="fac-body"><div class="fac-line"><span class="fac-p">$</span> whoami</div><div class="fac-name">삽질노트</div><div class="fac-line"><span class="fac-p">$</span> cat tagline.txt</div><div class="fac-out">삽질해서 배운 걸, 남은 안 삽질하게.<br>리눅스 · 클라우드 · AI — 매일 쌓는 실무 노트</div><div class="fac-line"><span class="fac-p">$</span><span class="cur"></span></div></div></section></div><main class="wrap">
-<section class="list"><div class="search"><span class="sig">grep -i</span><input id="q" type="search" placeholder="&quot;검색어&quot; — 제목·요약·태그" autocomplete="off" spellcheck="false"></div><div class="list-head">최근 글 · 94개</div><article class="entry" data-search="systemd 유닛 파일 읽는 법 — type, after, restart가 하는 일 서비스가 안 뜨거나 계속 재시작하는 이유의 대부분은 유닛 파일 세 줄에 있습니다. type·after·restart를 읽으면 원인이 보여요. 리눅스 linux systemd 유닛 서비스 restart 의존성">
+<section class="list"><div class="search"><span class="sig">grep -i</span><input id="q" type="search" placeholder="&quot;검색어&quot; — 제목·요약·태그" autocomplete="off" spellcheck="false"></div><div class="list-head">최근 글 · 103개</div><article class="entry" data-search="새로 뜬 서버가 바로 죽는 이유 — 오토스케일링 워밍업과 헬스체크 그레이스 확장은 됐는데 새 인스턴스가 켜지자마자 &#x27;비정상&#x27; 판정으로 교체되고, 또 교체되고… 준비 시간을 안 준 설계의 전형적 실패입니다. 클라우드 cloud 오토스케일링 워밍업 헬스체크 그레이스 부팅">
+  <div class="meta"><span>2026-09-16</span><a class="chip" href="c/cloud.html">--cloud</a><span>3 min</span></div>
+  <h2><a href="p/warmup-grace.html"><span class="g">&#10095;</span>새로 뜬 서버가 바로 죽는 이유 — 오토스케일링 워밍업과 헬스체크 그레이스</a></h2>
+  <p class="sum">확장은 됐는데 새 인스턴스가 켜지자마자 &#x27;비정상&#x27; 판정으로 교체되고, 또 교체되고… 준비 시간을 안 준 설계의 전형적 실패입니다.</p>
+</article><article class="entry" data-search="http 헤더 실무편 — host, x-forwarded-for, cache-control 세 개면 사고의 8할 lb·cdn·프록시 뒤에서 앱이 이상하게 구는 이유는 대개 헤더 세 개 중 하나입니다. 각각이 어디서 붙고 어디서 사라지는지 따라가 봅니다. 네트워크 network http 헤더 x-forwarded-for cache-control host 프록시">
+  <div class="meta"><span>2026-09-16</span><a class="chip" href="c/network.html">--network</a><span>4 min</span></div>
+  <h2><a href="p/http-headers.html"><span class="g">&#10095;</span>HTTP 헤더 실무편 — Host, X-Forwarded-For, Cache-Control 세 개면 사고의 8할</a></h2>
+  <p class="sum">LB·CDN·프록시 뒤에서 앱이 이상하게 구는 이유는 대개 헤더 세 개 중 하나입니다. 각각이 어디서 붙고 어디서 사라지는지 따라가 봅니다.</p>
+</article><article class="entry" data-search="에이전트 실패 모드 도감 — 루프·환각 실행·권한 초과·조용한 포기 에이전트는 새로운 종류의 사고를 냅니다 — 틀린 말이 아니라 틀린 행동. 운영에서 실제로 만나는 실패 유형 여섯과 각각의 감지·차단 장치. ai/llm ai 에이전트 실패 모드 운영 안전장치 llm">
+  <div class="meta"><span>2026-09-16</span><a class="chip" href="c/ai.html">--ai</a><span>3 min</span></div>
+  <h2><a href="p/agent-failure-modes.html"><span class="g">&#10095;</span>에이전트 실패 모드 도감 — 루프·환각 실행·권한 초과·조용한 포기</a></h2>
+  <p class="sum">에이전트는 새로운 종류의 사고를 냅니다 — 틀린 말이 아니라 틀린 행동. 운영에서 실제로 만나는 실패 유형 여섯과 각각의 감지·차단 장치.</p>
+</article><article class="entry" data-search="컨테이너가 노드 디스크를 다 먹었다 — 이미지·로그·오버레이 청소법 노드 디스크 90% 알람의 범인은 대개 컨테이너 층에 있습니다. 어디가 먹는지 재는 법과, 지워도 되는 것/안 되는 것을 가르는 청소 순서. 트러블슈팅 troubleshooting docker 디스크 prune 오버레이 로그 kubernetes">
+  <div class="meta"><span>2026-09-15</span><a class="chip" href="c/troubleshooting.html">--troubleshooting</a><span>3 min</span></div>
+  <h2><a href="p/container-disk-cleanup.html"><span class="g">&#10095;</span>컨테이너가 노드 디스크를 다 먹었다 — 이미지·로그·오버레이 청소법</a></h2>
+  <p class="sum">노드 디스크 90% 알람의 범인은 대개 컨테이너 층에 있습니다. 어디가 먹는지 재는 법과, 지워도 되는 것/안 되는 것을 가르는 청소 순서.</p>
+</article><article class="entry" data-search="급하지 않은 llm 작업은 반값에 — 배치 api 활용법 야간에 도는 문서 분류 1만 건을 실시간 api로 부르는 건 택시로 이삿짐을 옮기는 격입니다. 결과를 나중에 받아도 되는 일의 비용 구조와 설계. ai/llm ai 배치 api 비동기 비용 대량 처리 llm">
+  <div class="meta"><span>2026-09-15</span><a class="chip" href="c/ai.html">--ai</a><span>2 min</span></div>
+  <h2><a href="p/batch-api.html"><span class="g">&#10095;</span>급하지 않은 LLM 작업은 반값에 — 배치 API 활용법</a></h2>
+  <p class="sum">야간에 도는 문서 분류 1만 건을 실시간 API로 부르는 건 택시로 이삿짐을 옮기는 격입니다. 결과를 나중에 받아도 되는 일의 비용 구조와 설계.</p>
+</article><article class="entry" data-search="누가 새벽 3시에 보안그룹을 열었나 — 감사 로그 되짚기 클라우드의 모든 api 호출은 기록됩니다 — 켜져 있고 보존돼 있다면. 감사 로그를 언제 켜고 어디 두고 어떻게 뒤지는지, 사고 하루 전에 알아둘 것들. 보안 security 감사 로그 cloudtrail audit 포렌식 iam 컴플라이언스">
+  <div class="meta"><span>2026-09-15</span><a class="chip" href="c/security.html">--security</a><span>3 min</span></div>
+  <h2><a href="p/audit-log.html"><span class="g">&#10095;</span>누가 새벽 3시에 보안그룹을 열었나 — 감사 로그 되짚기</a></h2>
+  <p class="sum">클라우드의 모든 API 호출은 기록됩니다 — 켜져 있고 보존돼 있다면. 감사 로그를 언제 켜고 어디 두고 어떻게 뒤지는지, 사고 하루 전에 알아둘 것들.</p>
+</article><article class="entry" data-search="검색 범위를 먼저 좁혀라 — 메타데이터 필터링으로 rag 정확도 올리기 &#x27;2025년 고객사 a의 계약서에서&#x27;라는 조건을 벡터 유사도에 기대면 틀립니다. 구조화된 조건은 필터로, 의미는 벡터로 — 역할을 나누는 법. ai/llm ai 메타데이터 필터링 벡터검색 rag 권한">
+  <div class="meta"><span>2026-09-14</span><a class="chip" href="c/ai.html">--ai</a><span>3 min</span></div>
+  <h2><a href="p/metadata-filtering.html"><span class="g">&#10095;</span>검색 범위를 먼저 좁혀라 — 메타데이터 필터링으로 RAG 정확도 올리기</a></h2>
+  <p class="sum">&#x27;2025년 고객사 A의 계약서에서&#x27;라는 조건을 벡터 유사도에 기대면 틀립니다. 구조화된 조건은 필터로, 의미는 벡터로 — 역할을 나누는 법.</p>
+</article><article class="entry" data-search="콘솔 클릭을 코드로 옮기면 뭐가 달라지나 — iac 입문 콘솔 클릭은 재현이 안 되고 기록이 안 남습니다. 인프라를 코드로 쓰면 리뷰·재현·롤백이 생기죠. 첫 도입에서 실제로 부딪히는 것들. 클라우드 cloud iac terraform 코드형 인프라 상태 파일 드리프트">
+  <div class="meta"><span>2026-09-14</span><a class="chip" href="c/cloud.html">--cloud</a><span>3 min</span></div>
+  <h2><a href="p/iac-intro.html"><span class="g">&#10095;</span>콘솔 클릭을 코드로 옮기면 뭐가 달라지나 — IaC 입문</a></h2>
+  <p class="sum">콘솔 클릭은 재현이 안 되고 기록이 안 남습니다. 인프라를 코드로 쓰면 리뷰·재현·롤백이 생기죠. 첫 도입에서 실제로 부딪히는 것들.</p>
+</article><article class="entry" data-search="파일을 지웠는데 용량이 안 줄었다 — 열린 fd와 lsof +l1 rm은 이름만 지웁니다. 누가 그 파일을 열어두고 있으면 데이터는 그대로 디스크를 차지하죠. 범인 찾기와 안전한 회수법. 트러블슈팅 troubleshooting lsof 디스크 삭제 fd 로그 로테이션">
+  <div class="meta"><span>2026-09-14</span><a class="chip" href="c/troubleshooting.html">--troubleshooting</a><span>3 min</span></div>
+  <h2><a href="p/deleted-but-full.html"><span class="g">&#10095;</span>파일을 지웠는데 용량이 안 줄었다 — 열린 fd와 lsof +L1</a></h2>
+  <p class="sum">rm은 이름만 지웁니다. 누가 그 파일을 열어두고 있으면 데이터는 그대로 디스크를 차지하죠. 범인 찾기와 안전한 회수법.</p>
+</article><article class="entry" data-search="systemd 유닛 파일 읽는 법 — type, after, restart가 하는 일 서비스가 안 뜨거나 계속 재시작하는 이유의 대부분은 유닛 파일 세 줄에 있습니다. type·after·restart를 읽으면 원인이 보여요. 리눅스 linux systemd 유닛 서비스 restart 의존성">
   <div class="meta"><span>2026-09-09</span><a class="chip" href="c/linux.html">--linux</a><span>4 min</span></div>
   <h2><a href="p/systemd-unit.html"><span class="g">&#10095;</span>systemd 유닛 파일 읽는 법 — Type, After, Restart가 하는 일</a></h2>
   <p class="sum">서비스가 안 뜨거나 계속 재시작하는 이유의 대부분은 유닛 파일 세 줄에 있습니다. Type·After·Restart를 읽으면 원인이 보여요.</p>

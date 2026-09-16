@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>파일을 지웠는데 용량이 안 줄었다 — 열린 fd와 lsof +L1 · 삽질노트</title>
+<meta name="description" content="rm은 이름만 지웁니다. 누가 그 파일을 열어두고 있으면 데이터는 그대로 디스크를 차지하죠. 범인 찾기와 안전한 회수법.">
+<meta property="og:title" content="파일을 지웠는데 용량이 안 줄었다 — 열린 fd와 lsof +L1 · 삽질노트">
+<meta property="og:description" content="rm은 이름만 지웁니다. 누가 그 파일을 열어두고 있으면 데이터는 그대로 디스크를 차지하죠. 범인 찾기와 안전한 회수법.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/deleted-but-full.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/deleted-but-full.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/deleted-but-full.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/deleted-but-full.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html" class="on">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-14</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>파일을 지웠는데 용량이 안 줄었다 — 열린 fd와 lsof +L1</h1><blockquote>
+<p><strong>한 줄 요약:</strong> <code>rm</code>은 <strong>파일의 이름(디렉토리 항목)</strong>을 지우는 것이고, 실제 데이터는 <strong>그 파일을 열어둔 프로세스가 전부 닫을 때</strong> 회수됩니다. 로그 파일을 지웠는데 df가 그대로라면, 누군가 아직 그 파일을 쓰고 있다는 뜻 — <code>lsof +L1</code>이 범인을 지목합니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">rm은 이름표만 뗀다</div><svg viewBox="0 0 640 230" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.dl-tag{animation:dl-t 3.6s ease-in-out infinite;}
+@keyframes dl-t{0%,30%{opacity:1;transform:translate(0,0)}55%,100%{opacity:0;transform:translate(0,-30px)}}
+</style>
+<rect x="60" y="60" width="200" height="90" rx="12" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<text x="84" y="98" class="dg-t">데이터 20GB (inode)</text>
+<text x="84" y="122" class="dg-ts">디스크를 계속 점유</text>
+<g class="dg-anim dl-tag"><rect x="84" y="24" width="150" height="26" rx="6" fill="var(--raise)" stroke="var(--dg-red)" stroke-width="1.5"/>
+<text x="96" y="42" class="dg-lab2" fill="var(--dg-red)">app.log ← rm 으로 뗌</text></g>
+<circle cx="420.0" cy="105.0" r="32.6" fill="var(--dg-green-s)"/><g transform="translate(394.4,79.4) scale(1.600)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g>
+<text x="386" y="156" class="dg-t">java (pid 23841)</text>
+<text x="386" y="172" class="dg-ts">fd 7 로 계속 쓰는 중</text>
+<line x1="260" y1="105" x2="380" y2="105" stroke="var(--dg-green)" stroke-width="2.4"/>
+<text x="272" y="96" class="dg-lab2" fill="var(--dg-green)">열린 fd = 참조 1</text>
+<text x="14" y="208" class="dg-ts">df ≫ du 어긋남 → sudo lsof +L1 → truncate -s 0 /proc/PID/fd/7 (로그만!) → 앞으로는 logrotate</text>
+</svg><figcaption>열어둔 프로세스가 있으면 데이터는 살아 있습니다. lsof +L1 로 찾고, 로그면 /proc/PID/fd/N 을 truncate.</figcaption></figure>
+<h2 id="_1">상황</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>$<span class="w"> </span>du<span class="w"> </span>-sh<span class="w"> </span>/var/log/app/<span class="w">        </span><span class="c1"># 12M</span>
+$<span class="w"> </span>df<span class="w"> </span>-h<span class="w"> </span>/var<span class="w">                  </span><span class="c1"># 사용률 97%  — 어디 갔지?</span>
+</code></pre></div>
+
+<p><code>du</code>(보이는 파일의 합)와 <code>df</code>(디스크 실제 사용)가 크게 어긋나면 이 현상입니다. 며칠 전 20GB짜리 로그를 <code>rm</code>으로 지웠는데, 그 로그를 쓰던 앱은 여전히 <strong>같은 파일 핸들에 계속 쓰고 있습니다.</strong> 이름은 사라졌지만 파일은 살아 있고, 심지어 계속 커지고 있어요.</p>
+<h2 id="_2">원리: 이름과 실체는 다르다</h2>
+<p>inode 글에서 본 구조입니다 — 파일의 실체는 inode + 데이터 블록이고, 디렉토리 항목은 그 실체를 가리키는 <strong>이름표</strong>일 뿐이에요. <code>rm</code>은 이름표를 뗍니다. 실체는 <strong>참조 수(이름 개수 + 열어둔 fd 개수)가 0이 될 때</strong> 회수됩니다.</p>
+<div class="highlight"><pre><span></span><code>rm 전:  이름표 1 + 열린 fd 1  → 참조 2
+rm 후:  이름표 0 + 열린 fd 1  → 참조 1  ← 살아 있음, 디스크 점유 중
+프로세스 종료/close 후:       → 참조 0  ← 그때 회수
+</code></pre></div>
+
+<p>리눅스가 "쓰는 중인 파일을 지울 수 있는" 이유이자, 그 대가입니다.</p>
+<h2 id="_3">범인 찾기</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>sudo<span class="w"> </span>lsof<span class="w"> </span>+L1
+<span class="c1"># COMMAND   PID  USER  FD   TYPE  SIZE/OFF    NLINK  NAME</span>
+<span class="c1"># java    23841   app  7w   REG   21474836480     0  /var/log/app/app.log (deleted)</span>
+</code></pre></div>
+
+<p><code>+L1</code>은 <strong>링크 수(NLINK)가 1 미만인 열린 파일</strong> — 즉 이름은 없는데 열려 있는 파일만 보여줍니다. SIZE 컬럼이 곧 회수 가능한 용량이고, PID와 FD 번호가 처방의 재료예요.</p>
+<h2 id="_4">회수하는 세 가지 방법</h2>
+<p><strong>① 프로세스 재시작</strong> — 가장 확실. 앱이 fd를 닫으면 즉시 회수됩니다. 단, 서비스 중단이 따르죠.</p>
+<p><strong>② 파일을 비우기(truncate) — 재시작 없이</strong></p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>sudo<span class="w"> </span>truncate<span class="w"> </span>-s<span class="w"> </span><span class="m">0</span><span class="w"> </span>/proc/23841/fd/7
+<span class="c1"># 또는:  : &gt; /proc/23841/fd/7</span>
+</code></pre></div>
+
+<p><code>/proc/PID/fd/N</code>은 그 프로세스가 열어둔 파일로 가는 <strong>살아있는 통로</strong>입니다(fd·strace 글에서 본 그 디렉토리). 이름이 지워진 파일도 이 경로로는 접근되니, 내용을 0바이트로 잘라버리면 공간이 즉시 돌아옵니다. 앱은 계속 쓰지만 처음부터 다시 쌓이는 셈 — <strong>운영 중 응급 처치의 정석</strong>입니다.</p>
+<p><strong>③ 로그라면 로테이션 도구에 맡기기</strong> — 근본 해결. 아래에서.</p>
+<h2 id="rm">재발 방지: 로그는 rm 하지 않는다</h2>
+<p>이 사고의 8할은 <strong>로그 파일을 손으로 지워서</strong> 납니다. 정석은 둘 중 하나예요.</p>
+<ul>
+<li><strong>logrotate + copytruncate</strong>: 로그를 복사해두고 원본을 잘라냅니다(truncate). 앱은 같은 fd로 계속 쓰니 재시작 불필요. 단, 복사와 잘라내기 사이의 아주 짧은 순간에 쓰인 로그는 유실될 수 있습니다.</li>
+<li><strong>logrotate + 시그널(재열기)</strong>: 파일을 옮기고 앱에 "로그 다시 열어"(SIGHUP/USR1)를 보냅니다. 유실 없이 깔끔하지만 앱이 그 시그널을 지원해야 합니다(nginx 등은 지원).</li>
+</ul>
+<div class="highlight"><pre><span></span><code># /etc/logrotate.d/app
+/var/log/app/*.log {
+    daily
+    rotate 14
+    compress
+    copytruncate        # 앱이 재열기를 지원하면 이 줄 대신 postrotate에서 시그널
+    missingok
+}
+</code></pre></div>
+
+<p>그리고 근본의 근본 — 로그가 로컬 디스크를 채우는 구조 자체가 문제라는 것. 로그 중앙화 글의 그 파이프라인이면 로컬은 며칠치만 두고 중앙으로 보내니, 이 사고가 성립할 여지가 줄어듭니다.</p>
+<h2 id="_5">진단 루틴 정리</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>df<span class="w"> </span>-h<span class="p">;</span><span class="w"> </span>du<span class="w"> </span>-sh<span class="w"> </span>/var/*<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-h<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w">        </span><span class="c1"># ① df ≫ du 인가 (어긋남 확인)</span>
+sudo<span class="w"> </span>lsof<span class="w"> </span>+L1<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-k7<span class="w"> </span>-n<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w">           </span><span class="c1"># ② 지워졌는데 열린 파일, 큰 것부터</span>
+sudo<span class="w"> </span>truncate<span class="w"> </span>-s<span class="w"> </span><span class="m">0</span><span class="w"> </span>/proc/PID/fd/N<span class="w">            </span><span class="c1"># ③ 응급 회수 (로그류에만)</span>
+<span class="c1"># ④ logrotate 설정 점검 · 중앙화 검토</span>
+</code></pre></div>
+
+<p>주의: ③은 <strong>로그처럼 내용을 버려도 되는 파일</strong>에만 하세요. DB 데이터 파일이나 업로드 파일이 lsof +L1에 잡혔다면, 그건 지우면 안 되는 걸 지운 겁니다 — 프로세스가 살아 있는 지금이 복구 가능한 유일한 시간이에요(<code>cp /proc/PID/fd/N 복구경로</code>).</p>
+<h2 id="_6">한 줄 정리</h2>
+<p><strong>rm은 이름표만 뗍니다.</strong> df와 du가 어긋나면 <code>lsof +L1</code>로 "지워졌는데 열린 파일"을 찾고, 로그면 <code>/proc/PID/fd/N</code>을 truncate로 응급 회수, 그리고 앞으로는 rm 대신 logrotate — 로그는 손으로 지우는 게 아니라 정책으로 돌리는 겁니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --troubleshooting</div><a href="../p/container-disk-cleanup.html"><span class="g">&#10095;</span>컨테이너가 노드 디스크를 다 먹었다 — 이미지·로그·오버레이 청소법</a><a href="../p/readonly-filesystem.html"><span class="g">&#10095;</span>디스크가 갑자기 읽기전용이 됐다 — 파일시스템의 자기방어</a><a href="../p/multi-stage-build.html"><span class="g">&#10095;</span>1.2GB 이미지가 80MB가 되기까지 — 멀티스테이지 빌드</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/iac-intro.html"><span class="lbl">newer</span>콘솔 클릭을 코드로 옮기면 뭐가 달라지나 — IaC 입문</a><a href="../p/systemd-unit.html" style="text-align:right"><span class="lbl">older</span>systemd 유닛 파일 읽는 법 — Type, After, Restart가 하는 일</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

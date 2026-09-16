@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>콘솔 클릭을 코드로 옮기면 뭐가 달라지나 — IaC 입문 · 삽질노트</title>
+<meta name="description" content="콘솔 클릭은 재현이 안 되고 기록이 안 남습니다. 인프라를 코드로 쓰면 리뷰·재현·롤백이 생기죠. 첫 도입에서 실제로 부딪히는 것들.">
+<meta property="og:title" content="콘솔 클릭을 코드로 옮기면 뭐가 달라지나 — IaC 입문 · 삽질노트">
+<meta property="og:description" content="콘솔 클릭은 재현이 안 되고 기록이 안 남습니다. 인프라를 코드로 쓰면 리뷰·재현·롤백이 생기죠. 첫 도입에서 실제로 부딪히는 것들.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/iac-intro.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/iac-intro.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/iac-intro.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/iac-intro.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-14</span><a class="chip" href="../c/cloud.html">--cloud</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>콘솔 클릭을 코드로 옮기면 뭐가 달라지나 — IaC 입문</h1><blockquote>
+<p><strong>한 줄 요약:</strong> IaC는 <strong>인프라를 텍스트 파일로 선언하고 도구가 그 상태로 맞춰주는 것</strong>입니다. 얻는 건 셋 — <strong>재현</strong>(같은 환경을 다시), <strong>기록</strong>(누가 언제 왜 바꿨는지 git에), <strong>검토</strong>(적용 전 diff). 첫 도입의 진짜 장벽은 문법이 아니라 <strong>상태 파일과 이미 있는 자원</strong>입니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">IaC — plan/apply 루프</div><svg viewBox="0 0 640 116" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.ia-0{animation:ia-h 4.6s ease-in-out infinite;animation-delay:0.0s;}
+.ia-1{animation:ia-h 4.6s ease-in-out infinite;animation-delay:1.15s;}
+.ia-2{animation:ia-h 4.6s ease-in-out infinite;animation-delay:2.3s;}
+.ia-3{animation:ia-h 4.6s ease-in-out infinite;animation-delay:3.45s;}
+@keyframes ia-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim ia-0" x="12" y="18" width="145" height="58" rx="10"/><circle cx="44.0" cy="47.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(24.0,27.0) scale(1.250)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="70" y="42" class="dg-key">선언</text><text x="70" y="62" class="dg-lab2">main.tf 에 원하는 상태</text><line x1="157" y1="47" x2="169" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim ia-1" x="169" y="18" width="145" height="58" rx="10"/><circle cx="201.0" cy="47.0" r="27.0" fill="var(--dg-violet-s)"/><g transform="translate(181.0,27.0) scale(1.250)">
+<path d="M16 5 a6 6 0 0 0 -6 6 a5 5 0 0 0 -2 9 a5.5 5.5 0 0 0 8 6 a5.5 5.5 0 0 0 8 -6 a5 5 0 0 0 -2 -9 a6 6 0 0 0 -6 -6 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.8"/>
+<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.4" stroke-linecap="round"/></g><text x="227" y="42" class="dg-key">plan</text><text x="227" y="62" class="dg-lab2">현재와의 diff 미리보기</text><line x1="314" y1="47" x2="326" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim ia-2" x="326" y="18" width="145" height="58" rx="10"/><circle cx="358.0" cy="47.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(338.0,27.0) scale(1.250)">
+<path d="M5 29 V13 a11 11 0 0 1 22 0 v16 z" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.8"/>
+<path d="M11 29 V15 a5 5 0 0 1 10 0 v14 z" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.7"/>
+<circle cx="19" cy="22" r="1.2" fill="var(--dg-blue)"/></g><text x="384" y="42" class="dg-key">apply</text><text x="384" y="62" class="dg-lab2">차이만 적용</text><line x1="471" y1="47" x2="483" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim ia-3" x="483" y="18" width="145" height="58" rx="10"/><circle cx="515.0" cy="47.0" r="27.0" fill="var(--dg-amber-s)"/><g transform="translate(495.0,27.0) scale(1.250)">
+<path d="M10 14 v-3.5 a6 6 0 0 1 12 0 V14" fill="none" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<rect x="6.5" y="14" width="19" height="14" rx="2.5" fill="var(--dg-amber-s)" stroke="var(--dg-amber)" stroke-width="1.8"/>
+<circle cx="16" cy="20" r="2" fill="var(--dg-amber)"/>
+<path d="M16 21.5 v3" stroke="var(--dg-amber)" stroke-width="2" stroke-linecap="round"/></g><text x="541" y="42" class="dg-key">state</text><text x="541" y="62" class="dg-lab2">원격 + 잠금</text><text x="12" y="102" class="dg-ts">-/+ (destroy and create) 가 보이면 멈추기 · 데이터 계층은 prevent_destroy · 환경×계층으로 상태 분리</text></svg><figcaption>선언(코드) → plan(차이 미리보기) → apply(차이만 적용) → 상태 파일. 진실의 원장은 원격에.</figcaption></figure>
+<h2 id="_1">콘솔 운영의 한계</h2>
+<p>300개 계정을 만지는 MSP라면 익숙한 장면 — "이 고객사 VPC, 그때 누가 어떻게 만들었죠?" 답은 콘솔 어딘가의 감사 로그와 기억 속에만 있습니다. 스테이징을 운영과 똑같이 만들려면 클릭을 수십 번 <strong>다시</strong> 해야 하고, 사소한 차이(ACG 규칙 하나)가 "스테이징에선 되는데"의 원인이 되죠.</p>
+<p>IaC는 이 셋을 구조로 풉니다.</p>
+<div class="highlight"><pre data-lang="hcl"><span></span><code><span class="c1"># main.tf — &quot;이런 상태이길 원한다&quot;는 선언</span>
+<span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;ncloud_vpc&quot;</span><span class="w"> </span><span class="nv">&quot;main&quot;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="na">name</span><span class="w">            </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;goil-prod&quot;</span>
+<span class="w">  </span><span class="na">ipv4_cidr_block</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;10.10.0.0/16&quot;</span>
+<span class="p">}</span>
+<span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;ncloud_subnet&quot;</span><span class="w"> </span><span class="nv">&quot;web&quot;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="na">vpc_no</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="nv">ncloud_vpc.main.id</span>
+<span class="w">  </span><span class="na">subnet</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;10.10.1.0/24&quot;</span>
+<span class="w">  </span><span class="na">zone</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;KR-2&quot;</span>
+<span class="w">  </span><span class="na">subnet_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;PUBLIC&quot;</span>
+<span class="w">  </span><span class="na">name</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;goil-prod-web&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>핵심 동작은 <strong>plan → apply</strong> 두 단계입니다. <code>plan</code>이 "현재 상태와 선언의 차이"를 diff로 보여주고, <code>apply</code>가 그 차이만 적용합니다. <strong>적용 전에 뭐가 바뀔지 본다</strong> — 이게 콘솔과의 결정적 차이예요. 리뷰가 가능해지니 PR로 인프라 변경을 승인하는 문화가 따라옵니다.</p>
+<h2 id="_2">첫 도입의 진짜 장벽 셋</h2>
+<p><strong>① 상태 파일(state).</strong> 도구는 "내가 만든 자원이 뭔지"를 상태 파일에 기억합니다. 이 파일이 <strong>진실의 원장</strong>이에요 — 잃으면 도구가 자원을 못 알아보고, 둘이 동시에 쓰면 꼬입니다. 그래서 첫날부터 <strong>원격 백엔드</strong>(오브젝트 스토리지 + 잠금)에 두는 게 규칙입니다. 로컬 노트북의 state 파일은 스냅샷 글의 "같은 도시에 둔 백업"과 같은 취약점이죠.</p>
+<p><strong>② 이미 있는 자원.</strong> 신규 프로젝트면 편한데, 대부분은 콘솔로 만든 자원이 이미 있습니다. 선택지는 <strong>import</strong>(기존 자원을 상태에 편입 — 코드도 맞춰 써야 함) 또는 <strong>신규부터만 IaC</strong>(기존은 그대로, 새 것만 코드로). 실무 정석은 후자로 시작해 중요 자원부터 점진 import. 한 번에 다 옮기려다 멈추는 팀이 많습니다 — 태그 정책 글의 "신규부터 강제"와 같은 감각이에요.</p>
+<p><strong>③ 드리프트(drift).</strong> 누군가 콘솔에서 손으로 바꾸면 코드와 현실이 어긋납니다. plan이 그 차이를 잡아내지만(이게 IaC의 감시 기능), <strong>되돌릴지 코드에 반영할지</strong> 결정이 필요하죠. 조직 규칙이 없으면 "코드는 장식, 현실은 콘솔"로 퇴행합니다. 처방은 정기 plan(드리프트 감지 알람)과 "콘솔 변경 금지 자원" 목록.</p>
+<h2 id="_3">폭발 반경을 설계하라</h2>
+<p>한 상태 파일에 전부 넣으면 <code>apply</code> 한 번의 실수가 전부를 건드립니다. 리전·AZ 글의 장애 반경이 IaC에서는 <strong>상태 파일 경계</strong>로 나타나요.</p>
+<div class="highlight"><pre><span></span><code>환경별(prod / stg) × 계층별(network / compute / data)로 상태를 분리
+→ data 계층은 별도 상태 + 삭제 방지(prevent_destroy)
+→ apply 권한도 환경별로 (IAM 글의 최소권한)
+</code></pre></div>
+
+<p>특히 <strong>DB·스토리지는 <code>prevent_destroy</code></strong> — "이름 하나 바꾸려다 재생성(=삭제 후 생성)"이 IaC 사고의 고전이라서요. plan에서 <code>-/+</code>(destroy and create)가 보이면 반드시 멈춰 읽는 습관이 안전판입니다.</p>
+<h2 id="msp">그래서 얻는 것 — MSP 관점</h2>
+<ul>
+<li><strong>고객사별 표준 아키텍처를 모듈로</strong> — VPC+서브넷+NAT+배스천 세트를 변수 몇 개로 찍어냄. 300개 계정의 일관성이 여기서 나옵니다.</li>
+<li><strong>컴플라이언스 근거</strong> — CSAP/ISMS-P 심사에서 "이 구성이 정책대로다"를 코드로 보여줄 수 있음</li>
+<li><strong>재해 복구</strong> — 크로스 리전 글의 RTO를 줄이는 결정적 도구. 타 리전에 같은 코드를 apply하면 골격이 재현됩니다.</li>
+</ul>
+<h2 id="_4">시작 절차</h2>
+<div class="highlight"><pre><span></span><code>1. 원격 상태 백엔드 먼저 (잠금 포함)
+2. 신규 자원 하나(예: 서브넷 하나)를 코드로 — plan/apply 감각 익히기
+3. 환경·계층 분리 구조 잡기, 데이터 계층엔 prevent_destroy
+4. PR 리뷰에 plan 결과 첨부하는 규칙
+5. 기존 자원은 중요도 순으로 import
+</code></pre></div>
+
+<h2 id="_5">한 줄 정리</h2>
+<p>IaC의 가치는 <strong>plan(적용 전 diff)·git(기록)·재현</strong>이고, 첫 장벽은 <strong>원격 상태·기존 자원·드리프트</strong>입니다. 상태를 환경×계층으로 나눠 폭발 반경을 좁히고, 데이터엔 삭제 방지, <code>-/+</code>가 보이면 멈추기 — 신규부터 시작해 점진 편입이 살아남는 도입법입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --cloud</div><a href="../p/warmup-grace.html"><span class="g">&#10095;</span>새로 뜬 서버가 바로 죽는 이유 — 오토스케일링 워밍업과 헬스체크 그레이스</a><a href="../p/lifecycle-policy.html"><span class="g">&#10095;</span>저장은 쉽고 정리는 안 한다 — 수명주기 정책으로 자동으로 싸게 늙히기</a><a href="../p/spot-instances.html"><span class="g">&#10095;</span>70% 할인의 조건 — 스팟(선점형) 인스턴스를 쓸 수 있는 일과 없는 일</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/metadata-filtering.html"><span class="lbl">newer</span>검색 범위를 먼저 좁혀라 — 메타데이터 필터링으로 RAG 정확도 올리기</a><a href="../p/deleted-but-full.html" style="text-align:right"><span class="lbl">older</span>파일을 지웠는데 용량이 안 줄었다 — 열린 fd와 lsof +L1</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>에이전트 실패 모드 도감 — 루프·환각 실행·권한 초과·조용한 포기 · 삽질노트</title>
+<meta name="description" content="에이전트는 새로운 종류의 사고를 냅니다 — 틀린 말이 아니라 틀린 행동. 운영에서 실제로 만나는 실패 유형 여섯과 각각의 감지·차단 장치.">
+<meta property="og:title" content="에이전트 실패 모드 도감 — 루프·환각 실행·권한 초과·조용한 포기 · 삽질노트">
+<meta property="og:description" content="에이전트는 새로운 종류의 사고를 냅니다 — 틀린 말이 아니라 틀린 행동. 운영에서 실제로 만나는 실패 유형 여섯과 각각의 감지·차단 장치.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/agent-failure-modes.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/agent-failure-modes.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/agent-failure-modes.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/agent-failure-modes.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-16</span><a class="chip" href="../c/ai.html">--ai</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>에이전트 실패 모드 도감 — 루프·환각 실행·권한 초과·조용한 포기</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 챗봇의 실패는 <strong>틀린 답</strong>이지만 에이전트의 실패는 <strong>틀린 행동</strong>입니다. 운영에서 반복되는 유형은 여섯 — <strong>무한 루프, 환각 실행, 권한 초과, 조용한 포기, 컨텍스트 붕괴, 부분 완료.</strong> 각각 감지 지표와 차단 장치가 다르니, 도감처럼 알아두면 사고가 났을 때 "어느 종인지"부터 가려집니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">에이전트 실패 모드 여섯 종</div><svg viewBox="0 0 640 334" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.af-0{animation:af-h 6.0s ease-in-out infinite;animation-delay:0.0s;}
+.af-1{animation:af-h 6.0s ease-in-out infinite;animation-delay:1.0s;}
+.af-2{animation:af-h 6.0s ease-in-out infinite;animation-delay:2.0s;}
+.af-3{animation:af-h 6.0s ease-in-out infinite;animation-delay:3.0s;}
+.af-4{animation:af-h 6.0s ease-in-out infinite;animation-delay:4.0s;}
+.af-5{animation:af-h 6.0s ease-in-out infinite;animation-delay:5.0s;}
+@keyframes af-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,10.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim af-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="60" y="36" class="dg-t">① 무한 루프</text><text x="216" y="36" class="dg-lab2">같은 도구 반복</text><text x="396" y="36" class="dg-ts">호출 상한 · 반복 감지</text><rect class="dg-box dg-anim af-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<path d="M16 5 a6 6 0 0 0 -6 6 a5 5 0 0 0 -2 9 a5.5 5.5 0 0 0 8 6 a5.5 5.5 0 0 0 8 -6 a5 5 0 0 0 -2 -9 a6 6 0 0 0 -6 -6 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.8"/>
+<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.4" stroke-linecap="round"/></g><text x="60" y="84" class="dg-t">② 환각 실행</text><text x="216" y="84" class="dg-lab2">없는 도구·지어낸 ID</text><text x="396" y="84" class="dg-ts">인자 검증 · ID 출처 추적</text><rect class="dg-box dg-anim af-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<rect x="3" y="6" width="26" height="20" rx="2" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.7"/>
+<path d="M3 12.6 h26 M3 19.3 h26" stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M11 6 v6.6 M20 6 v6.6 M7 12.6 v6.7 M16 12.6 v6.7 M24.5 12.6 v6.7 M11 19.3 v6.7 M20 19.3 v6.7"
+      stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M16 13 c2.6 2.4 3.4 4.2 3.4 6 a3.4 3.4 0 0 1 -6.8 0 c0 -1.8 0.8 -3.6 3.4 -6 z"
+      fill="var(--dg-amber)" stroke="var(--dg-red)" stroke-width="1.3"/></g><text x="60" y="132" class="dg-t">③ 권한 초과</text><text x="216" y="132" class="dg-lab2">조회 시켰는데 삭제</text><text x="396" y="132" class="dg-ts">도구 최소화 · 승인 게이트</text><rect class="dg-box dg-anim af-3" x="12" y="156" width="616" height="38" rx="9"/><g transform="translate(17.6,156.6) scale(1.150)">
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
+      stroke-linecap="round" stroke-linejoin="round"/></g><text x="60" y="180" class="dg-t">④ 조용한 포기</text><text x="216" y="180" class="dg-lab2">못 했는데 '완료'</text><text x="396" y="180" class="dg-ts">결과 필드 명시 · 기록 대조 ★</text><rect class="dg-box dg-anim af-4" x="12" y="204" width="616" height="38" rx="9"/><g transform="translate(17.6,204.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="60" y="228" class="dg-t">⑤ 컨텍스트 붕괴</text><text x="216" y="228" class="dg-lab2">긴 작업 후반 제약 망각</text><text x="396" y="228" class="dg-ts">작업 노트 · 도구 레벨 강제</text><rect class="dg-box dg-anim af-5" x="12" y="252" width="616" height="38" rx="9"/><g transform="translate(17.6,252.6) scale(1.150)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="60" y="276" class="dg-t">⑥ 부분 완료</text><text x="216" y="276" class="dg-lab2">상한에 걸려 중간 정지</text><text x="396" y="276" class="dg-ts">멱등 설계 · 재개 체크포인트</text><text x="12" y="326" class="dg-ts">공통 기반: 구조화된 도구 결과 + 실행 기록 로그 + 골든셋의 '실패해야 정상' 과제</text></svg><figcaption>챗봇은 틀린 답, 에이전트는 틀린 행동. 종마다 감지 지표와 차단 장치가 다릅니다.</figcaption></figure>
+<h2 id="1">① 무한 루프 — 같은 도구를 계속 부른다</h2>
+<p><strong>증상:</strong> 검색 → 결과 불만족 → 같은 검색 → … 토큰과 비용이 곱으로 뜁니다. 에이전트 글에서 말한 그 "루프 상한"이 없을 때의 기본 실패.</p>
+<p><strong>원인:</strong> 도구 결과가 모델이 기대한 형식이 아니거나(빈 결과, 에러 문자열), 종료 조건이 프롬프트에 없거나, 도구 설명이 "언제 그만둘지"를 안 말해줘서.</p>
+<p><strong>장치:</strong> 호출 횟수 상한(작업당), <strong>같은 도구+같은 인자 반복 감지</strong>(2회면 개입), 예산(토큰·시간) 상한. 감지 지표는 <strong>작업당 평균 도구 호출 수</strong> — 이게 튀면 루프가 늘고 있는 겁니다.</p>
+<h2 id="2">② 환각 실행 — 없는 도구·없는 인자를 부른다</h2>
+<p><strong>증상:</strong> 존재하지 않는 함수명, 스키마에 없는 파라미터, 지어낸 ID(<code>order_id: "ORD-12345"</code> — 실제 조회 없이 만든 값)로 실행 요청. 환각 글의 그 관성이 <strong>행동으로</strong> 나타나는 것.</p>
+<p><strong>장치:</strong> 구조화 출력 글의 스키마 강제(도구 호출 단계에서 인자 검증 — 검증 실패는 실행 없이 모델에 에러로 되돌리기), 그리고 <strong>ID류는 반드시 이전 도구 결과에서 왔는지 추적</strong>(조회 안 한 ID로 삭제·결제 요청이 오면 차단). 감지 지표는 <strong>인자 검증 실패율.</strong></p>
+<h2 id="3">③ 권한 초과 — 할 수 있어서 했다</h2>
+<p><strong>증상:</strong> 조회만 시켰는데 "정리하는 게 좋겠다"며 삭제. 프롬프트 주입 글의 그 시나리오가 주입 없이도 모델의 과잉 친절로 발생합니다.</p>
+<p><strong>장치:</strong> 도구 권한을 <strong>작업 단위로 최소화</strong>(읽기 작업엔 쓰기 도구 자체를 안 줌 — 멀티에이전트 글의 조회/실행 분리), 파괴적 작업엔 사람 승인 게이트, 그리고 <strong>드라이런 모드</strong>(실행 대신 "하려는 것"을 보고). 감지 지표는 <strong>승인 게이트 도달 건수 대비 승인 거부율</strong> — 거부가 많으면 모델이 과하게 행동하려는 신호.</p>
+<h2 id="4">④ 조용한 포기 — 못 했는데 했다고 한다</h2>
+<p><strong>증상:</strong> 도구가 에러를 반환했는데 모델이 "완료했습니다"라고 보고. 또는 3단계 중 2단계에서 막혔는데 결과를 그럴듯하게 요약. <strong>가장 위험한 유형</strong> — 로그를 안 보면 모릅니다.</p>
+<p><strong>원인:</strong> 에러 메시지가 모델에게 "실패"로 안 읽히거나(HTTP 200에 담긴 에러 JSON), 프롬프트가 "항상 결과를 보고하라"고 압박해서.</p>
+<p><strong>장치:</strong> 도구 결과에 <strong>성공/실패를 명시적 필드로</strong>(모델이 해석할 필요 없게), 최종 보고에 <strong>"수행한 도구 호출 목록과 각 결과"를 구조화로 첨부</strong>하게 강제 — 그러면 "완료"라는 말과 실제 실행 기록을 코드가 대조할 수 있습니다. 감지 지표는 <strong>보고 내용 vs 도구 성공 기록의 불일치 건수.</strong></p>
+<h2 id="5">⑤ 컨텍스트 붕괴 — 길어지다 처음을 잊는다</h2>
+<p><strong>증상:</strong> 긴 작업 후반에 초반의 제약("prod는 건드리지 마")을 잊고 위반. 컨텍스트 윈도우 글의 "가운데 흐림"과 밀려남이 <strong>행동 제약 상실</strong>로 나타나는 것.</p>
+<p><strong>장치:</strong> 핵심 제약은 시스템 프롬프트에(시스템/유저 글의 위계), 긴 작업은 에이전트 메모리 글의 <strong>작업 노트 패턴</strong>으로 제약·진행 상태를 매 스텝 다시 읽게, 그리고 제약은 프롬프트에만 두지 말고 <strong>도구 레벨에서도 강제</strong>(prod 리소스는 도구가 거부). 감지 지표는 <strong>작업 길이(스텝 수)별 제약 위반율.</strong></p>
+<h2 id="6">⑥ 부분 완료 — 중간에 멈춘 채 끝</h2>
+<p><strong>증상:</strong> 5개 파일 중 3개만 수정하고 종료, 또는 예산 상한(①의 장치!)에 걸려 중간 상태로 정지. 안전장치가 만드는 2차 실패이기도 합니다.</p>
+<p><strong>장치:</strong> 작업을 <strong>멱등하게</strong> 설계(다시 돌려도 안전 — 배치 API 글의 그 원칙), 중단 시 <strong>어디까지 했는지 구조화 보고</strong>를 필수로, 재개 가능한 체크포인트(스팟 글의 그 감각). 감지 지표는 <strong>정상 종료 vs 상한 종료 비율.</strong></p>
+<h2 id="_1">운영 대시보드 여섯 줄</h2>
+<div class="highlight"><pre><span></span><code>작업당 평균 도구 호출 수         ← ① 루프
+인자 검증 실패율                 ← ② 환각 실행
+승인 게이트 거부율               ← ③ 권한 초과
+보고-실행 기록 불일치 건수        ← ④ 조용한 포기
+스텝 수별 제약 위반율            ← ⑤ 컨텍스트 붕괴
+상한 종료 비율                  ← ⑥ 부분 완료
+</code></pre></div>
+
+<p>LLM 평가 글의 골든셋에 <strong>"실패해야 정상인 과제"</strong>(권한 없는 요청, 존재하지 않는 대상)를 섞어두면, 이 여섯 지표가 배포 전에 측정됩니다. 그리고 감사 로그 글의 원칙 — 모든 도구 호출은 <strong>누가(어느 에이전트·어느 사용자 세션)·언제·무엇을·결과</strong>로 기록. 사고가 났을 때 "어느 종인지" 가리는 건 결국 이 로그입니다.</p>
+<h2 id="_2">한 줄 정리</h2>
+<p>에이전트 실패는 여섯 종 — <strong>루프·환각 실행·권한 초과·조용한 포기·컨텍스트 붕괴·부분 완료.</strong> 각각 다른 감지 지표와 차단 장치가 있고, 공통 기반은 <strong>구조화된 도구 결과 + 실행 기록 로그 + 골든셋의 '실패해야 정상' 과제</strong>입니다. 가장 무서운 건 ④ — 못 했는데 했다고 하는 것이니, 말이 아니라 기록을 믿는 구조를 만드세요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/batch-api.html"><span class="g">&#10095;</span>급하지 않은 LLM 작업은 반값에 — 배치 API 활용법</a><a href="../p/metadata-filtering.html"><span class="g">&#10095;</span>검색 범위를 먼저 좁혀라 — 메타데이터 필터링으로 RAG 정확도 올리기</a><a href="../p/hybrid-search.html"><span class="g">&#10095;</span>벡터 검색만으로는 &#x27;그 단어&#x27;를 못 찾는다 — 하이브리드 검색(BM25+벡터)</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/http-headers.html"><span class="lbl">newer</span>HTTP 헤더 실무편 — Host, X-Forwarded-For, Cache-Control 세 개면 사고의 8할</a><a href="../p/container-disk-cleanup.html" style="text-align:right"><span class="lbl">older</span>컨테이너가 노드 디스크를 다 먹었다 — 이미지·로그·오버레이 청소법</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

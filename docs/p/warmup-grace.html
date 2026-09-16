@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>새로 뜬 서버가 바로 죽는 이유 — 오토스케일링 워밍업과 헬스체크 그레이스 · 삽질노트</title>
+<meta name="description" content="확장은 됐는데 새 인스턴스가 켜지자마자 &#x27;비정상&#x27; 판정으로 교체되고, 또 교체되고… 준비 시간을 안 준 설계의 전형적 실패입니다.">
+<meta property="og:title" content="새로 뜬 서버가 바로 죽는 이유 — 오토스케일링 워밍업과 헬스체크 그레이스 · 삽질노트">
+<meta property="og:description" content="확장은 됐는데 새 인스턴스가 켜지자마자 &#x27;비정상&#x27; 판정으로 교체되고, 또 교체되고… 준비 시간을 안 준 설계의 전형적 실패입니다.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/warmup-grace.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/warmup-grace.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/warmup-grace.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/warmup-grace.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html" class="on">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-16</span><a class="chip" href="../c/cloud.html">--cloud</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>새로 뜬 서버가 바로 죽는 이유 — 오토스케일링 워밍업과 헬스체크 그레이스</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 새 인스턴스는 <strong>부팅 → 앱 기동 → 의존성 연결 → 캐시 예열</strong>을 거쳐야 정상 응답을 냅니다. 이 시간을 안 주면 LB 헬스체크가 "죽었다"고 판정해 <strong>교체 → 또 교체</strong>의 루프가 돌고, 트래픽은 준비 안 된 서버로 쏟아지죠. 처방은 두 다이얼 — <strong>헬스체크 그레이스 기간</strong>과 <strong>워밍업(예열) 시간</strong>입니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">새 서버의 준비 시간표</div><svg viewBox="0 0 640 176" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.wg-b{animation:wg-g 2.6s ease-out infinite;transform-origin:left center;}
+@keyframes wg-g{0%{transform:scaleX(0)}45%,100%{transform:scaleX(1)}}</style><line x1="360" y1="6" x2="360" y2="142" class="dg-wall"/><text x="366" y="16" class="dg-ts" fill="var(--dg-red)">헬스체크 판정 90s</text><circle cx="30.0" cy="35.0" r="21.4" fill="var(--dg-blue-s)"/><g transform="translate(15.6,20.6) scale(0.900)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="52" y="41" class="dg-t">OS 부팅</text><rect x="164" y="26" width="348" height="20" rx="5" fill="var(--line-2)"/><g class="dg-anim wg-b" style="animation-delay:0.0s"><rect x="164" y="26" width="87" height="20" rx="5" fill="var(--dg-green)" opacity=".85"/></g><text x="259" y="41" class="dg-ts">~40s</text><circle cx="30.0" cy="79.0" r="21.4" fill="var(--dg-green-s)"/><g transform="translate(15.6,64.6) scale(0.900)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="52" y="85" class="dg-t">초기화·앱 기동</text><rect x="164" y="70" width="348" height="20" rx="5" fill="var(--line-2)"/><g class="dg-anim wg-b" style="animation-delay:0.18s"><rect x="164" y="70" width="196" height="20" rx="5" fill="var(--dg-green)" opacity=".85"/></g><text x="368" y="85" class="dg-ts">~90s → 헬스 200</text><circle cx="30.0" cy="123.0" r="21.4" fill="var(--dg-violet-s)"/><g transform="translate(15.6,108.6) scale(0.900)">
+<path d="M16 5 a6 6 0 0 0 -6 6 a5 5 0 0 0 -2 9 a5.5 5.5 0 0 0 8 6 a5.5 5.5 0 0 0 8 -6 a5 5 0 0 0 -2 -9 a6 6 0 0 0 -6 -6 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.8"/>
+<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.4" stroke-linecap="round"/></g><text x="52" y="129" class="dg-t">캐시 예열 (정상 성능)</text><rect x="164" y="114" width="348" height="20" rx="5" fill="var(--line-2)"/><g class="dg-anim wg-b" style="animation-delay:0.36s"><rect x="164" y="114" width="326" height="20" rx="5" fill="var(--dg-red)" opacity=".85"/></g><text x="498" y="129" class="dg-ts">~150s</text><text x="12" y="168" class="dg-ts">그레이스가 90s 미만이면 앱 뜨기 전에 죽임 · 90~150s 트래픽은 느린 서버로 → slow start</text></svg><figcaption>헬스체크가 준비 시간을 안 기다리면 교체 루프가 돕니다. 그레이스는 실측×1.5, 스케일링 계산엔 워밍업 제외.</figcaption></figure>
+<h2 id="_1">증상</h2>
+<p>트래픽이 늘어 오토스케일링이 2대를 추가했습니다. 그런데 —</p>
+<div class="highlight"><pre><span></span><code>09:01  인스턴스 i-A 시작
+09:02  헬스체크 실패 (3회 연속) → Unhealthy → 종료
+09:03  대체 인스턴스 i-B 시작
+09:04  또 실패 → 종료 → i-C 시작 ...
+</code></pre></div>
+
+<p>스케일링 이력에 "시작·종료"가 번갈아 찍히고, 기존 서버들은 여전히 과부하. 확장이 <strong>비용만 쓰고 용량은 안 늘리는</strong> 상태입니다. 오토스케일링 글의 사각지대와 다른 축의 실패 — 거기가 "안 줄어드는" 문제였다면, 여기는 "늘어도 소용없는" 문제죠.</p>
+<h2 id="_2">원인: 준비에도 시간이 든다</h2>
+<p>새 서버가 트래픽을 제대로 받기까지의 단계를 시간축에 놓으면:</p>
+<div class="highlight"><pre><span></span><code>0s     인스턴스 시작 (OS 부팅)
+~40s   초기화 스크립트 (패키지·설정·시크릿 가져오기)
+~70s   앱 프로세스 기동 (JVM 워밍업, 의존성 로드)
+~90s   DB·캐시 연결, 헬스 엔드포인트 200 시작
+~150s  JIT·로컬 캐시 예열 — 응답 지연이 정상 수준으로
+</code></pre></div>
+
+<p>헬스체크가 <strong>30초 간격 × 3회 실패 = 90초</strong>에 판정하면, 아직 앱이 안 뜬 70초 시점의 실패를 세다가 죽여버립니다. 그리고 헬스체크를 통과한 90초부터 트래픽이 들어오는데, 150초까지는 <strong>느린 상태</strong> — p95가 확장할 때마다 튀는 이유(알람 설계 글의 그 p95).</p>
+<h2 id="1">다이얼 ① — 헬스체크 그레이스 기간</h2>
+<p>"시작 후 N초 동안은 헬스체크 실패를 세지 않는다." 오토스케일링 그룹 설정에 있는 <strong>health check grace period</strong>(NCP도 대응 설정)가 이것입니다.</p>
+<div class="highlight"><pre><span></span><code>그레이스 = (앱이 헬스 200을 내기까지 실제 시간) × 1.5 정도
+</code></pre></div>
+
+<p>실측이 전제입니다 — 인스턴스를 하나 띄우고 <code>curl</code> 루프로 첫 200까지 몇 초인지 재세요. 감으로 300초를 주면 진짜 죽은 서버를 5분간 못 알아채니, 넉넉히가 아니라 <strong>실측 × 여유</strong>가 정답입니다.</p>
+<p>헬스체크 자체도 점검 대상입니다(헬스체크 3대장 글) — 특히 <strong>경로.</strong> <code>/</code>가 무거운 페이지면 부팅 직후 타임아웃이 잦고, 반대로 <code>/health</code>가 "프로세스 살아있음"만 답하면 DB 연결 전에 200을 내서 트래픽이 너무 일찍 옵니다. <strong>의존성까지 확인하는 readiness 성격의 엔드포인트</strong>가 맞습니다 — 쿠버의 readiness 프로브가 정확히 이 구분을 제도화한 것이고요.</p>
+<h2 id="2">다이얼 ② — 워밍업(예열) 시간</h2>
+<p>헬스 200이 나와도 성능이 정상까지 오는 데 시간이 더 걸립니다. 두 가지 처방:</p>
+<ul>
+<li><strong>스케일링 계산에서의 워밍업</strong> — "새 인스턴스는 N초 동안 집계 지표에 포함하지 않는다". 안 그러면 새 서버의 낮은 CPU가 평균을 끌어내려 <strong>확장 직후 축소 판정</strong>이 나는 진동이 생깁니다(사각지대 글의 그 임계값 문제가 시간축으로 재현).</li>
+<li><strong>LB 단계적 트래픽 유입(slow start)</strong> — 새 대상에 처음엔 트래픽을 조금만 주고 수 분에 걸쳐 늘리는 LB 기능. JVM류나 로컬 캐시 의존 앱에 특효.</li>
+</ul>
+<h2 id="_3">근본: 준비 시간 자체를 줄이기</h2>
+<p>다이얼로 견디는 것과 별개로, 부팅 시간 자체가 짧으면 모든 게 편해집니다.</p>
+<ul>
+<li><strong>골든 이미지</strong> — 스냅샷/이미지 글의 그 방식. 부팅 후 패키지 설치를 하는 대신, 다 깔린 이미지로 시작. 초기화 40초 → 5초.</li>
+<li><strong>의존성 대기 로직</strong> — 앱이 DB 연결 실패로 죽어 재시작 루프를 도는 대신, 연결까지 재시도하며 기다리기(systemd 글의 Restart 설계와 연결).</li>
+<li><strong>컨테이너라면</strong> — 이미지 다이어트(멀티스테이지)로 pull 시간 단축, requests/limits 글의 리소스 보장으로 기동 시 CPU 스로틀링 방지. 쿠버에선 <code>startupProbe</code>가 그레이스 기간의 역할입니다.</li>
+</ul>
+<h2 id="_4">점검 체크리스트</h2>
+<div class="highlight"><pre><span></span><code>□ 새 인스턴스 첫 200까지 시간 실측 → 그레이스 = 그 × 1.5
+□ 헬스 경로가 의존성(DB·캐시)까지 확인하는가
+□ 스케일링 지표 집계에 워밍업 제외 설정
+□ LB slow start 지원 여부 확인·적용
+□ 스케일링 이력에서 &quot;시작 후 N분 내 종료&quot; 패턴 검색 (있으면 이 문제 진행 중)
+□ 골든 이미지로 초기화 단계 제거
+</code></pre></div>
+
+<h2 id="_5">한 줄 정리</h2>
+<p>새 서버에게 <strong>준비 시간을 안 주면 확장이 교체 루프가 됩니다.</strong> 그레이스는 실측×1.5, 헬스 경로는 의존성까지, 스케일링 계산에 워밍업 제외, LB는 slow start — 그리고 골든 이미지로 준비 시간 자체를 줄이는 것이 근본입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --cloud</div><a href="../p/iac-intro.html"><span class="g">&#10095;</span>콘솔 클릭을 코드로 옮기면 뭐가 달라지나 — IaC 입문</a><a href="../p/lifecycle-policy.html"><span class="g">&#10095;</span>저장은 쉽고 정리는 안 한다 — 수명주기 정책으로 자동으로 싸게 늙히기</a><a href="../p/spot-instances.html"><span class="g">&#10095;</span>70% 할인의 조건 — 스팟(선점형) 인스턴스를 쓸 수 있는 일과 없는 일</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><span></span><a href="../p/http-headers.html" style="text-align:right"><span class="lbl">older</span>HTTP 헤더 실무편 — Host, X-Forwarded-For, Cache-Control 세 개면 사고의 8할</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

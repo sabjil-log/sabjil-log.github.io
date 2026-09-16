@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>누가 새벽 3시에 보안그룹을 열었나 — 감사 로그 되짚기 · 삽질노트</title>
+<meta name="description" content="클라우드의 모든 API 호출은 기록됩니다 — 켜져 있고 보존돼 있다면. 감사 로그를 언제 켜고 어디 두고 어떻게 뒤지는지, 사고 하루 전에 알아둘 것들.">
+<meta property="og:title" content="누가 새벽 3시에 보안그룹을 열었나 — 감사 로그 되짚기 · 삽질노트">
+<meta property="og:description" content="클라우드의 모든 API 호출은 기록됩니다 — 켜져 있고 보존돼 있다면. 감사 로그를 언제 켜고 어디 두고 어떻게 뒤지는지, 사고 하루 전에 알아둘 것들.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/audit-log.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/audit-log.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/audit-log.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/audit-log.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html" class="on">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-15</span><a class="chip" href="../c/security.html">--security</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>누가 새벽 3시에 보안그룹을 열었나 — 감사 로그 되짚기</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 감사 로그는 <strong>"누가·언제·어디서·무엇을 했는가"의 API 호출 기록</strong>입니다. 장애 원인 추적, 보안 사고 포렌식, 컴플라이언스 증적의 세 가지 용도가 전부 여기서 나오죠. 조건은 하나 — <strong>사고 전에 켜져 있고, 원본 계정 밖에 보존돼 있을 것.</strong> 사고 후에 켜는 건 늦습니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">감사 로그 — 사고 전에 켜서 밖에</div><svg viewBox="0 0 640 238" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.at-0{animation:at-h 4.0s ease-in-out infinite;animation-delay:0.0s;}
+.at-1{animation:at-h 4.0s ease-in-out infinite;animation-delay:1.0s;}
+.at-2{animation:at-h 4.0s ease-in-out infinite;animation-delay:2.0s;}
+.at-3{animation:at-h 4.0s ease-in-out infinite;animation-delay:3.0s;}
+@keyframes at-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim at-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<path d="M10 14 v-3.5 a6 6 0 0 1 12 0 V14" fill="none" stroke="var(--dg-metal-d)" stroke-width="2" stroke-linecap="round"/>
+<rect x="6.5" y="14" width="19" height="14" rx="2.5" fill="var(--dg-amber-s)" stroke="var(--dg-amber)" stroke-width="1.8"/>
+<circle cx="16" cy="20" r="2" fill="var(--dg-amber)"/>
+<path d="M16 21.5 v3" stroke="var(--dg-amber)" stroke-width="2" stroke-linecap="round"/></g><text x="60" y="36" class="dg-t">① 켜기 + 내보내기</text><text x="216" y="36" class="dg-lab2">별도 계정 버킷 (pull)</text><text x="396" y="36" class="dg-ts">불변 보존 — 침입자 1순위가 로그 삭제</text><rect class="dg-box dg-anim at-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="60" y="84" class="dg-t">② 리소스 → 누가</text><text x="216" y="84" class="dg-lab2">이 ACG 바꾼 사람</text><text x="396" y="84" class="dg-ts">장애 추적의 기본</text><rect class="dg-box dg-anim at-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<circle cx="16" cy="10" r="6" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<path d="M4.5 29 c0 -6.6 5.2 -11 11.5 -11 s11.5 4.4 11.5 11" fill="var(--dg-blue-s)"
+      stroke="var(--dg-blue)" stroke-width="1.8" stroke-linecap="round"/></g><text x="60" y="132" class="dg-t">③ 자격증명 → 무엇</text><text x="216" y="132" class="dg-lab2">이 키가 24h 한 일</text><text x="396" y="132" class="dg-ts">유출 의심 시 첫 질문</text><rect class="dg-box dg-anim at-3" x="12" y="156" width="616" height="38" rx="9"/><g transform="translate(17.6,156.6) scale(1.150)">
+<path d="M16 3 L28 7 v9 c0 7.5 -6.4 12.6 -12 14 C10.4 28.6 4 23.5 4 16 V7 z"
+      fill="var(--dg-green-s)" stroke="var(--dg-green)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M10.5 15.5 l4.2 4.2 L22 12" fill="none" stroke="var(--dg-green)" stroke-width="2.6"
+      stroke-linecap="round" stroke-linejoin="round"/></g><text x="60" y="180" class="dg-t">④ 실시간 알람</text><text x="216" y="180" class="dg-lab2">루트 사용·로그 중지·0.0.0.0/0</text><text x="396" y="180" class="dg-ts">P1 — 받으면 즉시 행동</text><text x="12" y="230" class="dg-ts">CSAP·ISMS-P 증적 = 이 로그 · 보존 1년+ 정책 · 월간 '관리자 권한 변경 검토'를 루틴으로</text></svg><figcaption>누가·언제·어디서·무엇을. 리소스→누가, 자격증명→무엇, 거부 이벤트 세 축으로 뒤집니다.</figcaption></figure>
+<h2 id="_1">세 가지 질문에 답하는 로그</h2>
+<ul>
+<li><strong>장애:</strong> "ACG 규칙이 바뀌어서 서비스가 죽었는데, 누가 언제 바꿨나?" → 변경 이력</li>
+<li><strong>보안:</strong> "이 키가 유출된 것 같은데, 그 키로 뭘 했나?" → 자격증명별 활동</li>
+<li><strong>컴플라이언스:</strong> "관리자 권한 부여가 승인 절차를 거쳤는지 증명하라" → 증적</li>
+</ul>
+<p>콘솔의 서비스별 로그(웹서버 액세스 로그 등)와 다릅니다 — 감사 로그는 <strong>클라우드 관리 평면</strong>(콘솔·CLI·SDK로 한 모든 행위)의 기록이에요. AWS의 CloudTrail, NCP의 Cloud Activity Tracer/감사 로그 계열이 이것. 서버 안에서 벌어진 일(SSH 후 명령)은 여기 없고 배스천·OS 로그의 영역입니다.</p>
+<h2 id="_2">켜기 — 그리고 밖으로 내보내기</h2>
+<p>기본 콘솔 이력은 보존이 짧습니다(수십 일). 그래서 첫 작업은 <strong>장기 보존 + 원본 계정 밖 저장</strong>:</p>
+<div class="highlight"><pre><span></span><code>감사 로그 → 전용 버킷 (별도 보안 계정, pull 방식) → 불변 보존 (오브젝트 락)
+                                                   → 로그 중앙화 파이프라인으로 검색 가능하게
+</code></pre></div>
+
+<p>크로스 리전 글의 "권한 분리·시간 분리"가 그대로 적용됩니다. 이유는 명확해요 — <strong>침입자가 첫 번째로 하는 일이 로그 삭제</strong>입니다. 운영 계정의 admin이 지울 수 있는 곳에 있는 감사 로그는 감사 로그가 아니에요.</p>
+<p>그리고 <strong>읽기 이벤트까지 켤지</strong> 결정합니다. 기본은 쓰기(변경)만 기록하는 경우가 많은데, "누가 이 버킷의 파일을 읽었나"가 필요한 환경(개인정보 저장소)은 데이터 이벤트도 켜야 합니다 — 볼륨과 비용이 커지니 대상 버킷을 골라서.</p>
+<h2 id="_3">뒤지는 법 — 세 가지 축</h2>
+<p>로그 한 줄의 구조는 어디나 비슷합니다: <strong>시각 · 행위자(누가, 어떤 자격증명으로) · 행위(어떤 API) · 대상(어떤 리소스) · 출처(IP, 콘솔/CLI) · 결과(성공/거부).</strong></p>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># 예: AWS CLI로 &quot;보안그룹 변경&quot; 이벤트 찾기</span>
+aws<span class="w"> </span>cloudtrail<span class="w"> </span>lookup-events<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--lookup-attributes<span class="w"> </span><span class="nv">AttributeKey</span><span class="o">=</span>EventName,AttributeValue<span class="o">=</span>AuthorizeSecurityGroupIngress<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--start-time<span class="w"> </span><span class="m">2026</span>-09-14T00:00:00Z<span class="w"> </span>--query<span class="w"> </span><span class="s1">&#39;Events[].[EventTime,Username,CloudTrailEvent]&#39;</span><span class="w"> </span>--output<span class="w"> </span>table
+</code></pre></div>
+
+<p>세 가지 추적 축:</p>
+<p><strong>① 리소스 → 누가.</strong> "이 ACG를 바꾼 사람" — 대상 리소스 ID로 필터. 장애 추적의 기본 동작.</p>
+<p><strong>② 자격증명 → 무엇.</strong> "이 액세스 키가 지난 24시간에 한 것 전부" — 유출 의심 시 첫 질문. 여기서 <strong>평소와 다른 리전, 새벽 시각, 처음 보는 API</strong>(예: 갑자기 대량의 인스턴스 생성 — 코인 채굴 패턴)가 보이면 확정입니다. 최소권한 글의 폭발 반경이 실제로 얼마였는지도 이 조회로 나오죠.</p>
+<p><strong>③ 거부 이벤트.</strong> AccessDenied가 특정 자격증명에서 반복되면 — 권한 부족한 배치(정상)일 수도, 권한 탐색 중인 공격자(비정상)일 수도 있습니다. 어느 쪽이든 봐야 할 신호.</p>
+<h2 id="_4">알람으로 승격할 것들</h2>
+<p>로그는 쌓여 있는 것만으로는 사후 수사 도구입니다. 몇 가지는 <strong>실시간 알람</strong>으로 올려야 해요 (알람 설계 글의 P1 기준 — 받으면 지금 할 행동이 있는 것):</p>
+<ul>
+<li>루트/최고 관리자 계정 사용 (평소엔 쓰면 안 되는 계정 — break-glass 개봉 신호)</li>
+<li>감사 로그 설정 변경·중지 시도 (로그를 끄려는 행위 자체가 최고 경보)</li>
+<li>IAM 정책·관리자 권한 부여</li>
+<li>보안그룹/ACG에서 0.0.0.0/0 인바운드 개방</li>
+<li>평소 안 쓰는 리전에서의 리소스 생성</li>
+</ul>
+<h2 id="_5">컴플라이언스 관점</h2>
+<p>CSAP·ISMS-P 심사에서 "접근 통제 이력" "권한 변경 승인" 항목은 결국 <strong>이 로그를 증적으로 제출</strong>하는 일입니다. 심사 때 급히 뒤지는 게 아니라 — 보존 기간(대개 1년 이상 요구)이 정책으로 걸려 있고, 월간 점검에 "관리자 권한 변경 건 검토"가 루틴으로 있으면 심사 대응이 작업이 아니라 출력이 됩니다. 태그 정책 글의 owner 태그가 여기서 "누가 승인했나"의 연락처로 이어지고요.</p>
+<h2 id="_6">한 줄 정리</h2>
+<p>감사 로그는 <strong>사고 전에 켜서 밖에(별도 계정·불변 보존) 두는 것</strong>이 전부입니다. 뒤질 땐 리소스→누가, 자격증명→무엇, 거부 이벤트 세 축으로, 루트 사용·로그 중지·관리자 부여·0.0.0.0/0 개방은 실시간 알람으로 — 그러면 새벽 3시의 그 변경도, 심사 때의 증적도 검색 한 번입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --security</div><a href="../p/what-is-waf.html"><span class="g">&#10095;</span>방화벽이 있는데 왜 WAF가 또 필요하죠 — 겉봉투 검사와 내용물 검사</a><a href="../p/bastion-host.html"><span class="g">&#10095;</span>서버마다 SSH 문을 내지 마세요 — 배스천 호스트 설계</a><a href="../p/iam-least-privilege.html"><span class="g">&#10095;</span>일단 관리자 권한 주세요 — 클라우드 IAM 최소권한, 현실적으로 시작하기</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/batch-api.html"><span class="lbl">newer</span>급하지 않은 LLM 작업은 반값에 — 배치 API 활용법</a><a href="../p/metadata-filtering.html" style="text-align:right"><span class="lbl">older</span>검색 범위를 먼저 좁혀라 — 메타데이터 필터링으로 RAG 정확도 올리기</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

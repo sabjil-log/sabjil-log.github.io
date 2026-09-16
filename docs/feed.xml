@@ -5,6 +5,69 @@
   <description>삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</description>
   <language>ko</language>
     <item>
+      <title>새로 뜬 서버가 바로 죽는 이유 — 오토스케일링 워밍업과 헬스체크 그레이스</title>
+      <link>https://sabjil-log.github.io/p/warmup-grace.html</link>
+      <guid>https://sabjil-log.github.io/p/warmup-grace.html</guid>
+      <pubDate>Wed, 16 Sep 2026 00:00:00 -0000</pubDate>
+      <description>확장은 됐는데 새 인스턴스가 켜지자마자 &#x27;비정상&#x27; 판정으로 교체되고, 또 교체되고… 준비 시간을 안 준 설계의 전형적 실패입니다.</description>
+    </item>
+    <item>
+      <title>HTTP 헤더 실무편 — Host, X-Forwarded-For, Cache-Control 세 개면 사고의 8할</title>
+      <link>https://sabjil-log.github.io/p/http-headers.html</link>
+      <guid>https://sabjil-log.github.io/p/http-headers.html</guid>
+      <pubDate>Wed, 16 Sep 2026 00:00:00 -0000</pubDate>
+      <description>LB·CDN·프록시 뒤에서 앱이 이상하게 구는 이유는 대개 헤더 세 개 중 하나입니다. 각각이 어디서 붙고 어디서 사라지는지 따라가 봅니다.</description>
+    </item>
+    <item>
+      <title>에이전트 실패 모드 도감 — 루프·환각 실행·권한 초과·조용한 포기</title>
+      <link>https://sabjil-log.github.io/p/agent-failure-modes.html</link>
+      <guid>https://sabjil-log.github.io/p/agent-failure-modes.html</guid>
+      <pubDate>Wed, 16 Sep 2026 00:00:00 -0000</pubDate>
+      <description>에이전트는 새로운 종류의 사고를 냅니다 — 틀린 말이 아니라 틀린 행동. 운영에서 실제로 만나는 실패 유형 여섯과 각각의 감지·차단 장치.</description>
+    </item>
+    <item>
+      <title>컨테이너가 노드 디스크를 다 먹었다 — 이미지·로그·오버레이 청소법</title>
+      <link>https://sabjil-log.github.io/p/container-disk-cleanup.html</link>
+      <guid>https://sabjil-log.github.io/p/container-disk-cleanup.html</guid>
+      <pubDate>Tue, 15 Sep 2026 00:00:00 -0000</pubDate>
+      <description>노드 디스크 90% 알람의 범인은 대개 컨테이너 층에 있습니다. 어디가 먹는지 재는 법과, 지워도 되는 것/안 되는 것을 가르는 청소 순서.</description>
+    </item>
+    <item>
+      <title>급하지 않은 LLM 작업은 반값에 — 배치 API 활용법</title>
+      <link>https://sabjil-log.github.io/p/batch-api.html</link>
+      <guid>https://sabjil-log.github.io/p/batch-api.html</guid>
+      <pubDate>Tue, 15 Sep 2026 00:00:00 -0000</pubDate>
+      <description>야간에 도는 문서 분류 1만 건을 실시간 API로 부르는 건 택시로 이삿짐을 옮기는 격입니다. 결과를 나중에 받아도 되는 일의 비용 구조와 설계.</description>
+    </item>
+    <item>
+      <title>누가 새벽 3시에 보안그룹을 열었나 — 감사 로그 되짚기</title>
+      <link>https://sabjil-log.github.io/p/audit-log.html</link>
+      <guid>https://sabjil-log.github.io/p/audit-log.html</guid>
+      <pubDate>Tue, 15 Sep 2026 00:00:00 -0000</pubDate>
+      <description>클라우드의 모든 API 호출은 기록됩니다 — 켜져 있고 보존돼 있다면. 감사 로그를 언제 켜고 어디 두고 어떻게 뒤지는지, 사고 하루 전에 알아둘 것들.</description>
+    </item>
+    <item>
+      <title>검색 범위를 먼저 좁혀라 — 메타데이터 필터링으로 RAG 정확도 올리기</title>
+      <link>https://sabjil-log.github.io/p/metadata-filtering.html</link>
+      <guid>https://sabjil-log.github.io/p/metadata-filtering.html</guid>
+      <pubDate>Mon, 14 Sep 2026 00:00:00 -0000</pubDate>
+      <description>&#x27;2025년 고객사 A의 계약서에서&#x27;라는 조건을 벡터 유사도에 기대면 틀립니다. 구조화된 조건은 필터로, 의미는 벡터로 — 역할을 나누는 법.</description>
+    </item>
+    <item>
+      <title>콘솔 클릭을 코드로 옮기면 뭐가 달라지나 — IaC 입문</title>
+      <link>https://sabjil-log.github.io/p/iac-intro.html</link>
+      <guid>https://sabjil-log.github.io/p/iac-intro.html</guid>
+      <pubDate>Mon, 14 Sep 2026 00:00:00 -0000</pubDate>
+      <description>콘솔 클릭은 재현이 안 되고 기록이 안 남습니다. 인프라를 코드로 쓰면 리뷰·재현·롤백이 생기죠. 첫 도입에서 실제로 부딪히는 것들.</description>
+    </item>
+    <item>
+      <title>파일을 지웠는데 용량이 안 줄었다 — 열린 fd와 lsof +L1</title>
+      <link>https://sabjil-log.github.io/p/deleted-but-full.html</link>
+      <guid>https://sabjil-log.github.io/p/deleted-but-full.html</guid>
+      <pubDate>Mon, 14 Sep 2026 00:00:00 -0000</pubDate>
+      <description>rm은 이름만 지웁니다. 누가 그 파일을 열어두고 있으면 데이터는 그대로 디스크를 차지하죠. 범인 찾기와 안전한 회수법.</description>
+    </item>
+    <item>
       <title>systemd 유닛 파일 읽는 법 — Type, After, Restart가 하는 일</title>
       <link>https://sabjil-log.github.io/p/systemd-unit.html</link>
       <guid>https://sabjil-log.github.io/p/systemd-unit.html</guid>
@@ -80,68 +143,5 @@
       <guid>https://sabjil-log.github.io/p/cross-region-replication.html</guid>
       <pubDate>Wed, 02 Sep 2026 00:00:00 -0000</pubDate>
       <description>원본과 백업이 같은 리전·같은 계정에 있으면 하나의 사고가 둘을 함께 지웁니다. 지리적 분리와 권한 분리, 그리고 복구 목표(RPO/RTO)로 정하는 설계.</description>
-    </item>
-    <item>
-      <title>리더보드 1등 모델이 우리 서비스에선 3등인 이유 — 벤치마크 읽는 법</title>
-      <link>https://sabjil-log.github.io/p/benchmark-traps.html</link>
-      <guid>https://sabjil-log.github.io/p/benchmark-traps.html</guid>
-      <pubDate>Wed, 02 Sep 2026 00:00:00 -0000</pubDate>
-      <description>점수는 사실이지만 결론은 아닙니다. 오염·평균의 마법·조건 차이 — 리더보드가 우리 현실과 어긋나는 네 가지 이유와 읽는 요령.</description>
-    </item>
-    <item>
-      <title>서버리스는 언제 싸고 언제 비싼가 — 택시 요금의 경제학</title>
-      <link>https://sabjil-log.github.io/p/serverless-economics.html</link>
-      <guid>https://sabjil-log.github.io/p/serverless-economics.html</guid>
-      <pubDate>Wed, 12 Aug 2026 00:00:00 -0000</pubDate>
-      <description>실행한 만큼만 내는 건 축복이자 저주입니다. 간헐 트래픽엔 압승, 상시 트래픽엔 역전 — 손익분기의 감각과 비용 밖의 진짜 비용까지.</description>
-    </item>
-    <item>
-      <title>임베딩 모델 고르기 — 리더보드 1등을 덥석 쓰면 안 되는 이유</title>
-      <link>https://sabjil-log.github.io/p/embedding-choice.html</link>
-      <guid>https://sabjil-log.github.io/p/embedding-choice.html</guid>
-      <pubDate>Wed, 12 Aug 2026 00:00:00 -0000</pubDate>
-      <description>RAG 품질의 상한선은 임베딩이 정합니다. 언어·차원·크기·비용의 네 축과, 벤치마크보다 중요한 &#x27;내 데이터 30문항 테스트&#x27;까지.</description>
-    </item>
-    <item>
-      <title>DNS는 맞는데 가끔만 느리다 — 리졸버 캐시 4층과 hosts 우선순위</title>
-      <link>https://sabjil-log.github.io/p/dns-resolver-cache.html</link>
-      <guid>https://sabjil-log.github.io/p/dns-resolver-cache.html</guid>
-      <pubDate>Wed, 12 Aug 2026 00:00:00 -0000</pubDate>
-      <description>&#x27;첫 요청만 느리고 그다음은 빠른&#x27; 패턴은 DNS 캐시 미스의 지문입니다. 조회가 거치는 4층 구조, negative 캐시의 함정, hosts 파일이 이기는 이유까지.</description>
-    </item>
-    <item>
-      <title>방화벽이 있는데 왜 WAF가 또 필요하죠 — 겉봉투 검사와 내용물 검사</title>
-      <link>https://sabjil-log.github.io/p/what-is-waf.html</link>
-      <guid>https://sabjil-log.github.io/p/what-is-waf.html</guid>
-      <pubDate>Sat, 08 Aug 2026 00:00:00 -0000</pubDate>
-      <description>ACG·NACL은 &#x27;누가 어느 문으로&#x27;를 검사하고, WAF는 &#x27;들고 온 내용물&#x27;을 검사합니다. 정상적으로 열린 443 포트로 들어오는 공격은 WAF의 영역이에요.</description>
-    </item>
-    <item>
-      <title>태그 세 개면 충분하다 — owner, project, expire</title>
-      <link>https://sabjil-log.github.io/p/tag-strategy.html</link>
-      <guid>https://sabjil-log.github.io/p/tag-strategy.html</guid>
-      <pubDate>Sat, 08 Aug 2026 00:00:00 -0000</pubDate>
-      <description>태그 정책은 거창하게 시작하면 아무도 안 지킵니다. &#x27;누구 거냐, 무슨 일이냐, 언제 지우냐&#x27; — 질문 세 개에 답하는 최소 정책과 강제 장치.</description>
-    </item>
-    <item>
-      <title>시스템 프롬프트와 유저 프롬프트, 왜 굳이 나눠놨을까</title>
-      <link>https://sabjil-log.github.io/p/system-vs-user-prompt.html</link>
-      <guid>https://sabjil-log.github.io/p/system-vs-user-prompt.html</guid>
-      <pubDate>Sat, 08 Aug 2026 00:00:00 -0000</pubDate>
-      <description>같은 텍스트인데 칸이 두 개인 이유 — 권위의 위계, 캐싱, 그리고 주입 방어까지. 무엇을 어느 칸에 넣을지의 기준을 정리했어요.</description>
-    </item>
-    <item>
-      <title>scp 쓰다가 rsync로 못 돌아오는 이유 — 델타 전송과 재개</title>
-      <link>https://sabjil-log.github.io/p/rsync.html</link>
-      <guid>https://sabjil-log.github.io/p/rsync.html</guid>
-      <pubDate>Sat, 08 Aug 2026 00:00:00 -0000</pubDate>
-      <description>scp는 매번 전부 다시 보내고, 끊기면 처음부터입니다. rsync는 바뀐 조각만 보내고, 끊긴 곳부터 잇죠. 옵션 다섯 개와 함정(슬래시!)까지.</description>
-    </item>
-    <item>
-      <title>1.2GB 이미지가 80MB가 되기까지 — 멀티스테이지 빌드</title>
-      <link>https://sabjil-log.github.io/p/multi-stage-build.html</link>
-      <guid>https://sabjil-log.github.io/p/multi-stage-build.html</guid>
-      <pubDate>Sat, 08 Aug 2026 00:00:00 -0000</pubDate>
-      <description>빌드 도구는 짐 싸는 데만 필요하고 여행엔 필요 없습니다. 공장(빌드 스테이지)과 매장(런타임 스테이지)을 분리하는 멀티스테이지의 원리와 함정.</description>
     </item>
 </channel></rss>

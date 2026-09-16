@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>검색 범위를 먼저 좁혀라 — 메타데이터 필터링으로 RAG 정확도 올리기 · 삽질노트</title>
+<meta name="description" content="&#x27;2025년 고객사 A의 계약서에서&#x27;라는 조건을 벡터 유사도에 기대면 틀립니다. 구조화된 조건은 필터로, 의미는 벡터로 — 역할을 나누는 법.">
+<meta property="og:title" content="검색 범위를 먼저 좁혀라 — 메타데이터 필터링으로 RAG 정확도 올리기 · 삽질노트">
+<meta property="og:description" content="&#x27;2025년 고객사 A의 계약서에서&#x27;라는 조건을 벡터 유사도에 기대면 틀립니다. 구조화된 조건은 필터로, 의미는 벡터로 — 역할을 나누는 법.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/metadata-filtering.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/metadata-filtering.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/metadata-filtering.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/metadata-filtering.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html" class="on">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-14</span><a class="chip" href="../c/ai.html">--ai</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>검색 범위를 먼저 좁혀라 — 메타데이터 필터링으로 RAG 정확도 올리기</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 벡터 검색은 "비슷한 것"을 찾지 "조건에 맞는 것"을 찾지 못합니다. <strong>연도·고객사·문서 종류·접근 권한</strong> 같은 구조화된 조건은 임베딩에 맡기지 말고 <strong>메타데이터 필터로 먼저 자르고</strong>, 남은 범위 안에서 의미 검색을 하세요. 정확도와 속도, 그리고 <strong>권한 격리</strong>가 한 번에 따라옵니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">조건은 필터, 의미는 벡터</div><svg viewBox="0 0 640 116" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.mf2-0{animation:mf2-h 4.6s ease-in-out infinite;animation-delay:0.0s;}
+.mf2-1{animation:mf2-h 4.6s ease-in-out infinite;animation-delay:1.15s;}
+.mf2-2{animation:mf2-h 4.6s ease-in-out infinite;animation-delay:2.3s;}
+.mf2-3{animation:mf2-h 4.6s ease-in-out infinite;animation-delay:3.45s;}
+@keyframes mf2-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim mf2-0" x="12" y="18" width="145" height="58" rx="10"/><circle cx="44.0" cy="47.0" r="27.0" fill="var(--dg-red-s)"/><g transform="translate(24.0,27.0) scale(1.250)">
+<rect x="3" y="6" width="26" height="20" rx="2" fill="var(--dg-red-s)" stroke="var(--dg-red)" stroke-width="1.7"/>
+<path d="M3 12.6 h26 M3 19.3 h26" stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M11 6 v6.6 M20 6 v6.6 M7 12.6 v6.7 M16 12.6 v6.7 M24.5 12.6 v6.7 M11 19.3 v6.7 M20 19.3 v6.7"
+      stroke="var(--dg-red)" stroke-width="1.3"/>
+<path d="M16 13 c2.6 2.4 3.4 4.2 3.4 6 a3.4 3.4 0 0 1 -6.8 0 c0 -1.8 0.8 -3.6 3.4 -6 z"
+      fill="var(--dg-amber)" stroke="var(--dg-red)" stroke-width="1.3"/></g><text x="70" y="42" class="dg-key">메타 필터</text><text x="70" y="62" class="dg-lab2">client·year·acl</text><line x1="157" y1="47" x2="169" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim mf2-1" x="169" y="18" width="145" height="58" rx="10"/><circle cx="201.0" cy="47.0" r="27.0" fill="var(--dg-green-s)"/><g transform="translate(181.0,27.0) scale(1.250)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="227" y="42" class="dg-key">범위 확정</text><text x="227" y="62" class="dg-lab2">후보 수천 → 수백</text><line x1="314" y1="47" x2="326" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim mf2-2" x="326" y="18" width="145" height="58" rx="10"/><circle cx="358.0" cy="47.0" r="27.0" fill="var(--dg-violet-s)"/><g transform="translate(338.0,27.0) scale(1.250)">
+<path d="M16 5 a6 6 0 0 0 -6 6 a5 5 0 0 0 -2 9 a5.5 5.5 0 0 0 8 6 a5.5 5.5 0 0 0 8 -6 a5 5 0 0 0 -2 -9 a6 6 0 0 0 -6 -6 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.8"/>
+<path d="M16 6 v20 M11 12 h4 M17 17 h4 M12 21 h4" fill="none" stroke="var(--dg-violet)" stroke-width="1.4" stroke-linecap="round"/></g><text x="384" y="42" class="dg-key">벡터 top-k</text><text x="384" y="62" class="dg-lab2">의미 검색</text><line x1="471" y1="47" x2="483" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim mf2-3" x="483" y="18" width="145" height="58" rx="10"/><circle cx="515.0" cy="47.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(495.0,27.0) scale(1.250)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="541" y="42" class="dg-key">리랭커→LLM</text><text x="541" y="62" class="dg-lab2">정예만</text><text x="12" y="102" class="dg-ts">필터 후 검색(pre-filter) — 검색 후 걸러내면 결과가 비거나 k 부족 · 권한 필터는 모델이 아닌 코드가</text></svg><figcaption>연도·고객사·권한은 벡터 유사도에 맡기지 말고 메타데이터로 먼저 자릅니다. 권한은 코드가 세션에서.</figcaption></figure>
+<h2 id="_1">벡터가 못 하는 일</h2>
+<p>"2025년 A사 계약서에서 위약금 조항" — 사람은 세 조건(연도·고객사·문서종류)과 한 의미(위약금)로 읽습니다. 벡터 검색에 이 문장을 통째로 넣으면 <strong>전부 의미로 뭉개져</strong> "위약금"과 비슷한 문서가 연도·고객사 무관하게 올라옵니다. 하이브리드 검색 글에서 식별자를 BM25로 보완했듯, <strong>조건은 조건대로 다뤄야</strong> 해요.</p>
+<p>그리고 더 심각한 문제 — <strong>권한.</strong> B사 담당자가 A사 계약서를 검색 결과로 받으면 그건 품질 문제가 아니라 사고입니다. "프롬프트에 A사만 보라고 써두기"는 프롬프트 주입 글의 그 1층 방어(완화)에 불과하고요.</p>
+<h2 id="_2">구조: 필터 먼저, 벡터 다음</h2>
+<div class="highlight"><pre><span></span><code>청크 저장 시:  텍스트 + 벡터 + 메타데이터 { year, client, doc_type, acl }
+검색 시:       ① 메타데이터 필터로 후보 범위 확정 → ② 그 안에서 벡터 top-k
+</code></pre></div>
+
+<div class="highlight"><pre data-lang="python"><span></span><code><span class="n">results</span> <span class="o">=</span> <span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+    <span class="n">query_embeddings</span><span class="o">=</span><span class="p">[</span><span class="n">embed</span><span class="p">(</span><span class="s2">&quot;위약금 조항&quot;</span><span class="p">)],</span>
+    <span class="n">n_results</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;$and&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s2">&quot;client&quot;</span><span class="p">:</span>   <span class="p">{</span><span class="s2">&quot;$eq&quot;</span><span class="p">:</span> <span class="s2">&quot;A사&quot;</span><span class="p">}},</span>
+        <span class="p">{</span><span class="s2">&quot;year&quot;</span><span class="p">:</span>     <span class="p">{</span><span class="s2">&quot;$gte&quot;</span><span class="p">:</span> <span class="mi">2025</span><span class="p">}},</span>
+        <span class="p">{</span><span class="s2">&quot;doc_type&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$eq&quot;</span><span class="p">:</span> <span class="s2">&quot;contract&quot;</span><span class="p">}},</span>
+        <span class="p">{</span><span class="s2">&quot;acl&quot;</span><span class="p">:</span>      <span class="p">{</span><span class="s2">&quot;$in&quot;</span><span class="p">:</span> <span class="n">user_groups</span><span class="p">}},</span>     <span class="c1"># ← 권한은 여기서, 코드가 강제</span>
+    <span class="p">]},</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p>대부분의 벡터 DB가 이 형태(pre-filtering)를 지원합니다. 순서가 중요해요 — <strong>필터 후 검색</strong>이지 "검색 후 걸러내기"가 아닙니다. 후자는 top-k를 뽑은 뒤 조건에 안 맞는 걸 버리니, 조건 문서가 상위에 없으면 <strong>결과가 비거나 k가 부족</strong>해지는 함정이 있습니다.</p>
+<h2 id="_3">메타데이터는 인덱싱 때 결정된다</h2>
+<p>필터가 강력한 만큼, <strong>인덱싱 시 메타데이터를 얼마나 잘 붙였는가</strong>가 전부입니다. 청킹 글에서 "출처 메타데이터를 붙이라"던 그 조언이 여기서 검색 기능이 되는 거죠.</p>
+<p>붙일 것들:
+- <strong>출처 계열</strong>: 파일명, 경로, 문서 종류, 작성일/개정일, 버전
+- <strong>조직 계열</strong>: 고객사, 부서, 프로젝트 (태그 전략 글의 owner/project가 그대로 쓰입니다)
+- <strong>접근 제어</strong>: 이 문서를 볼 수 있는 그룹/역할 목록(ACL)
+- <strong>유효성</strong>: 폐기 여부, 대체 문서 ID — "옛 규정이 검색됨" 방지</p>
+<p>경로나 파일명에서 자동 추출되는 것(고객사 폴더 구조 등)은 파서에서 뽑고, 문서 내용에서 뽑아야 하는 것(개정일, 적용 대상)은 <strong>LLM으로 구조화 추출</strong>(구조화 출력 글의 그 스키마 강제)해서 붙이는 파이프라인이 실전 표준입니다.</p>
+<h2 id="_4">질의에서 조건을 뽑아내기</h2>
+<p>사용자는 "작년 A사 계약 위약금"이라고 자연어로 묻습니다. 여기서 필터를 만들어야 하죠 — 두 방식:</p>
+<ul>
+<li><strong>UI에서 명시적으로</strong>: 고객사·연도 선택 드롭다운. 가장 정확하고 권한 강제도 확실. 사내 도구라면 이게 정답.</li>
+<li><strong>LLM으로 질의 해석</strong>: 질문을 <code>{client, year, doc_type, semantic_query}</code> 스키마로 구조화 추출 → 필터 + 의미 질의 분리. 편하지만 <strong>권한 필터는 여기에 맡기면 안 됩니다</strong> — 사용자의 그룹은 로그인 세션에서 가져와 코드가 넣어야 해요. 모델이 만든 값에 보안을 걸면 주입 한 번에 뚫립니다.</li>
+</ul>
+<h2 id="_5">함정 셋</h2>
+<ul>
+<li><strong>필터가 너무 좁아 결과 0</strong> — "2025년 A사 계약"인데 문서가 2024년 개정본만 있으면 빈 결과. 단계적 완화(연도 조건 제거 후 재검색)와 "조건에 맞는 문서가 없습니다" 안내가 필요합니다 — 환각 글의 그 '모른다' 출구가 검색 단계에도 있어야 하죠.</li>
+<li><strong>카디널리티 높은 필드</strong> — 문서 ID 같은 걸 필터로 쓰면 인덱스 효율이 떨어지는 DB가 있습니다. 필터 필드는 값의 종류가 적당한 것(고객사·종류·연도)으로.</li>
+<li><strong>메타데이터 갱신 누락</strong> — 문서가 폐기됐는데 <code>valid=true</code>가 남아 있으면 옛 규정이 계속 근거로 인용됩니다. 임베딩 캐시 글의 "차집합 삭제"와 함께, 메타데이터 갱신도 인덱싱 파이프라인의 의무입니다.</li>
+</ul>
+<h2 id="_6">한 줄 정리</h2>
+<p><strong>조건은 필터, 의미는 벡터.</strong> 인덱싱 때 출처·조직·권한·유효성 메타데이터를 붙이고, 검색은 <strong>필터 먼저 → 그 안에서 top-k</strong>, 권한 필터는 모델이 아니라 <strong>코드가 세션에서</strong> 넣기 — 정확도와 속도와 보안이 같은 설계에서 나옵니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --ai</div><a href="../p/agent-failure-modes.html"><span class="g">&#10095;</span>에이전트 실패 모드 도감 — 루프·환각 실행·권한 초과·조용한 포기</a><a href="../p/batch-api.html"><span class="g">&#10095;</span>급하지 않은 LLM 작업은 반값에 — 배치 API 활용법</a><a href="../p/hybrid-search.html"><span class="g">&#10095;</span>벡터 검색만으로는 &#x27;그 단어&#x27;를 못 찾는다 — 하이브리드 검색(BM25+벡터)</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/audit-log.html"><span class="lbl">newer</span>누가 새벽 3시에 보안그룹을 열었나 — 감사 로그 되짚기</a><a href="../p/iac-intro.html" style="text-align:right"><span class="lbl">older</span>콘솔 클릭을 코드로 옮기면 뭐가 달라지나 — IaC 입문</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

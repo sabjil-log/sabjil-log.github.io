@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTTP 헤더 실무편 — Host, X-Forwarded-For, Cache-Control 세 개면 사고의 8할 · 삽질노트</title>
+<meta name="description" content="LB·CDN·프록시 뒤에서 앱이 이상하게 구는 이유는 대개 헤더 세 개 중 하나입니다. 각각이 어디서 붙고 어디서 사라지는지 따라가 봅니다.">
+<meta property="og:title" content="HTTP 헤더 실무편 — Host, X-Forwarded-For, Cache-Control 세 개면 사고의 8할 · 삽질노트">
+<meta property="og:description" content="LB·CDN·프록시 뒤에서 앱이 이상하게 구는 이유는 대개 헤더 세 개 중 하나입니다. 각각이 어디서 붙고 어디서 사라지는지 따라가 봅니다.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/http-headers.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/http-headers.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/http-headers.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/http-headers.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html" class="on">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-16</span><a class="chip" href="../c/network.html">--network</a><span>4 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>HTTP 헤더 실무편 — Host, X-Forwarded-For, Cache-Control 세 개면 사고의 8할</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 요청이 CDN → LB → 프록시 → 앱을 지나는 동안 헤더가 <strong>붙고, 바뀌고, 사라집니다.</strong> 실무 사고의 대부분은 세 헤더 — <strong>Host</strong>(어느 사이트로 온 요청인가), <strong>X-Forwarded-For</strong>(진짜 클라이언트는 누구인가), <strong>Cache-Control</strong>(누가 얼마나 캐시해도 되나) — 에서 나고, 진단은 <code>curl -v</code>로 각 층에서 헤더를 찍어보는 겁니다.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">프록시를 지나며 헤더가 붙고 사라진다</div><svg viewBox="0 0 640 116" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.hh-0{animation:hh-h 4.6s ease-in-out infinite;animation-delay:0.0s;}
+.hh-1{animation:hh-h 4.6s ease-in-out infinite;animation-delay:1.15s;}
+.hh-2{animation:hh-h 4.6s ease-in-out infinite;animation-delay:2.3s;}
+.hh-3{animation:hh-h 4.6s ease-in-out infinite;animation-delay:3.45s;}
+@keyframes hh-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim hh-0" x="12" y="18" width="145" height="58" rx="10"/><circle cx="44.0" cy="47.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(24.0,27.0) scale(1.250)">
+<circle cx="16" cy="10" r="6" fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8"/>
+<path d="M4.5 29 c0 -6.6 5.2 -11 11.5 -11 s11.5 4.4 11.5 11" fill="var(--dg-blue-s)"
+      stroke="var(--dg-blue)" stroke-width="1.8" stroke-linecap="round"/></g><text x="70" y="42" class="dg-key">클라이언트</text><text x="70" y="62" class="dg-lab2">Host: api.example.com</text><line x1="157" y1="47" x2="169" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim hh-1" x="169" y="18" width="145" height="58" rx="10"/><circle cx="201.0" cy="47.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(181.0,27.0) scale(1.250)">
+<path d="M8.5 24 a6 6 0 0 1 0.6 -11.95 a8.2 8.2 0 0 1 15.3 -1 a5.8 5.8 0 0 1 0.6 12.95 z"
+      fill="var(--dg-blue-s)" stroke="var(--dg-blue)" stroke-width="1.8" stroke-linejoin="round"/></g><text x="227" y="42" class="dg-key">CDN</text><text x="227" y="62" class="dg-lab2">+XFF · Cache 판단</text><line x1="314" y1="47" x2="326" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim hh-2" x="326" y="18" width="145" height="58" rx="10"/><circle cx="358.0" cy="47.0" r="27.0" fill="var(--dg-green-s)"/><g transform="translate(338.0,27.0) scale(1.250)">
+<rect x="2" y="11" width="28" height="11" rx="2" fill="var(--dg-metal)" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="5" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="10" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="15" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<rect x="20" y="14" width="3.2" height="5" rx="0.6" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.1"/>
+<circle cx="26.5" cy="16.5" r="1.2" fill="var(--dg-green)"/></g><text x="384" y="42" class="dg-key">LB</text><text x="384" y="62" class="dg-lab2">+XFF · TLS 종료</text><line x1="471" y1="47" x2="483" y2="47" class="dg-arrow"/><rect class="dg-box dg-anim hh-3" x="483" y="18" width="145" height="58" rx="10"/><circle cx="515.0" cy="47.0" r="27.0" fill="var(--dg-blue-s)"/><g transform="translate(495.0,27.0) scale(1.250)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="541" y="42" class="dg-key">앱</text><text x="541" y="62" class="dg-lab2">XFF 신뢰 계산</text><text x="12" y="102" class="dg-ts">사고 8할: 사라진 Host(리다이렉트 깨짐) · 위조 가능한 XFF 맨 왼쪽 · 개인 응답에 public 캐시</text></svg><figcaption>Host는 어느 사이트, XFF는 진짜 누구(신뢰 홉 계산), Cache-Control은 누가 기억해도 되나.</figcaption></figure>
+<h2 id="host-ip">Host — 한 IP에 여러 사이트가 사는 법</h2>
+<p>서버 한 대(IP 하나)가 <code>api.example.com</code>과 <code>admin.example.com</code>을 함께 서빙할 수 있는 이유가 Host 헤더입니다. 브라우저가 요청에 "나는 api.example.com에 왔다"를 적어 보내고, 웹서버/LB가 그걸 보고 분기하죠(ALB 글의 호스트 기반 라우팅이 이것). DNS 글에서 "IP는 맞는데 안 열린다"의 다음 층이 여기예요.</p>
+<p>사고 유형:
+- <strong>IP로 직접 접속하면 기본(첫 번째) 사이트가 뜸</strong> — 정상입니다. Host가 없으니 기본값. <code>curl -H "Host: api.example.com" http://10.0.3.15/</code>로 테스트해야 진짜 검증.
+- <strong>프록시가 Host를 자기 것으로 바꿔 전달</strong> — nginx의 <code>proxy_set_header Host $host;</code>가 빠지면 뒷단 앱이 <code>localhost:8080</code>을 Host로 받아 리다이렉트 URL·쿠키 도메인이 깨집니다. "로그인 후 localhost로 튕겨요"의 단골 원인.</p>
+<h2 id="x-forwarded-for">X-Forwarded-For — 진짜 클라이언트는 누구인가</h2>
+<p>ALB 글에서 예고한 그 문제. L7 프록시는 연결을 새로 맺으니 앱이 보는 발신 IP는 <strong>프록시의 IP</strong>입니다. 진짜 클라이언트 IP는 프록시가 <code>X-Forwarded-For</code>(XFF)에 <strong>덧붙여</strong> 넘기죠.</p>
+<div class="highlight"><pre><span></span><code>X-Forwarded-For: 203.0.113.9, 10.0.1.20, 10.0.2.5
+                  ↑클라이언트   ↑CDN       ↑LB       (지나온 순서대로 오른쪽에 추가)
+</code></pre></div>
+
+<p>세 가지를 알아야 안전합니다.</p>
+<p><strong>① 맨 왼쪽이 항상 진짜는 아니다.</strong> 클라이언트가 <strong>직접 XFF 헤더를 위조해 보낼 수 있습니다.</strong> 그러면 맨 왼쪽은 공격자가 적은 가짜 IP. 신뢰할 수 있는 건 <strong>내가 아는 프록시가 추가한 값</strong>뿐 — 즉 "오른쪽에서부터, 신뢰하는 프록시 홉 수만큼 세어 그 직전 값"이 진짜입니다. nginx의 <code>set_real_ip_from</code>(신뢰 대역) + <code>real_ip_recursive on</code>이 정확히 이 계산을 해줍니다.</p>
+<p><strong>② IP 기반 통제는 이 값을 써야 한다.</strong> 레이트리밋, 국가 차단, 관리자 IP 허용목록이 프록시 IP를 보면 — 전 사용자가 한 IP로 보여 한 명이 막히면 전부 막힙니다. WAF 글의 레이트리밋도 XFF 기준으로 동작해야 하고요.</p>
+<p><strong>③ 로그 포맷에 반영.</strong> 액세스 로그에 XFF(신뢰 계산 후)가 없으면 로그 중앙화 글의 모든 분석이 "전부 LB IP"로 무의미해집니다.</p>
+<h2 id="cache-control">Cache-Control — 누가 얼마나 기억해도 되나</h2>
+<p>응답 헤더로, <strong>브라우저와 중간 캐시(CDN)에게 내리는 지시</strong>입니다. CDN 캐시 글의 그 "유통기한"을 실제로 적는 자리.</p>
+<div class="highlight"><pre><span></span><code>Cache-Control: public, max-age=31536000, immutable   ← 해시 파일명 정적 자원: 1년, 재검증 불필요
+Cache-Control: no-cache                              ← HTML: 캐시해도 되지만 매번 서버에 확인
+Cache-Control: private, no-store                     ← 개인 데이터 API: 어디에도 저장 금지
+</code></pre></div>
+
+<p>사고 유형:
+- <strong>개인화 응답에 public</strong> — "다른 사용자의 마이페이지가 보여요"라는 최악의 사고. CDN이 A의 응답을 캐시해 B에게 줍니다. 인증이 필요한 응답은 <code>private</code> 또는 <code>no-store</code>가 기본값이어야 하고, CDN 쪽에서도 쿠키/Authorization 있는 요청은 캐시 제외.
+- <strong><code>Vary</code> 누락</strong> — 같은 URL이 언어·기기별로 다른 응답을 주는데 <code>Vary: Accept-Language</code>가 없으면 첫 사용자 언어로 전부 캐시됩니다.
+- <strong>no-cache ≠ no-store</strong> — 이름이 반직관적입니다. <code>no-cache</code>는 "저장은 하되 쓰기 전에 확인", <code>no-store</code>는 "저장 자체 금지". 민감 데이터는 후자.</p>
+<h2 id="_1">진단: 층마다 헤더 찍기</h2>
+<p>curl 글의 방식 그대로, <strong>각 층에 직접</strong> 붙어 헤더를 비교합니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>curl<span class="w"> </span>-sI<span class="w"> </span>https://api.example.com/x<span class="w">            </span><span class="c1"># CDN/LB 경유 — 사용자가 보는 것</span>
+curl<span class="w"> </span>-sI<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Host: api.example.com&quot;</span><span class="w"> </span>http://LB-내부IP/x<span class="w">       </span><span class="c1"># LB 직접</span>
+curl<span class="w"> </span>-sI<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Host: api.example.com&quot;</span><span class="w"> </span>http://10.0.3.15:8080/x<span class="w"> </span><span class="c1"># 앱 직접</span>
+<span class="c1"># → 어느 층에서 Cache-Control이 바뀌고, XFF가 붙고, Host가 사라지는지 비교</span>
+</code></pre></div>
+
+<p>앱이 받는 실제 헤더를 봐야 할 때는 요청을 그대로 되돌려주는 디버그 엔드포인트(헤더 덤프)를 하나 두는 게 좋습니다 — 단, 운영에선 내부 IP에만 열기(감사 로그 글의 그 감각).</p>
+<h2 id="_2">덤: 자주 만나는 나머지</h2>
+<ul>
+<li><strong><code>X-Forwarded-Proto</code></strong> — 프록시에서 TLS를 풀었으니 앱은 http로 받지만, 원래는 https였다는 표시. 이게 없으면 앱이 http로 리다이렉트 URL을 만들어 <strong>무한 리다이렉트 루프</strong>가 납니다.</li>
+<li><strong><code>X-Request-ID</code> / <code>traceparent</code></strong> — 로그 중앙화 글의 trace_id. 가장 앞단(CDN/LB)에서 발급하고 모든 층이 그대로 전달.</li>
+<li><strong><code>Connection</code>, <code>Content-Length</code>/<code>Transfer-Encoding</code></strong> — 스트리밍(SSE 글)에서 중간 장비가 버퍼링하는 원인이 이 근처에 있습니다.</li>
+</ul>
+<h2 id="_3">한 줄 정리</h2>
+<p><strong>Host는 어느 사이트, XFF는 진짜 누구(단, 신뢰 홉 계산 필수), Cache-Control은 누가 기억해도 되나.</strong> 프록시 뒤에서 이상하면 <code>curl -sI</code>로 층마다 헤더를 찍어 비교하세요 — 사라진 Host, 위조 가능한 XFF, 개인 응답의 public 캐시가 사고의 8할입니다.</p><aside class="related"><div class="rel-head">이어서 읽기 · --network</div><a href="../p/nftables.html"><span class="g">&#10095;</span>iptables 대신 nftables — 규칙 읽는 법만이라도</a><a href="../p/dns-resolver-cache.html"><span class="g">&#10095;</span>DNS는 맞는데 가끔만 느리다 — 리졸버 캐시 4층과 hosts 우선순위</a><a href="../p/peering-vs-tgw.html"><span class="g">&#10095;</span>VPC가 늘어나면 연결이 지옥이 된다 — 피어링 vs Transit Gateway</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/warmup-grace.html"><span class="lbl">newer</span>새로 뜬 서버가 바로 죽는 이유 — 오토스케일링 워밍업과 헬스체크 그레이스</a><a href="../p/agent-failure-modes.html" style="text-align:right"><span class="lbl">older</span>에이전트 실패 모드 도감 — 루프·환각 실행·권한 초과·조용한 포기</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>

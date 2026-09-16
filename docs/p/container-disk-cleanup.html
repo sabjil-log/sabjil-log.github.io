@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>컨테이너가 노드 디스크를 다 먹었다 — 이미지·로그·오버레이 청소법 · 삽질노트</title>
+<meta name="description" content="노드 디스크 90% 알람의 범인은 대개 컨테이너 층에 있습니다. 어디가 먹는지 재는 법과, 지워도 되는 것/안 되는 것을 가르는 청소 순서.">
+<meta property="og:title" content="컨테이너가 노드 디스크를 다 먹었다 — 이미지·로그·오버레이 청소법 · 삽질노트">
+<meta property="og:description" content="노드 디스크 90% 알람의 범인은 대개 컨테이너 층에 있습니다. 어디가 먹는지 재는 법과, 지워도 되는 것/안 되는 것을 가르는 청소 순서.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sabjil-log.github.io/p/container-disk-cleanup.html">
+<meta property="og:site_name" content="삽질노트">
+<meta property="og:image" content="https://sabjil-log.github.io/og/container-disk-cleanup.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sabjil-log.github.io/og/container-disk-cleanup.png">
+<link rel="canonical" href="https://sabjil-log.github.io/p/container-disk-cleanup.html">
+<link rel="alternate" type="application/rss+xml" title="삽질노트" href="../feed.xml">
+<meta name="naver-site-verification" content="2c95f84cd3549a43e184fe5fb9dbc7fb47f2a312">
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono@2.304/css/jetbrains-mono.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/highlight.css">
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+  <div class="head-row">
+    <a class="prompt" href="../index.html">~/<span class="dir">sabjil-log</span>&nbsp;$<span class="cur"></span></a>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="라이트/다크 전환">☾</button>
+  </div>
+  <p class="tagline">삽질해서 배운 걸, 남은 안 삽질하게. — 매일 하나씩 정리하는 실무 노트</p>
+  <nav class="nav"><a href="../index.html">home</a><a href="../c/troubleshooting.html" class="on">--troubleshooting</a><a href="../c/linux.html">--linux</a><a href="../c/cloud.html">--cloud</a><a href="../c/network.html">--network</a><a href="../c/security.html">--security</a><a href="../c/ai.html">--ai</a><a href="../visual.html">--visual</a><a href="../archive.html">--all</a></nav>
+</div></header>
+<main class="wrap">
+<article><div class="post-meta"><span>2026-09-15</span><a class="chip" href="../c/troubleshooting.html">--troubleshooting</a><span>3 min read</span></div><h1><span class="g">&#10095;&nbsp;</span>컨테이너가 노드 디스크를 다 먹었다 — 이미지·로그·오버레이 청소법</h1><blockquote>
+<p><strong>한 줄 요약:</strong> 컨테이너 호스트의 디스크는 <strong>옛 이미지, 죽은 컨테이너, 컨테이너 stdout 로그, 빌드 캐시</strong>가 조용히 먹습니다. <code>docker system df</code>로 어디가 얼마인지 재고, <strong>로그 상한 설정 + 정기 prune</strong>을 걸어두면 이 알람은 사라집니다. 단, 볼륨은 데이터라 함부로 prune하지 마세요.</p>
+</blockquote>
+<figure class="diagram"><div class="dg-cap">노드 디스크를 먹는 네 층</div><svg viewBox="0 0 640 238" role="img"><style>
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1.5;}
+.dg-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--dg-blue);}
+.dg-ts{font-family:var(--mono);font-size:10.5px;fill:var(--muted);}
+.dg-tl{font-family:var(--sans);font-size:13.5px;font-weight:700;fill:var(--dg-red);}
+.dg-ok{fill:var(--accent);}
+.dg-no{fill:#E5484D;}
+.dg-arrow{stroke:var(--line);stroke-width:1.5;fill:none;}
+.dg-key{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--dg-red);}
+.dg-lab{font-family:var(--sans);font-size:12.5px;fill:var(--dg-blue);}
+.dg-lab2{font-family:var(--mono);font-size:10.5px;fill:var(--dg-blue);}
+.dg-warn{font-family:var(--sans);font-size:12.5px;font-weight:700;fill:var(--dg-amber);}
+.dg-chk{fill:var(--dg-green);font-weight:700;}
+.dg-wall{stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;}
+@media (prefers-reduced-motion: reduce){
+  .dg-anim{animation:none !important;}
+}
+
+.cd2-0{animation:cd2-h 4.0s ease-in-out infinite;animation-delay:0.0s;}
+.cd2-1{animation:cd2-h 4.0s ease-in-out infinite;animation-delay:1.0s;}
+.cd2-2{animation:cd2-h 4.0s ease-in-out infinite;animation-delay:2.0s;}
+.cd2-3{animation:cd2-h 4.0s ease-in-out infinite;animation-delay:3.0s;}
+@keyframes cd2-h{0%,100%{fill:var(--raise);stroke:var(--line)}2%,15.0%{fill:var(--accent-soft);stroke:var(--accent)}}</style><rect class="dg-box dg-anim cd2-0" x="12" y="12" width="616" height="38" rx="9"/><g transform="translate(17.6,12.6) scale(1.150)">
+<path d="M8 3 h11 l6 6 v20 H8 z" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M19 3 v6 h6" fill="none" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<path d="M11.5 15 h10 M11.5 19 h10 M11.5 23 h6" stroke="var(--dg-blue)" stroke-width="1.7" stroke-linecap="round"/></g><text x="60" y="36" class="dg-t">① 컨테이너 로그</text><text x="216" y="36" class="dg-lab2">json-file 무제한</text><text x="396" y="36" class="dg-ts">daemon.json max-size 상한</text><rect class="dg-box dg-anim cd2-1" x="12" y="60" width="616" height="38" rx="9"/><g transform="translate(17.6,60.6) scale(1.150)">
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="var(--dg-teal)" opacity=".16"/>
+<path d="M16 3 L28 9 v14 L16 29 L4 23 V9 z" fill="none" stroke="var(--dg-teal)" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M4 9 L16 15 L28 9 M16 15 v14" fill="none" stroke="var(--dg-teal)" stroke-width="1.5"/></g><text x="60" y="84" class="dg-t">② 옛 이미지·죽은 컨테이너</text><text x="216" y="84" class="dg-lab2">배포마다 태그 누적</text><text x="396" y="84" class="dg-ts">system prune / image prune -a</text><rect class="dg-box dg-anim cd2-2" x="12" y="108" width="616" height="38" rx="9"/><g transform="translate(17.6,108.6) scale(1.150)">
+<rect x="6" y="3" width="20" height="26" rx="2.5" fill="var(--dg-metal)" opacity="1" stroke="var(--dg-metal-d)" stroke-width="1.7"/>
+<rect x="9" y="6.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="13.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<rect x="9" y="20.5" width="14" height="5" rx="1" fill="var(--raise)" stroke="var(--dg-metal-d)" stroke-width="1.3"/>
+<circle cx="20.5" cy="9" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="16" r="1.1" fill="var(--dg-green)"/>
+<circle cx="20.5" cy="23" r="1.1" fill="var(--dg-amber)"/></g><text x="60" y="132" class="dg-t">③ 빌드 캐시</text><text x="216" y="132" class="dg-lab2">CI 노드에서 비대</text><text x="396" y="132" class="dg-ts">builder prune --filter until</text><rect class="dg-box dg-anim cd2-3" x="12" y="156" width="616" height="38" rx="9"/><g transform="translate(17.6,156.6) scale(1.150)">
+<path d="M5 8.5 v15 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3 v-15 z"
+      fill="var(--dg-violet-s)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<ellipse cx="16" cy="8.5" rx="11" ry="4.3" fill="var(--raise)" stroke="var(--dg-violet)" stroke-width="1.7"/>
+<path d="M5 15.5 c0 2.4 4.9 4.3 11 4.3 s11 -1.9 11 -4.3" fill="none" stroke="var(--dg-violet)" stroke-width="1.4"/></g><text x="60" y="180" class="dg-t">④ 볼륨 — 멈춤</text><text x="216" y="180" class="dg-lab2">dangling 이라도 데이터</text><text x="396" y="180" class="dg-ts">목록 확인 후 개별 삭제만</text><text x="12" y="230" class="dg-ts">쿠버 노드는 kubelet GC(85%)와 싸우지 말고 임계·로그 상한 조정 — DiskPressure = 이 문제</text></svg><figcaption>docker system df 로 재고, 안전한 것부터 지웁니다. 볼륨은 데이터 — prune 말고 개별 확인.</figcaption></figure>
+<h2 id="_1">어디가 먹는지 재기부터</h2>
+<div class="highlight"><pre data-lang="bash"><span></span><code>docker<span class="w"> </span>system<span class="w"> </span>df<span class="w"> </span>-v<span class="w">            </span><span class="c1"># 이미지 / 컨테이너 / 볼륨 / 빌드 캐시 — 항목별 용량과 회수 가능량</span>
+du<span class="w"> </span>-sh<span class="w"> </span>/var/lib/docker/*<span class="w">  </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-h<span class="w">      </span><span class="c1"># 실제 디렉토리 기준</span>
+du<span class="w"> </span>-sh<span class="w"> </span>/var/lib/docker/containers/*/*-json.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-h<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w">   </span><span class="c1"># 컨테이너별 로그</span>
+</code></pre></div>
+
+<p>전형적 분포: 이미지가 수십 GB(태그 바꿔 배포할 때마다 옛 이미지가 남음), 특정 컨테이너의 json 로그가 수 GB(로그 상한 미설정), 빌드 캐시가 수 GB(CI 노드). "지웠는데 안 줄어요"의 파일 삭제 글 현상이 여기서도 나오니, <code>df</code>와 <code>du</code>가 어긋나면 그 글의 <code>lsof +L1</code>도 병행하세요.</p>
+<h2 id="_2">청소 순서 — 안전한 것부터</h2>
+<p><strong>① 컨테이너 로그 (가장 흔한 범인).</strong> 도커의 기본 로깅 드라이버는 stdout을 json 파일로 <strong>무제한</strong> 쌓습니다. 응급은 truncate, 근본은 상한 설정.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code><span class="c1"># 응급: 특정 컨테이너 로그 비우기 (파일 삭제 글의 그 방식 — 삭제 아님)</span>
+sudo<span class="w"> </span>truncate<span class="w"> </span>-s<span class="w"> </span><span class="m">0</span><span class="w"> </span>/var/lib/docker/containers/&lt;ID&gt;/&lt;ID&gt;-json.log
+
+<span class="c1"># 근본: /etc/docker/daemon.json — 모든 컨테이너 기본 상한</span>
+<span class="o">{</span>
+<span class="w">  </span><span class="s2">&quot;log-driver&quot;</span>:<span class="w"> </span><span class="s2">&quot;json-file&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;log-opts&quot;</span>:<span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="s2">&quot;max-size&quot;</span>:<span class="w"> </span><span class="s2">&quot;50m&quot;</span>,<span class="w"> </span><span class="s2">&quot;max-file&quot;</span>:<span class="w"> </span><span class="s2">&quot;3&quot;</span><span class="w"> </span><span class="o">}</span>
+<span class="o">}</span>
+<span class="c1"># → systemctl restart docker (기존 컨테이너는 재생성돼야 적용)</span>
+</code></pre></div>
+
+<p>로그 중앙화 글의 구조라면 로컬은 이 상한만 두고 수집기가 걷어가니 근본 해결이 됩니다.</p>
+<p><strong>② 멈춘 컨테이너·태그 없는 이미지·미사용 네트워크.</strong></p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>docker<span class="w"> </span>system<span class="w"> </span>prune<span class="w">            </span><span class="c1"># 멈춘 컨테이너 + dangling 이미지 + 미사용 네트워크 (볼륨 제외)</span>
+docker<span class="w"> </span>image<span class="w"> </span>prune<span class="w"> </span>-a<span class="w">          </span><span class="c1"># 실행 중인 컨테이너가 안 쓰는 이미지 전부 — 다음 배포 시 다시 pull</span>
+</code></pre></div>
+
+<p><code>-a</code>는 강력합니다 — 롤백용으로 쥐고 있던 이전 버전 이미지도 지우니, 레지스트리에서 다시 받을 수 있는지(그리고 NAT 요금·pull 시간이 감당되는지) 확인 후에.</p>
+<p><strong>③ 빌드 캐시.</strong> CI 노드에서 커집니다.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>docker<span class="w"> </span>builder<span class="w"> </span>prune<span class="w"> </span>--filter<span class="w"> </span><span class="k">until</span><span class="o">=</span>168h<span class="w">    </span><span class="c1"># 일주일 안 쓴 캐시만</span>
+</code></pre></div>
+
+<p>레이어 캐시 글에서 빌드 속도의 핵심이라 했으니, <strong>전부 지우면 다음 빌드가 느려집니다.</strong> until 필터로 오래된 것만.</p>
+<p><strong>④ 볼륨 — 여기서 멈추세요.</strong></p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>docker<span class="w"> </span>volume<span class="w"> </span>ls<span class="w"> </span>-f<span class="w"> </span><span class="nv">dangling</span><span class="o">=</span><span class="nb">true</span><span class="w">    </span><span class="c1"># 어떤 컨테이너도 안 쓰는 볼륨 목록 — 지우기 전에 이름 확인</span>
+</code></pre></div>
+
+<p><code>docker volume prune</code>은 <strong>데이터 삭제</strong>입니다. 도커 볼륨 글의 그 <code>down -v</code> 사고와 같은 급. dangling 볼륨이라도 "정지된 DB 컨테이너의 데이터"일 수 있으니, 목록을 보고 <strong>이름을 확인한 뒤 개별 삭제</strong>가 원칙이에요.</p>
+<h2 id="_3">쿠버네티스 노드라면</h2>
+<p>kubelet이 <strong>가비지 컬렉션</strong>을 자동으로 합니다 — 디스크 사용률 임계(기본 85%)를 넘으면 미사용 이미지를 지우고, 더 심하면 Pod를 퇴출(eviction)시킵니다. "노드가 갑자기 Pod를 쫓아냈다"(DiskPressure)의 정체가 이것.</p>
+<div class="highlight"><pre data-lang="bash"><span></span><code>kubectl<span class="w"> </span>describe<span class="w"> </span>node<span class="w"> </span>&lt;노드&gt;<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A5<span class="w"> </span>Conditions<span class="w">     </span><span class="c1"># DiskPressure 여부</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>events<span class="w"> </span>--field-selector<span class="w"> </span><span class="nv">reason</span><span class="o">=</span>Evicted<span class="w">     </span><span class="c1"># 퇴출 이력</span>
+</code></pre></div>
+
+<p>노드에 직접 들어가 <code>docker prune</code>하는 건 kubelet과 충돌할 수 있으니(containerd 환경이면 <code>crictl rmi --prune</code>), 정석은 <strong>kubelet의 GC 임계값 조정 + 로그 상한(컨테이너 런타임 설정) + 노드 디스크 크기 산정</strong>입니다. 그리고 Pod가 emptyDir이나 로컬 경로에 대용량을 쓰고 있다면 그건 워크로드 설계 문제 — requests/limits 글의 <code>ephemeral-storage</code> 제한이 이 계열의 안전판이에요.</p>
+<h2 id="_4">재발 방지 세트</h2>
+<div class="highlight"><pre><span></span><code>□ daemon.json 로그 상한 (max-size / max-file)
+□ 주간 cron: docker system prune -f + builder prune --filter until=168h  (볼륨 제외!)
+□ 디스크 사용률 알람 80% (알람 설계 글의 시한폭탄 예외 항목)
+□ 노드 디스크 산정 시 &quot;이미지 3세대 + 로그 상한 × 컨테이너 수&quot; 반영
+□ 이미지 다이어트 (멀티스테이지) — 원인의 크기 자체를 줄이기
+</code></pre></div>
+
+<h2 id="_5">한 줄 정리</h2>
+<p><code>docker system df</code>로 재고, <strong>로그 → 멈춘 컨테이너/옛 이미지 → 빌드 캐시</strong> 순으로 지우되 <strong>볼륨은 목록 보고 개별로.</strong> 근본은 로그 상한 + 정기 prune + 알람이고, 쿠버 노드는 kubelet GC와 싸우지 말고 임계값을 조정하세요.</p><aside class="related"><div class="rel-head">이어서 읽기 · --troubleshooting</div><a href="../p/deleted-but-full.html"><span class="g">&#10095;</span>파일을 지웠는데 용량이 안 줄었다 — 열린 fd와 lsof +L1</a><a href="../p/readonly-filesystem.html"><span class="g">&#10095;</span>디스크가 갑자기 읽기전용이 됐다 — 파일시스템의 자기방어</a><a href="../p/multi-stage-build.html"><span class="g">&#10095;</span>1.2GB 이미지가 80MB가 되기까지 — 멀티스테이지 빌드</a></aside><section class="comments"><div class="rel-head" style="margin:34px 0 6px">댓글</div><script src="https://giscus.app/client.js" data-repo="sabjil-log/sabjil-log.github.io" data-repo-id="R_kgDOTSag4A" data-category="Announcements" data-category-id="DIC_kwDOTSag4M4DBCac" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="preferred_color_scheme" data-lang="ko" data-loading="lazy" crossorigin="anonymous" async></script></section><nav class="pn"><a href="../p/agent-failure-modes.html"><span class="lbl">newer</span>에이전트 실패 모드 도감 — 루프·환각 실행·권한 초과·조용한 포기</a><a href="../p/batch-api.html" style="text-align:right"><span class="lbl">older</span>급하지 않은 LLM 작업은 반값에 — 배치 API 활용법</a></nav></article>
+</main>
+<footer class="site-foot"><div class="wrap"><span>© 삽질노트 · 가명 운영</span><span>익명의 엔지니어</span></div></footer>
+<script src="../assets/app.js" defer></script>
+</body>
+</html>
